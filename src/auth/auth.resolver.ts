@@ -4,6 +4,8 @@ import { TokenRequestInput } from './dto/tokenRequest.input';
 import { Auth } from 'firebase-admin/auth';
 import { Public } from './decorators/publicDecorator';
 import { UserAuthResponse } from './entities/user-auth-response.entity';
+import { TempSignInInput } from './dto/temp-signin.input';
+import { GraphQLJSONObject } from 'graphql-type-json';
 
 @Resolver()
 export class AuthResolver {
@@ -11,10 +13,10 @@ export class AuthResolver {
 
   constructor(private readonly authService: AuthService) {}
 
-  // @Mutation(() => GraphQLJSONObject)
-  // tempLogin(@Args('input') input: SignInByEmailInput) {
-  //   return this.authService.tempLogin(input);
-  // }
+  @Mutation(() => GraphQLJSONObject)
+  tempLogin(@Args('input') input: TempSignInInput) {
+    return this.authService.tempLogin(input);
+  }
 
   @Public()
   @Mutation(() => UserAuthResponse)

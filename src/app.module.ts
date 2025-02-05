@@ -34,6 +34,7 @@ import { join } from 'path';
 import { GraphqlDecimal, GraphqlPoint } from 'support/scalars';
 import { AccessTokenGuard } from './auth/guards/accessToken.guard';
 import { DataloaderRegistryFactory } from './dataloaders/dataloaderRegistryFactory';
+import { AuthModule } from './auth/auth.module';
 
 @Module({
   imports: [
@@ -86,6 +87,7 @@ import { DataloaderRegistryFactory } from './dataloaders/dataloaderRegistryFacto
         }),
       }),
     }),
+    AuthModule,
     AgeRangeModule,
     AllergyModule,
     CampModule,

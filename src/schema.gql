@@ -297,6 +297,11 @@ enum UserType {
   customerService
 }
 
+type UserAuthResponse {
+  user: User!
+  accessToken: String!
+}
+
 """Decimal custom scalar type"""
 scalar Decimal
 
@@ -304,6 +309,7 @@ scalar Decimal
 scalar GraphqlPoint
 
 type Query {
+  user(id: Int!): User!
   ageRange(id: Int!): AgeRange!
   allergy(id: Int!): Allergy!
   camp(id: Int!): Camp!
@@ -326,10 +332,14 @@ type Query {
   registrationPaymentHistory(id: Int!): RegistrationPaymentHistory!
   settings: [Settings!]!
   setting(id: Int!): Settings!
-  user(id: Int!): User!
 }
 
 type Mutation {
+  tempLogin(input: TempSignInInput!): JSONObject!
+  signIn(input: TokenRequestInput!): UserAuthResponse!
+  createUser(input: CreateUserInput!): JSONObject!
+  updateUser(updateUserInput: UpdateUserInput!): User!
+  removeUser(id: Int!): User!
   createAgeRange(createAgeRangeInput: CreateAgeRangeInput!): AgeRange!
   updateAgeRange(updateAgeRangeInput: UpdateAgeRangeInput!): AgeRange!
   removeAgeRange(id: Int!): AgeRange!
@@ -393,9 +403,54 @@ type Mutation {
   createSetting(createSettingInput: CreateSettingInput!): Settings!
   updateSetting(updateSettingInput: UpdateSettingInput!): Settings!
   removeSetting(id: Int!): Settings!
-  createUser(input: CreateUserInput!): User!
-  updateUser(updateUserInput: UpdateUserInput!): User!
-  removeUser(id: Int!): User!
+}
+
+"""
+The `JSONObject` scalar type represents JSON objects as specified by [ECMA-404](http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf).
+"""
+scalar JSONObject
+
+input TempSignInInput {
+  email: String!
+  password: String!
+}
+
+input TokenRequestInput {
+  firebaseToken: String!
+}
+
+input CreateUserInput {
+  id: String!
+  name: String!
+  type: UserType!
+  email: String!
+  phone: String
+  occupation: String
+  parentAdditional: [CreateParentAdditionalInput!]
+  children: [CreateChildInput!]
+}
+
+input CreateParentAdditionalInput {
+  name: String!
+  email: String
+  phone: String!
+}
+
+input CreateChildInput {
+  name: String!
+  birthdate: DateTime!
+  schoolId: Int!
+  isMale: Boolean!
+  parentRelation: ParentRelation!
+  imageFileId: Int
+  medicalInfo: String!
+  otherAllergies: String!
+  extraNotes: String!
+  allergies: [Int!]
+}
+
+input UpdateUserInput {
+  id: Int!
 }
 
 input CreateAgeRangeInput {
@@ -462,19 +517,6 @@ input UpdateCampVariantRegistrationInput {
   """Example field (placeholder)"""
   exampleField: Int
   id: Int!
-}
-
-input CreateChildInput {
-  name: String!
-  birthdate: DateTime!
-  schoolId: Int!
-  isMale: Boolean!
-  parentRelation: ParentRelation!
-  imageFileId: Int
-  medicalInfo: String!
-  otherAllergies: String!
-  extraNotes: String!
-  allergies: [Int!]
 }
 
 input UpdateChildInput {
@@ -590,12 +632,6 @@ input UpdateMealInput {
   id: Int!
 }
 
-input CreateParentAdditionalInput {
-  name: String!
-  email: String
-  phone: String!
-}
-
 input UpdateParentAdditionalInput {
   id: Int!
 }
@@ -641,20 +677,5 @@ input CreateSettingInput {
 input UpdateSettingInput {
   """Example field (placeholder)"""
   exampleField: Int
-  id: Int!
-}
-
-input CreateUserInput {
-  id: String!
-  name: String!
-  type: UserType!
-  email: String!
-  phone: String
-  occupation: String
-  parentAdditional: [CreateParentAdditionalInput!]
-  children: [CreateChildInput!]
-}
-
-input UpdateUserInput {
   id: Int!
 }

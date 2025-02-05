@@ -19,10 +19,9 @@ import {
   signInWithEmailAndPassword,
 } from 'firebase/auth';
 
-import { UserType } from 'support/enums';
-import { query } from 'express';
 import { FirebaseError } from 'firebase/app';
 import { UserAuthResponse } from './entities/user-auth-response.entity';
+import { TempSignInInput } from './dto/temp-signin.input';
 // import admin from "../main";
 
 @Injectable()
@@ -35,41 +34,40 @@ export class AuthService {
     private configService: ConfigService,
     private userService: UserService,
     private jwtService: JwtService,
-    private dataSource: DataSource,
   ) {
     this.firebaseAuth = admin.auth();
   }
 
-  // async tempLogin(input: SignInByEmailInput) {
-  //   let userCredential: UserCredential;
+  async tempLogin(input: TempSignInInput) {
+    let userCredential: UserCredential;
 
-  //   try {
-  //     const auth = getAuth();
-  //     userCredential = await signInWithEmailAndPassword(
-  //       auth,
-  //       input.email,
-  //       input.password,
-  //     );
+    try {
+      const auth = getAuth();
+      userCredential = await signInWithEmailAndPassword(
+        auth,
+        input.email,
+        input.password,
+      );
 
-  //     return {
-  //       success: true,
-  //       userCredential,
-  //     };
-  //   } catch (e) {
-  //     if (e instanceof FirebaseError) {
-  //       console.log(e);
-  //       const errorMessage = this.handleAuthError(e);
-  //       console.log(errorMessage);
-  //       return {
-  //         success: false,
-  //         code: e.code,
-  //         message: errorMessage,
-  //       }; // Return the error message for further handling
-  //     }
+      return {
+        success: true,
+        userCredential,
+      };
+    } catch (e) {
+      if (e instanceof FirebaseError) {
+        console.log(e);
+        const errorMessage = this.handleAuthError(e);
+        console.log(errorMessage);
+        return {
+          success: false,
+          code: e.code,
+          message: errorMessage,
+        }; // Return the error message for further handling
+      }
 
-  //     return { success: false, message: e };
-  //   }
-  // }
+      return { success: false, message: e };
+    }
+  }
 
   async signIn(tokenPayload: TokenRequestInput): Promise<UserAuthResponse> {
     try {

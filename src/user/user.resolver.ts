@@ -3,12 +3,15 @@ import { UserService } from './user.service';
 import { User } from './entities/user.entity';
 import { CreateUserInput } from './dto/create-user.input';
 import { UpdateUserInput } from './dto/update-user.input';
+import { ResponseWrapper } from 'support/response-wrapper.entity';
+import { GraphQLObjectType } from 'graphql';
+import { GraphQLJSONObject } from 'graphql-type-json';
 
 @Resolver(() => User)
 export class UserResolver {
   constructor(private readonly userService: UserService) {}
 
-  @Mutation(() => User)
+  @Mutation(() => GraphQLJSONObject)
   createUser(@Args('input') createUserInput: CreateUserInput) {
     return this.userService.create(createUserInput);
   }

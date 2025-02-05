@@ -13,6 +13,10 @@ dotenv.config();
 @Injectable()
 export class AccessTokenStrategy extends PassportStrategy(Strategy, 'jwt') {
   constructor() {
+    console.log(
+      'process.env.access_token_secret',
+      process.env.access_token_secret,
+    );
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       secretOrKey: process.env.access_token_secret,

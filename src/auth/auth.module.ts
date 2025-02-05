@@ -8,13 +8,7 @@ import { RefreshTokenStrategy } from './strategies/refreshToken.strategy';
 
 @Module({
   imports: [UserModule],
-  providers: [
-    AuthResolver,
-    AuthService,
-    JwtService,
-    AccessTokenStrategy,
-    RefreshTokenStrategy,
-  ],
+  providers: [AuthResolver, AuthService, JwtService, AccessTokenStrategy],
   exports: [AuthService],
 })
 export class AuthModule {}

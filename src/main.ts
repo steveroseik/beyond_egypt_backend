@@ -1,6 +1,5 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import { firebaseConfig } from 'fireabase-config';
 import * as bodyParser from 'body-parser';
 import * as admin from 'firebase-admin';
 import * as dotenv from 'dotenv';
@@ -11,11 +10,6 @@ dotenv.config();
 
 async function bootstrap() {
   /// admin initialization
-
-  console.log('process.env.private_key', process.env.private_key);
-  console.log('process.env.project_id', process.env.project_id);
-  console.log('process.env.client_email', process.env.client_email);
-
   admin.initializeApp({
     credential: admin.credential.cert({
       privateKey: process.env.private_key,
