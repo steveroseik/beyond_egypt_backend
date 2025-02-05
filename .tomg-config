@@ -1,0 +1,37 @@
+[
+  {
+    "resultsPath": "/Users/roseik/js-projects/beyond_egypt_backend/output",
+    "pluralizeNames": true,
+    "noConfigs": false,
+    "convertCaseFile": "pascal",
+    "convertCaseEntity": "pascal",
+    "convertCaseProperty": "camel",
+    "convertEol": "LF",
+    "propertyVisibility": "none",
+    "lazy": false,
+    "activeRecord": false,
+    "generateConstructor": false,
+    "customNamingStrategyPath": "",
+    "relationIds": false,
+    "strictMode": "none",
+    "skipSchema": false,
+    "indexFile": false,
+    "exportType": "named"
+  },
+  {
+    "host": "127.0.0.1",
+    "port": 3306,
+    "databaseNames": [
+      "beyond_egypt"
+    ],
+    "user": "user",
+    "password": "password",
+    "databaseType": "mysql",
+    "schemaNames": [
+      ""
+    ],
+    "ssl": false,
+    "skipTables": [],
+    "onlyTables": []
+  }
+]

@@ -1,0 +1,660 @@
+# ------------------------------------------------------
+# THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
+# ------------------------------------------------------
+
+type Event {
+  id: Int!
+  name: String!
+  description: String!
+  thumbnailId: Int!
+  startDate: DateTime!
+  endDate: DateTime!
+  createdAt: DateTime!
+  lastModified: DateTime!
+  deletedAt: DateTime
+  earlyBirdId: Int
+  files: [File!]!
+}
+
+"""
+A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date-time format.
+"""
+scalar DateTime
+
+type File {
+  id: Int!
+  name: String!
+  type: FileType!
+  key: String!
+  userId: String!
+  sizeInKb: Int!
+  createdAt: DateTime!
+}
+
+enum FileType {
+  video
+  image
+  audio
+  pdf
+  doc
+  other
+}
+
+type Meal {
+  id: Int!
+  name: String!
+  price: Decimal!
+  createdAt: DateTime!
+  lastModified: DateTime!
+  deletedAt: DateTime
+}
+
+type Camp {
+  id: Int!
+  name: String!
+  description: String
+  thumbnailId: Int!
+  defaultPrice: String
+  hasShirts: Boolean!
+  eventId: Int
+  isPrivate: Boolean!
+  capacity: Int!
+  locationId: Int!
+  createdAt: DateTime!
+  lastModified: DateTime!
+  deletedAt: DateTime
+  ageRanges: [AgeRange!]
+  files: [File!]
+  meals: [Meal!]
+}
+
+type AgeRange {
+  id: Int!
+  name: String
+  minAge: Int
+  maxAge: Int
+  createdAt: DateTime!
+  lastModified: DateTime!
+  deletedAt: DateTime
+  camps: [Camp!]
+}
+
+type Child {
+  parentId: String!
+  name: String!
+  birthdate: DateTime!
+  schoolId: Int!
+  isMale: Boolean!
+  parentRelation: ParentRelation!
+  imageFileId: Int
+  createdAt: DateTime!
+  lastModified: DateTime!
+  deletedAt: DateTime
+  allergies: [Allergy!]
+}
+
+enum ParentRelation {
+  father
+  mother
+  grandParent
+  uncle
+}
+
+type Allergy {
+  id: Int!
+  name: String!
+  category: Int!
+  createdAt: DateTime!
+  lastModified: DateTime!
+  deletedAt: DateTime
+  children: [Child!]
+}
+
+type CampRegistration {
+  parentId: Int!
+  campId: Int!
+  oneDayPrice: Decimal
+  totalPrice: Decimal!
+  paymentMethod: String!
+  createdAt: DateTime!
+  lastModified: DateTime!
+  deletedAt: DateTime
+}
+
+type CampVariant {
+  id: Int!
+  campId: Int!
+  name: String
+  price: Decimal
+  startDate: DateTime!
+  endDate: DateTime!
+  createdAt: DateTime!
+  lastModified: DateTime!
+  deletedAt: DateTime
+}
+
+type CampVariantRegistration {
+  id: Int!
+  childId: Int!
+  campRegistrationId: Int!
+  campVariantId: Int!
+  price: Decimal!
+  mealId: Int
+  shirtSize: ShirtSize
+  createdAt: DateTime!
+  lastModified: DateTime!
+  deletedAt: DateTime
+}
+
+enum ShirtSize {
+  xxs
+  xs
+  s
+  m
+  l
+  xl
+  xxl
+}
+
+type ChildAllergy {
+  """Example field (placeholder)"""
+  exampleField: Int!
+}
+
+type ChildReport {
+  id: Int!
+  childId: Int!
+  campVariantId: Int!
+  type: ChildReportType!
+  status: ChildReportStatus!
+  createdAt: DateTime!
+  lastModified: DateTime!
+  deletedAt: DateTime
+}
+
+enum ChildReportType {
+  incident
+}
+
+enum ChildReportStatus {
+  new
+  followUp
+  closed
+}
+
+type ChildReportHistory {
+  childReportId: Int!
+  reportTime: DateTime!
+  gameName: String!
+  details: String!
+  actionsTaken: String!
+  status: ChildReportStatus!
+  userId: Int!
+}
+
+type RegistrationHistory {
+  campRegistrationId: Int!
+  status: CampRegistrationStatus!
+  userOnEnterId: String!
+  userOnLeaveId: String
+  createdAt: DateTime!
+  lastModified: DateTime!
+  discountsApplied: [Discount!]
+}
+
+enum CampRegistrationStatus {
+  idle
+  accepted
+  rejected
+  cancelled
+  modified
+}
+
+type Discount {
+  code: String
+  percentage: Decimal
+  amount: Decimal
+  startDate: DateTime
+  endDate: DateTime
+  createdAt: DateTime!
+  lastModified: DateTime!
+  deletedAt: DateTime
+}
+
+type EventFile {
+  """Example field (placeholder)"""
+  exampleField: Int!
+}
+
+type Location {
+  id: Int!
+  name: String!
+  geoPoint: GraphqlPoint
+  createdAt: DateTime!
+  lastModified: DateTime!
+  deletedAt: DateTime
+}
+
+type ParentAdditional {
+  userId: String!
+  name: String!
+  email: String
+  phone: String!
+  createdAt: DateTime!
+  lastModified: DateTime!
+  deletedAt: DateTime
+}
+
+type RegistrationAttendance {
+  id: Int!
+  campRegistrationId: Int!
+  childId: Int!
+  enterTime: DateTime!
+  leaveTime: DateTime
+  userId: Int!
+  createdAt: DateTime!
+  lastModified: DateTime!
+  deletedAt: DateTime
+}
+
+type RegistrationPaymentHistory {
+  id: Int!
+  campRegistrationId: Int!
+  paymentMethod: PaymentMethod!
+  total: Decimal!
+  receiptId: Int
+  userId: Int!
+  createdAt: DateTime!
+}
+
+enum PaymentMethod {
+  fawry
+  instapay
+  cash
+}
+
+type Settings {
+  id: Int!
+  sizeChartFileId: Int
+  coachForm: String
+}
+
+type User {
+  id: String!
+  name: String!
+  type: UserType!
+  email: String!
+  phone: String
+  occupation: String
+  createdAt: DateTime!
+  lastModified: DateTime!
+  deletedAt: DateTime
+}
+
+enum UserType {
+  admin
+  parent
+  customerService
+}
+
+"""Decimal custom scalar type"""
+scalar Decimal
+
+"""MYSQL Point representation of coordinates."""
+scalar GraphqlPoint
+
+type Query {
+  ageRange(id: Int!): AgeRange!
+  allergy(id: Int!): Allergy!
+  camp(id: Int!): Camp!
+  campRegistration(id: Int!): CampRegistration!
+  campVariant(id: Int!): CampVariant!
+  campVariantRegistration(id: Int!): CampVariantRegistration!
+  child(id: Int!): Child!
+  childAllergy(id: Int!): ChildAllergy!
+  childReport(id: Int!): ChildReport!
+  childReportHistory(id: Int!): ChildReportHistory!
+  discount(id: Int!): Discount!
+  event(id: Int!): Event!
+  eventFile(id: Int!): EventFile!
+  file(id: Int!): File!
+  location(id: Int!): Location!
+  meal(id: Int!): Meal!
+  parentAdditional(id: Int!): ParentAdditional!
+  registrationAttendance(id: Int!): RegistrationAttendance!
+  registrationHistory(id: Int!): RegistrationHistory!
+  registrationPaymentHistory(id: Int!): RegistrationPaymentHistory!
+  settings: [Settings!]!
+  setting(id: Int!): Settings!
+  user(id: Int!): User!
+}
+
+type Mutation {
+  createAgeRange(createAgeRangeInput: CreateAgeRangeInput!): AgeRange!
+  updateAgeRange(updateAgeRangeInput: UpdateAgeRangeInput!): AgeRange!
+  removeAgeRange(id: Int!): AgeRange!
+  createAllergy(createAllergyInput: CreateAllergyInput!): Allergy!
+  updateAllergy(updateAllergyInput: UpdateAllergyInput!): Allergy!
+  removeAllergy(id: Int!): Allergy!
+  createCamp(createCampInput: CreateCampInput!): Camp!
+  updateCamp(updateCampInput: UpdateCampInput!): Camp!
+  removeCamp(id: Int!): Camp!
+  createCampRegistration(createCampRegistrationInput: CreateCampRegistrationInput!): CampRegistration!
+  updateCampRegistration(updateCampRegistrationInput: UpdateCampRegistrationInput!): CampRegistration!
+  removeCampRegistration(id: Int!): CampRegistration!
+  createCampVariant(createCampVariantInput: CreateCampVariantInput!): CampVariant!
+  updateCampVariant(updateCampVariantInput: UpdateCampVariantInput!): CampVariant!
+  removeCampVariant(id: Int!): CampVariant!
+  createCampVariantRegistration(createCampVariantRegistrationInput: CreateCampVariantRegistrationInput!): CampVariantRegistration!
+  updateCampVariantRegistration(updateCampVariantRegistrationInput: UpdateCampVariantRegistrationInput!): CampVariantRegistration!
+  removeCampVariantRegistration(id: Int!): CampVariantRegistration!
+  createChild(createChildInput: CreateChildInput!): Child!
+  updateChild(updateChildInput: UpdateChildInput!): Child!
+  removeChild(id: Int!): Child!
+  createChildAllergy(createChildAllergyInput: CreateChildAllergyInput!): ChildAllergy!
+  updateChildAllergy(updateChildAllergyInput: UpdateChildAllergyInput!): ChildAllergy!
+  removeChildAllergy(id: Int!): ChildAllergy!
+  createChildReport(createChildReportInput: CreateChildReportInput!): ChildReport!
+  updateChildReport(updateChildReportInput: UpdateChildReportInput!): ChildReport!
+  removeChildReport(id: Int!): ChildReport!
+  createChildReportHistory(createChildReportHistoryInput: CreateChildReportHistoryInput!): ChildReportHistory!
+  updateChildReportHistory(updateChildReportHistoryInput: UpdateChildReportHistoryInput!): ChildReportHistory!
+  removeChildReportHistory(id: Int!): ChildReportHistory!
+  createDiscount(createDiscountInput: CreateDiscountInput!): Discount!
+  updateDiscount(updateDiscountInput: UpdateDiscountInput!): Discount!
+  removeDiscount(id: Int!): Discount!
+  createEvent(createEventInput: CreateEventInput!): Event!
+  updateEvent(updateEventInput: UpdateEventInput!): Event!
+  removeEvent(id: Int!): Event!
+  createEventFile(createEventFileInput: CreateEventFileInput!): EventFile!
+  updateEventFile(updateEventFileInput: UpdateEventFileInput!): EventFile!
+  removeEventFile(id: Int!): EventFile!
+  createFile(createFileInput: CreateFileInput!): File!
+  updateFile(updateFileInput: UpdateFileInput!): File!
+  removeFile(id: Int!): File!
+  createLocation(createLocationInput: CreateLocationInput!): Location!
+  updateLocation(updateLocationInput: UpdateLocationInput!): Location!
+  removeLocation(id: Int!): Location!
+  createMeal(createMealInput: CreateMealInput!): Meal!
+  updateMeal(updateMealInput: UpdateMealInput!): Meal!
+  removeMeal(id: Int!): Meal!
+  createParentAdditional(createParentAdditionalInput: CreateParentAdditionalInput!): ParentAdditional!
+  updateParentAdditional(updateParentAdditionalInput: UpdateParentAdditionalInput!): ParentAdditional!
+  removeParentAdditional(id: Int!): ParentAdditional!
+  createRegistrationAttendance(createRegistrationAttendanceInput: CreateRegistrationAttendanceInput!): RegistrationAttendance!
+  updateRegistrationAttendance(updateRegistrationAttendanceInput: UpdateRegistrationAttendanceInput!): RegistrationAttendance!
+  removeRegistrationAttendance(id: Int!): RegistrationAttendance!
+  createRegistrationHistory(createRegistrationHistoryInput: CreateRegistrationHistoryInput!): RegistrationHistory!
+  updateRegistrationHistory(updateRegistrationHistoryInput: UpdateRegistrationHistoryInput!): RegistrationHistory!
+  removeRegistrationHistory(id: Int!): RegistrationHistory!
+  createRegistrationPaymentHistory(createRegistrationPaymentHistoryInput: CreateRegistrationPaymentHistoryInput!): RegistrationPaymentHistory!
+  updateRegistrationPaymentHistory(updateRegistrationPaymentHistoryInput: UpdateRegistrationPaymentHistoryInput!): RegistrationPaymentHistory!
+  removeRegistrationPaymentHistory(id: Int!): RegistrationPaymentHistory!
+  createSetting(createSettingInput: CreateSettingInput!): Settings!
+  updateSetting(updateSettingInput: UpdateSettingInput!): Settings!
+  removeSetting(id: Int!): Settings!
+  createUser(input: CreateUserInput!): User!
+  updateUser(updateUserInput: UpdateUserInput!): User!
+  removeUser(id: Int!): User!
+}
+
+input CreateAgeRangeInput {
+  """Example field (placeholder)"""
+  exampleField: Int!
+}
+
+input UpdateAgeRangeInput {
+  """Example field (placeholder)"""
+  exampleField: Int
+  id: Int!
+}
+
+input CreateAllergyInput {
+  """Example field (placeholder)"""
+  exampleField: Int!
+}
+
+input UpdateAllergyInput {
+  """Example field (placeholder)"""
+  exampleField: Int
+  id: Int!
+}
+
+input CreateCampInput {
+  """Example field (placeholder)"""
+  exampleField: Int!
+}
+
+input UpdateCampInput {
+  """Example field (placeholder)"""
+  exampleField: Int
+  id: Int!
+}
+
+input CreateCampRegistrationInput {
+  """Example field (placeholder)"""
+  exampleField: Int!
+}
+
+input UpdateCampRegistrationInput {
+  """Example field (placeholder)"""
+  exampleField: Int
+  id: Int!
+}
+
+input CreateCampVariantInput {
+  """Example field (placeholder)"""
+  exampleField: Int!
+}
+
+input UpdateCampVariantInput {
+  """Example field (placeholder)"""
+  exampleField: Int
+  id: Int!
+}
+
+input CreateCampVariantRegistrationInput {
+  """Example field (placeholder)"""
+  exampleField: Int!
+}
+
+input UpdateCampVariantRegistrationInput {
+  """Example field (placeholder)"""
+  exampleField: Int
+  id: Int!
+}
+
+input CreateChildInput {
+  name: String!
+  birthdate: DateTime!
+  schoolId: Int!
+  isMale: Boolean!
+  parentRelation: ParentRelation!
+  imageFileId: Int
+  medicalInfo: String!
+  otherAllergies: String!
+  extraNotes: String!
+  allergies: [Int!]
+}
+
+input UpdateChildInput {
+  name: String
+  birthdate: DateTime
+  schoolId: Int
+  isMale: Boolean
+  parentRelation: ParentRelation
+  imageFileId: Int
+  medicalInfo: String
+  otherAllergies: String
+  extraNotes: String
+  allergies: [Int!]
+  id: Int!
+}
+
+input CreateChildAllergyInput {
+  """Example field (placeholder)"""
+  exampleField: Int!
+}
+
+input UpdateChildAllergyInput {
+  """Example field (placeholder)"""
+  exampleField: Int
+  id: Int!
+}
+
+input CreateChildReportInput {
+  """Example field (placeholder)"""
+  exampleField: Int!
+}
+
+input UpdateChildReportInput {
+  """Example field (placeholder)"""
+  exampleField: Int
+  id: Int!
+}
+
+input CreateChildReportHistoryInput {
+  """Example field (placeholder)"""
+  exampleField: Int!
+}
+
+input UpdateChildReportHistoryInput {
+  """Example field (placeholder)"""
+  exampleField: Int
+  id: Int!
+}
+
+input CreateDiscountInput {
+  """Example field (placeholder)"""
+  exampleField: Int!
+}
+
+input UpdateDiscountInput {
+  """Example field (placeholder)"""
+  exampleField: Int
+  id: Int!
+}
+
+input CreateEventInput {
+  """Example field (placeholder)"""
+  exampleField: Int!
+}
+
+input UpdateEventInput {
+  """Example field (placeholder)"""
+  exampleField: Int
+  id: Int!
+}
+
+input CreateEventFileInput {
+  """Example field (placeholder)"""
+  exampleField: Int!
+}
+
+input UpdateEventFileInput {
+  """Example field (placeholder)"""
+  exampleField: Int
+  id: Int!
+}
+
+input CreateFileInput {
+  """Example field (placeholder)"""
+  exampleField: Int!
+}
+
+input UpdateFileInput {
+  """Example field (placeholder)"""
+  exampleField: Int
+  id: Int!
+}
+
+input CreateLocationInput {
+  """Example field (placeholder)"""
+  exampleField: Int!
+}
+
+input UpdateLocationInput {
+  """Example field (placeholder)"""
+  exampleField: Int
+  id: Int!
+}
+
+input CreateMealInput {
+  """Example field (placeholder)"""
+  exampleField: Int!
+}
+
+input UpdateMealInput {
+  """Example field (placeholder)"""
+  exampleField: Int
+  id: Int!
+}
+
+input CreateParentAdditionalInput {
+  name: String!
+  email: String
+  phone: String!
+}
+
+input UpdateParentAdditionalInput {
+  id: Int!
+}
+
+input CreateRegistrationAttendanceInput {
+  """Example field (placeholder)"""
+  exampleField: Int!
+}
+
+input UpdateRegistrationAttendanceInput {
+  """Example field (placeholder)"""
+  exampleField: Int
+  id: Int!
+}
+
+input CreateRegistrationHistoryInput {
+  """Example field (placeholder)"""
+  exampleField: Int!
+}
+
+input UpdateRegistrationHistoryInput {
+  """Example field (placeholder)"""
+  exampleField: Int
+  id: Int!
+}
+
+input CreateRegistrationPaymentHistoryInput {
+  """Example field (placeholder)"""
+  exampleField: Int!
+}
+
+input UpdateRegistrationPaymentHistoryInput {
+  """Example field (placeholder)"""
+  exampleField: Int
+  id: Int!
+}
+
+input CreateSettingInput {
+  """Example field (placeholder)"""
+  exampleField: Int!
+}
+
+input UpdateSettingInput {
+  """Example field (placeholder)"""
+  exampleField: Int
+  id: Int!
+}
+
+input CreateUserInput {
+  id: String!
+  name: String!
+  type: UserType!
+  email: String!
+  phone: String
+  occupation: String
+  parentAdditional: [CreateParentAdditionalInput!]
+  children: [CreateChildInput!]
+}
+
+input UpdateUserInput {
+  id: Int!
+}
