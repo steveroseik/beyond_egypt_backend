@@ -57,13 +57,16 @@ export class Child {
   imageFileId?: number;
 
   @Column('varchar', { name: 'medicalInfo', nullable: true, length: 255 })
-  medicalInfo: string;
+  @Field({ nullable: true })
+  medicalInfo?: string;
 
   @Column('varchar', { name: 'otherAllergies', nullable: true, length: 255 })
-  otherAllergies: string;
+  @Field({ nullable: true })
+  otherAllergies?: string;
 
   @Column('varchar', { name: 'extraNotes', nullable: true, length: 255 })
-  extraNotes: string;
+  @Field({ nullable: true })
+  extraNotes?: string;
 
   @CreateDateColumn({
     name: 'createdAt',

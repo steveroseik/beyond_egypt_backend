@@ -87,6 +87,9 @@ type Child {
   isMale: Boolean!
   parentRelation: ParentRelation!
   imageFileId: Int
+  medicalInfo: String
+  otherAllergies: String
+  extraNotes: String
   createdAt: DateTime!
   lastModified: DateTime!
   deletedAt: DateTime
