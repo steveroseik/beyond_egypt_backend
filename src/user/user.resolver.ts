@@ -6,11 +6,13 @@ import { UpdateUserInput } from './dto/update-user.input';
 import { ResponseWrapper } from 'support/response-wrapper.entity';
 import { GraphQLObjectType } from 'graphql';
 import { GraphQLJSONObject } from 'graphql-type-json';
+import { Public } from 'src/auth/decorators/publicDecorator';
 
 @Resolver(() => User)
 export class UserResolver {
   constructor(private readonly userService: UserService) {}
 
+  @Public()
   @Mutation(() => GraphQLJSONObject)
   createUser(@Args('input') createUserInput: CreateUserInput) {
     return this.userService.create(createUserInput);
@@ -32,7 +34,7 @@ export class UserResolver {
   }
 
   @Mutation(() => User)
-  removeUser(@Args('id', { type: () => Int }) id: number) {
+  removeUser(@Args('id') id: string) {
     return this.userService.remove(id);
   }
 }

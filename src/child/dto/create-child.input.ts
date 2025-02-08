@@ -43,18 +43,18 @@ export class CreateChildInput {
 
   @IsOptional()
   @IsString()
-  @Field()
-  medicalInfo: string;
+  @Field({ nullable: true })
+  medicalInfo?: string;
 
   @IsOptional()
   @IsString()
-  @Field()
-  otherAllergies: string;
+  @Field({ nullable: true })
+  otherAllergies?: string;
 
   @IsOptional()
   @IsString()
-  @Field()
-  extraNotes: string;
+  @Field({ nullable: true })
+  extraNotes?: string;
 
   @IsOptional()
   @IsArray()

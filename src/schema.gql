@@ -298,8 +298,12 @@ enum UserType {
 }
 
 type UserAuthResponse {
-  user: User!
-  accessToken: String!
+  user: User
+  accessToken: String
+
+  """0: No User, 1: Incomplete User, 2: Complete User"""
+  userState: Int
+  message: String!
 }
 
 """Decimal custom scalar type"""
@@ -339,7 +343,7 @@ type Mutation {
   signIn(input: TokenRequestInput!): UserAuthResponse!
   createUser(input: CreateUserInput!): JSONObject!
   updateUser(updateUserInput: UpdateUserInput!): User!
-  removeUser(id: Int!): User!
+  removeUser(id: String!): User!
   createAgeRange(createAgeRangeInput: CreateAgeRangeInput!): AgeRange!
   updateAgeRange(updateAgeRangeInput: UpdateAgeRangeInput!): AgeRange!
   removeAgeRange(id: Int!): AgeRange!
@@ -420,7 +424,7 @@ input TokenRequestInput {
 }
 
 input CreateUserInput {
-  id: String!
+  firebaseToken: String!
   name: String!
   type: UserType!
   email: String!
@@ -443,9 +447,9 @@ input CreateChildInput {
   isMale: Boolean!
   parentRelation: ParentRelation!
   imageFileId: Int
-  medicalInfo: String!
-  otherAllergies: String!
-  extraNotes: String!
+  medicalInfo: String
+  otherAllergies: String
+  extraNotes: String
   allergies: [Int!]
 }
 

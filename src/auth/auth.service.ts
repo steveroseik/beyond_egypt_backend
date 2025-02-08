@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { forwardRef, Inject, Injectable } from '@nestjs/common';
 import { TokenRequestInput } from './dto/tokenRequest.input';
 // import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
@@ -32,7 +32,7 @@ export class AuthService {
 
   constructor(
     private configService: ConfigService,
-    private userService: UserService,
+    @Inject(forwardRef(() => UserService)) private userService: UserService,
     private jwtService: JwtService,
   ) {
     this.firebaseAuth = admin.auth();
@@ -69,13 +69,20 @@ export class AuthService {
     }
   }
 
+  async verifyFirebaseToken(token: string) {
+    return await this.firebaseAuth.verifyIdToken(token);
+  }
+
   async signIn(tokenPayload: TokenRequestInput): Promise<UserAuthResponse> {
+    let email: string = undefined;
     try {
-      const decoded = await this.firebaseAuth.verifyIdToken(
+      const decoded = await this.verifyFirebaseToken(
         tokenPayload.firebaseToken,
       );
       if (decoded.email == null || decoded.email.length <= 0)
         throw Error('no_email_found');
+
+      email = decoded.email;
 
       const user = await this.userService.findExactOne(
         decoded.email,
@@ -98,30 +105,49 @@ export class AuthService {
       return {
         user: user,
         accessToken,
+        userState: 2,
+        message: 'User signed in successfully',
       };
     } catch (e) {
       // TODO: fix no errors shown except last
       console.log(e);
-      return e;
+
+      if (email) {
+        const response = await this.isEmailValid(email);
+        return {
+          userState: response,
+          message: 'Failed to sign in',
+        };
+      }
+
+      return {
+        userState: 0,
+        message: 'User not found or invalid token',
+      };
     }
   }
 
-  // async isEmailValid(email: string): Promise<number> {
-  //   const data = await this.userService.findOneByEmail(email);
+  async isEmailValid(email: string): Promise<number> {
+    const data = await this.userService.findOneByEmail(email);
 
-  //   const response = await this.tempLogin({
-  //     email,
-  //     password: 'fakePass123',
-  //     shopifyId: 'fakeShopifyId',
-  //   });
+    const response = await this.tempLogin({
+      email,
+      password: 'fakePass123',
+    });
 
-  //   if (data) {
-  //     if (response.code == 'auth/user-not-found') return 1;
-  //     return 2;
-  //   }
-
-  //   return 0;
-  // }
+    if (response.code == 'auth/user-not-found') {
+      if (data) {
+        await this.userService.remove(data.id);
+      }
+      return 0;
+    } else {
+      if (data) {
+        return 2;
+      } else {
+        return 1;
+      }
+    }
+  }
 
   findAll() {
     return `This action returns all auth`;

@@ -13,6 +13,7 @@ export class AuthResolver {
 
   constructor(private readonly authService: AuthService) {}
 
+  @Public()
   @Mutation(() => GraphQLJSONObject)
   tempLogin(@Args('input') input: TempSignInInput) {
     return this.authService.tempLogin(input);
@@ -22,7 +23,7 @@ export class AuthResolver {
   @Mutation(() => UserAuthResponse)
   async signIn(
     @Args('input') input: TokenRequestInput,
-  ): Promise<UserAuthResponse | null> {
+  ): Promise<UserAuthResponse> {
     return this.authService.signIn(input);
   }
 

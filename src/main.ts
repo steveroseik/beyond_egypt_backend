@@ -4,6 +4,8 @@ import * as bodyParser from 'body-parser';
 import * as admin from 'firebase-admin';
 import * as dotenv from 'dotenv';
 import { CorsOptions } from '@nestjs/common/interfaces/external/cors-options.interface';
+import { firebaseConfig } from 'firebase-config';
+import { initializeApp } from 'firebase/app';
 
 var cors = require('cors');
 dotenv.config();
@@ -20,7 +22,7 @@ async function bootstrap() {
 
   //// should npm i firebase/app
   /// client initialization
-  // initializeApp(firebaseConfig);
+  initializeApp(firebaseConfig);
 
   const app = await NestFactory.create(AppModule);
 

@@ -12,9 +12,11 @@ import { UserType } from 'support/enums';
 
 @InputType()
 export class CreateUserInput {
-  @Field()
-  @IsString()
   id: string;
+
+  @IsString()
+  @Field()
+  firebaseToken: string;
 
   @IsString()
   @Field()
