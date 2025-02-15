@@ -3,6 +3,8 @@ import { CampService } from './camp.service';
 import { Camp } from './entities/camp.entity';
 import { CreateCampInput } from './dto/create-camp.input';
 import { UpdateCampInput } from './dto/update-camp.input';
+import { CampPage } from './entities/camp-page.entity';
+import { PaginateCampsInput } from './dto/paginate-camps.input';
 
 @Resolver(() => Camp)
 export class CampResolver {
@@ -31,5 +33,10 @@ export class CampResolver {
   @Mutation(() => Camp)
   removeCamp(@Args('id', { type: () => Int }) id: number) {
     return this.campService.remove(id);
+  }
+
+  @Query(() => CampPage)
+  paginateCamps(@Args('input') input: PaginateCampsInput) {
+    return this.campService.paginate(input);
   }
 }
