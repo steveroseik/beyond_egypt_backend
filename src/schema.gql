@@ -114,6 +114,14 @@ type Allergy {
   children: [Child!]
 }
 
+type CampPage {
+  cursor: GraphqlCursor!
+  data: [Camp!]!
+}
+
+"""Cursor scalar type for pagination"""
+scalar GraphqlCursor
+
 type CampRegistration {
   parentId: String!
   campId: Int!
@@ -173,6 +181,11 @@ type CampVariant {
   createdAt: DateTime!
   lastModified: DateTime!
   deletedAt: DateTime
+}
+
+type ChildPage {
+  cursor: GraphqlCursor!
+  data: [Child!]!
 }
 
 type ChildAllergy {
@@ -324,10 +337,12 @@ type Query {
   ageRange(id: Int!): AgeRange!
   allergy(id: Int!): Allergy!
   camp(id: Int!): Camp!
+  paginateCamps(input: PaginateCampsInput!): CampPage!
   campRegistration(id: Int!): CampRegistration!
   campVariant(id: Int!): CampVariant!
   campVariantRegistration(id: Int!): CampVariantRegistration!
   child(id: Int!): Child!
+  paginateChildren(input: PaginateChildInput!): ChildPage!
   childAllergy(id: Int!): ChildAllergy!
   childReport(id: Int!): ChildReport!
   childReportHistory(id: Int!): ChildReportHistory!
@@ -343,6 +358,21 @@ type Query {
   registrationPaymentHistory(id: Int!): RegistrationPaymentHistory!
   settings: [Settings!]!
   setting(id: Int!): Settings!
+}
+
+input PaginateCampsInput {
+  isAsc: Boolean! = false
+  limit: Int = 20
+  afterCursor: String
+  beforeCursor: String
+}
+
+input PaginateChildInput {
+  isAsc: Boolean! = false
+  limit: Int = 20
+  afterCursor: String
+  beforeCursor: String
+  parentId: String!
 }
 
 type Mutation {
