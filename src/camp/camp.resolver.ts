@@ -9,8 +9,8 @@ export class CampResolver {
   constructor(private readonly campService: CampService) {}
 
   @Mutation(() => Camp)
-  createCamp(@Args('createCampInput') createCampInput: CreateCampInput) {
-    return this.campService.create(createCampInput);
+  createCamp(@Args('input') input: CreateCampInput) {
+    return this.campService.create(input);
   }
 
   @Query(() => [Camp], { name: 'camp' })

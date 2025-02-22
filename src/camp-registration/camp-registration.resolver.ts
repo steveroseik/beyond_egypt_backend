@@ -3,14 +3,38 @@ import { CampRegistrationService } from './camp-registration.service';
 import { CampRegistration } from './entities/camp-registration.entity';
 import { CreateCampRegistrationInput } from './dto/create-camp-registration.input';
 import { UpdateCampRegistrationInput } from './dto/update-camp-registration.input';
+import { CurrentUser } from 'src/auth/decorators/currentUserDecorator';
+import { UserType } from 'support/enums';
 
 @Resolver(() => CampRegistration)
 export class CampRegistrationResolver {
-  constructor(private readonly campRegistrationService: CampRegistrationService) {}
+  constructor(
+    private readonly campRegistrationService: CampRegistrationService,
+  ) {}
 
   @Mutation(() => CampRegistration)
-  createCampRegistration(@Args('createCampRegistrationInput') createCampRegistrationInput: CreateCampRegistrationInput) {
-    return this.campRegistrationService.create(createCampRegistrationInput);
+  createCampRegistration(
+    @Args('input') input: CreateCampRegistrationInput,
+    @CurrentUser('type') type: UserType,
+    @CurrentUser('id') id: string,
+  ) {
+    if (type !== UserType.parent) {
+      input.parentId = id;
+      if (
+        (input.status ||
+          input.campVariantRegistrations ||
+          input.totalPrice ||
+          input.oneDayPrice,
+        input.paymentMethod)
+      ) {
+        return {
+          success: false,
+          message: 'Unauthorized, admin action done by parent',
+        };
+      }
+    }
+
+    return this.campRegistrationService.create(input, type, id);
   }
 
   @Query(() => [CampRegistration], { name: 'campRegistration' })
@@ -24,8 +48,14 @@ export class CampRegistrationResolver {
   }
 
   @Mutation(() => CampRegistration)
-  updateCampRegistration(@Args('updateCampRegistrationInput') updateCampRegistrationInput: UpdateCampRegistrationInput) {
-    return this.campRegistrationService.update(updateCampRegistrationInput.id, updateCampRegistrationInput);
+  updateCampRegistration(
+    @Args('updateCampRegistrationInput')
+    updateCampRegistrationInput: UpdateCampRegistrationInput,
+  ) {
+    return this.campRegistrationService.update(
+      updateCampRegistrationInput.id,
+      updateCampRegistrationInput,
+    );
   }
 
   @Mutation(() => CampRegistration)

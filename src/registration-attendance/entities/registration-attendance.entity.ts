@@ -19,6 +19,10 @@ export class RegistrationAttendance {
   @Field()
   campRegistrationId: number;
 
+  @Column('int', { name: 'campId' })
+  @Field()
+  campId: number;
+
   @Column('int', { name: 'childId' })
   @Field()
   childId: number;
@@ -31,9 +35,13 @@ export class RegistrationAttendance {
   @Field({ nullable: true })
   leaveTime?: Date;
 
-  @Column('int', { name: 'userId' })
+  @Column('int', { name: 'enterAuditorId' })
   @Field()
-  userId: number;
+  enterAuditorId: number;
+
+  @Column('int', { name: 'leaveAuditorId', nullable: true })
+  @Field({ nullable: true })
+  leaveAuditorId?: number;
 
   @CreateDateColumn({
     name: 'createdAt',

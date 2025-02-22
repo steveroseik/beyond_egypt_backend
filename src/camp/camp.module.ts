@@ -1,8 +1,12 @@
 import { Module } from '@nestjs/common';
 import { CampService } from './camp.service';
 import { CampResolver } from './camp.resolver';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { Camp } from './entities/camp.entity';
 
 @Module({
+  imports: [TypeOrmModule.forFeature([Camp])],
   providers: [CampResolver, CampService],
+  exports: [CampService],
 })
 export class CampModule {}

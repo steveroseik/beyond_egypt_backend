@@ -1,7 +1,8 @@
 import { ObjectType, Field, Int } from '@nestjs/graphql';
 import Decimal from 'decimal.js';
+import { Col } from 'react-bootstrap';
 import { Discount } from 'src/discount/entities/discount.entity';
-import { PaymentMethod } from 'support/enums';
+import { CampRegistrationStatus, PaymentMethod } from 'support/enums';
 import { GraphqlDecimal } from 'support/scalars';
 import {
   Entity,
@@ -21,9 +22,9 @@ export class CampRegistration {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column('int', { name: 'parentId' })
+  @Column('varchar', { name: 'parentId' })
   @Field()
-  parentId: number;
+  parentId: string;
 
   @Column('int', { name: 'campId' })
   @Field()
@@ -50,8 +51,16 @@ export class CampRegistration {
     name: 'paymentMethod',
     enum: PaymentMethod,
   })
-  @Field()
+  @Field(() => PaymentMethod)
   paymentMethod: PaymentMethod;
+
+  @Column('enum', {
+    name: 'status',
+    enum: CampRegistrationStatus,
+    default: CampRegistrationStatus.idle,
+  })
+  @Field(() => CampRegistrationStatus)
+  status: CampRegistrationStatus;
 
   @CreateDateColumn({
     name: 'createdAt',

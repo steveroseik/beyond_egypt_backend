@@ -1,7 +1,32 @@
 import { InputType, Int, Field } from '@nestjs/graphql';
+import Decimal from 'decimal.js';
+import { CreateCampVariantRegistrationInput } from 'src/camp-variant-registration/dto/create-camp-variant-registration.input';
+import { CampRegistrationStatus, PaymentMethod } from 'support/enums';
+import { GraphqlDecimal } from 'support/scalars';
 
 @InputType()
 export class CreateCampRegistrationInput {
-  @Field(() => Int, { description: 'Example field (placeholder)' })
-  exampleField: number;
+  @Field()
+  parentId: string;
+
+  @Field()
+  campId: number;
+
+  @Field(() => GraphqlDecimal, { nullable: true })
+  oneDayPrice?: Decimal;
+
+  @Field(() => GraphqlDecimal, { nullable: true })
+  totalPrice?: Decimal;
+
+  @Field(() => PaymentMethod, { nullable: true })
+  paymentMethod?: PaymentMethod;
+
+  @Field(() => CampRegistrationStatus, {
+    defaultValue: CampRegistrationStatus.idle,
+    nullable: true,
+  })
+  status?: CampRegistrationStatus;
+
+  @Field(() => [CreateCampVariantRegistrationInput], { nullable: true })
+  campVariantRegistrations?: CreateCampVariantRegistrationInput[];
 }

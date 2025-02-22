@@ -60,6 +60,7 @@ type Camp {
   isPrivate: Boolean!
   capacity: Int!
   locationId: Int!
+  discountId: Int!
   createdAt: DateTime!
   lastModified: DateTime!
   deletedAt: DateTime
@@ -114,26 +115,29 @@ type Allergy {
 }
 
 type CampRegistration {
-  parentId: Int!
+  parentId: String!
   campId: Int!
   oneDayPrice: Decimal
   totalPrice: Decimal!
-  paymentMethod: String!
+  paymentMethod: PaymentMethod!
+  status: CampRegistrationStatus!
   createdAt: DateTime!
   lastModified: DateTime!
   deletedAt: DateTime
 }
 
-type CampVariant {
-  id: Int!
-  campId: Int!
-  name: String
-  price: Decimal
-  startDate: DateTime!
-  endDate: DateTime!
-  createdAt: DateTime!
-  lastModified: DateTime!
-  deletedAt: DateTime
+enum PaymentMethod {
+  fawry
+  instapay
+  cash
+}
+
+enum CampRegistrationStatus {
+  idle
+  accepted
+  rejected
+  cancelled
+  modified
 }
 
 type CampVariantRegistration {
@@ -157,6 +161,18 @@ enum ShirtSize {
   l
   xl
   xxl
+}
+
+type CampVariant {
+  id: Int!
+  campId: Int!
+  name: String
+  price: Decimal
+  startDate: DateTime!
+  endDate: DateTime!
+  createdAt: DateTime!
+  lastModified: DateTime!
+  deletedAt: DateTime
 }
 
 type ChildAllergy {
@@ -205,14 +221,6 @@ type RegistrationHistory {
   discountsApplied: [Discount!]
 }
 
-enum CampRegistrationStatus {
-  idle
-  accepted
-  rejected
-  cancelled
-  modified
-}
-
 type Discount {
   code: String
   percentage: Decimal
@@ -251,10 +259,12 @@ type ParentAdditional {
 type RegistrationAttendance {
   id: Int!
   campRegistrationId: Int!
+  campId: Int!
   childId: Int!
   enterTime: DateTime!
   leaveTime: DateTime
-  userId: Int!
+  enterAuditorId: Int!
+  leaveAuditorId: Int
   createdAt: DateTime!
   lastModified: DateTime!
   deletedAt: DateTime
@@ -268,12 +278,6 @@ type RegistrationPaymentHistory {
   receiptId: Int
   userId: Int!
   createdAt: DateTime!
-}
-
-enum PaymentMethod {
-  fawry
-  instapay
-  cash
 }
 
 type Settings {
@@ -353,10 +357,10 @@ type Mutation {
   createAllergy(createAllergyInput: CreateAllergyInput!): Allergy!
   updateAllergy(updateAllergyInput: UpdateAllergyInput!): Allergy!
   removeAllergy(id: Int!): Allergy!
-  createCamp(createCampInput: CreateCampInput!): Camp!
+  createCamp(input: CreateCampInput!): Camp!
   updateCamp(updateCampInput: UpdateCampInput!): Camp!
   removeCamp(id: Int!): Camp!
-  createCampRegistration(createCampRegistrationInput: CreateCampRegistrationInput!): CampRegistration!
+  createCampRegistration(input: CreateCampRegistrationInput!): CampRegistration!
   updateCampRegistration(updateCampRegistrationInput: UpdateCampRegistrationInput!): CampRegistration!
   removeCampRegistration(id: Int!): CampRegistration!
   createCampVariant(createCampVariantInput: CreateCampVariantInput!): CampVariant!
@@ -461,13 +465,15 @@ input UpdateUserInput {
 }
 
 input CreateAgeRangeInput {
-  """Example field (placeholder)"""
-  exampleField: Int!
+  name: String
+  minAge: Int
+  maxAge: Int
 }
 
 input UpdateAgeRangeInput {
-  """Example field (placeholder)"""
-  exampleField: Int
+  name: String
+  minAge: Int
+  maxAge: Int
   id: Int!
 }
 
@@ -483,46 +489,99 @@ input UpdateAllergyInput {
 }
 
 input CreateCampInput {
-  """Example field (placeholder)"""
-  exampleField: Int!
+  name: String!
+  description: String
+  thumbnailId: Int!
+  defaultPrice: String
+  hasShirts: Boolean!
+  eventId: Int
+  isPrivate: Boolean!
+  capacity: Int!
+  locationId: Int!
+  discountId: Int
+  variants: [CreateCampVariantInput!]!
+  ageRanges: [CreateAgeRangeInput!]
+  ageRangeIds: [Int!]
+  fileIds: [Int!]
+  mealIds: [Int!]
+  meals: [CreateMealInput!]
+}
+
+input CreateCampVariantInput {
+  name: String
+  price: Decimal
+  startDate: DateTime!
+  endDate: DateTime!
+}
+
+input CreateMealInput {
+  name: String!
+  price: Decimal!
 }
 
 input UpdateCampInput {
-  """Example field (placeholder)"""
-  exampleField: Int
+  name: String
+  description: String
+  thumbnailId: Int
+  defaultPrice: String
+  hasShirts: Boolean
+  eventId: Int
+  isPrivate: Boolean
+  capacity: Int
+  locationId: Int
+  discountId: Int
+  variants: [CreateCampVariantInput!]
+  ageRanges: [CreateAgeRangeInput!]
+  ageRangeIds: [Int!]
+  fileIds: [Int!]
+  mealIds: [Int!]
+  meals: [CreateMealInput!]
   id: Int!
 }
 
 input CreateCampRegistrationInput {
-  """Example field (placeholder)"""
-  exampleField: Int!
-}
-
-input UpdateCampRegistrationInput {
-  """Example field (placeholder)"""
-  exampleField: Int
-  id: Int!
-}
-
-input CreateCampVariantInput {
-  """Example field (placeholder)"""
-  exampleField: Int!
-}
-
-input UpdateCampVariantInput {
-  """Example field (placeholder)"""
-  exampleField: Int
-  id: Int!
+  parentId: String!
+  campId: Int!
+  oneDayPrice: Decimal
+  totalPrice: Decimal
+  paymentMethod: PaymentMethod
+  status: CampRegistrationStatus = idle
+  campVariantRegistrations: [CreateCampVariantRegistrationInput!]
 }
 
 input CreateCampVariantRegistrationInput {
-  """Example field (placeholder)"""
-  exampleField: Int!
+  childId: Int!
+  campVariantId: Int!
+  price: Decimal!
+  mealId: Int
+  shirtSize: ShirtSize
+}
+
+input UpdateCampRegistrationInput {
+  parentId: String
+  campId: Int
+  oneDayPrice: Decimal
+  totalPrice: Decimal
+  paymentMethod: PaymentMethod
+  status: CampRegistrationStatus = idle
+  campVariantRegistrations: [CreateCampVariantRegistrationInput!]
+  id: Int!
+}
+
+input UpdateCampVariantInput {
+  name: String
+  price: Decimal
+  startDate: DateTime
+  endDate: DateTime
+  id: Int!
 }
 
 input UpdateCampVariantRegistrationInput {
-  """Example field (placeholder)"""
-  exampleField: Int
+  childId: Int
+  campVariantId: Int
+  price: Decimal
+  mealId: Int
+  shirtSize: ShirtSize
   id: Int!
 }
 
@@ -628,14 +687,9 @@ input UpdateLocationInput {
   id: Int!
 }
 
-input CreateMealInput {
-  """Example field (placeholder)"""
-  exampleField: Int!
-}
-
 input UpdateMealInput {
-  """Example field (placeholder)"""
-  exampleField: Int
+  name: String
+  price: Decimal
   id: Int!
 }
 

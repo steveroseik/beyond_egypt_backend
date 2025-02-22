@@ -44,7 +44,7 @@ export class CampVariantRegistration {
     enum: ShirtSize,
   })
   @Field(() => ShirtSize, { nullable: true })
-  shirtSize: ShirtSize;
+  shirtSize?: ShirtSize;
 
   @CreateDateColumn({
     name: 'createdAt',

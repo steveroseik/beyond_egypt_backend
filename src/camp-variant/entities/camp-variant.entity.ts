@@ -28,7 +28,7 @@ export class CampVariant {
 
   @Column('decimal', { name: 'price', nullable: true, precision: 10, scale: 2 })
   @Field(() => GraphqlDecimal, { nullable: true })
-  price: Decimal;
+  price?: Decimal;
 
   @Column('datetime', { name: 'startDate' })
   @Field()
