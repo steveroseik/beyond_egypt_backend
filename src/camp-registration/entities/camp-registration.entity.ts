@@ -1,6 +1,5 @@
 import { ObjectType, Field, Int } from '@nestjs/graphql';
 import Decimal from 'decimal.js';
-import { Col } from 'react-bootstrap';
 import { Discount } from 'src/discount/entities/discount.entity';
 import { CampRegistrationStatus, PaymentMethod } from 'support/enums';
 import { GraphqlDecimal } from 'support/scalars';
