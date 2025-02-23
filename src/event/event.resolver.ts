@@ -3,6 +3,8 @@ import { EventService } from './event.service';
 import { Event } from './entities/event.entity';
 import { CreateEventInput } from './dto/create-event.input';
 import { UpdateEventInput } from './dto/update-event.input';
+import { EventPage } from './entities/event-page.entity';
+import { PaginateEventsInput } from './dto/paginate-events.input';
 
 @Resolver(() => Event)
 export class EventResolver {
@@ -31,5 +33,10 @@ export class EventResolver {
   @Mutation(() => Event)
   removeEvent(@Args('id', { type: () => Int }) id: number) {
     return this.eventService.remove(id);
+  }
+
+  @Query(() => EventPage)
+  paginateEvents(@Args('input') input: PaginateEventsInput) {
+    return this.eventService.paginate(input);
   }
 }

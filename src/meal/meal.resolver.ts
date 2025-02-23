@@ -3,6 +3,8 @@ import { MealService } from './meal.service';
 import { Meal } from './entities/meal.entity';
 import { CreateMealInput } from './dto/create-meal.input';
 import { UpdateMealInput } from './dto/update-meal.input';
+import { MealPage } from './entities/meal-page.entity';
+import { PaginateMealsInput } from './dto/paginate-meals.input';
 
 @Resolver(() => Meal)
 export class MealResolver {
@@ -31,5 +33,10 @@ export class MealResolver {
   @Mutation(() => Meal)
   removeMeal(@Args('id', { type: () => Int }) id: number) {
     return this.mealService.remove(id);
+  }
+
+  @Query(() => MealPage)
+  paginateMeals(@Args('input') input: PaginateMealsInput) {
+    return this.mealService.paginate(input);
   }
 }
