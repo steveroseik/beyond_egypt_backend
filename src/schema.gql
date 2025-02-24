@@ -245,6 +245,11 @@ type Discount {
   deletedAt: DateTime
 }
 
+type EventPage {
+  cursor: GraphqlCursor!
+  data: [Event!]!
+}
+
 type EventFile {
   """Example field (placeholder)"""
   exampleField: Int!
@@ -257,6 +262,11 @@ type Location {
   createdAt: DateTime!
   lastModified: DateTime!
   deletedAt: DateTime
+}
+
+type MealPage {
+  cursor: GraphqlCursor!
+  data: [Meal!]!
 }
 
 type ParentAdditional {
@@ -348,10 +358,12 @@ type Query {
   childReportHistory(id: Int!): ChildReportHistory!
   discount(id: Int!): Discount!
   event(id: Int!): Event!
+  paginateEvents(input: PaginateEventsInput!): EventPage!
   eventFile(id: Int!): EventFile!
   file(id: Int!): File!
   location(id: Int!): Location!
   meal(id: Int!): Meal!
+  paginateMeals(input: PaginateMealsInput!): MealPage!
   parentAdditional(id: Int!): ParentAdditional!
   registrationAttendance(id: Int!): RegistrationAttendance!
   registrationHistory(id: Int!): RegistrationHistory!
@@ -373,6 +385,20 @@ input PaginateChildInput {
   afterCursor: String
   beforeCursor: String
   parentId: String!
+}
+
+input PaginateEventsInput {
+  isAsc: Boolean! = false
+  limit: Int = 20
+  afterCursor: String
+  beforeCursor: String
+}
+
+input PaginateMealsInput {
+  isAsc: Boolean! = false
+  limit: Int = 20
+  afterCursor: String
+  beforeCursor: String
 }
 
 type Mutation {
