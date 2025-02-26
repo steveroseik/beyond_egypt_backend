@@ -9,7 +9,6 @@ import { CampRegistrationModule } from './camp-registration/camp-registration.mo
 import { CampVariantModule } from './camp-variant/camp-variant.module';
 import { CampVariantRegistrationModule } from './camp-variant-registration/camp-variant-registration.module';
 import { ChildModule } from './child/child.module';
-import { ChildAllergyModule } from './child-allergy/child-allergy.module';
 import { ChildReportModule } from './child-report/child-report.module';
 import { ChildReportHistoryModule } from './child-report-history/child-report-history.module';
 import { DiscountModule } from './discount/discount.module';
@@ -36,6 +35,7 @@ import { AccessTokenGuard } from './auth/guards/accessToken.guard';
 import { DataloaderRegistryFactory } from './dataloaders/dataloaderRegistryFactory';
 import { AuthModule } from './auth/auth.module';
 import { ApolloServerPluginLandingPageLocalDefault } from '@apollo/server/plugin/landingPage/default';
+import { SchoolModule } from './graphql/school/school.module';
 
 @Module({
   imports: [
@@ -102,7 +102,6 @@ import { ApolloServerPluginLandingPageLocalDefault } from '@apollo/server/plugin
     CampVariantModule,
     CampVariantRegistrationModule,
     ChildModule,
-    ChildAllergyModule,
     ChildReportModule,
     ChildReportHistoryModule,
     DiscountModule,
@@ -118,6 +117,7 @@ import { ApolloServerPluginLandingPageLocalDefault } from '@apollo/server/plugin
     SettingsModule,
     UserModule,
     DataloadersModule,
+    SchoolModule,
   ],
   controllers: [AppController],
   providers: [

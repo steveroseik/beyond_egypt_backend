@@ -106,7 +106,8 @@ enum ParentRelation {
 
 type Allergy {
   id: Int!
-  name: String!
+  nameEn: String!
+  nameAr: String!
   category: Int!
   createdAt: DateTime!
   lastModified: DateTime!
@@ -188,11 +189,6 @@ type ChildPage {
   data: [Child!]!
 }
 
-type ChildAllergy {
-  """Example field (placeholder)"""
-  exampleField: Int!
-}
-
 type ChildReport {
   id: Int!
   childId: Int!
@@ -269,6 +265,17 @@ type MealPage {
   data: [Meal!]!
 }
 
+type ResponseWrapper {
+  success: Boolean!
+  message: String!
+  data: JSONObject
+}
+
+"""
+The `JSONObject` scalar type represents JSON objects as specified by [ECMA-404](http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf).
+"""
+scalar JSONObject
+
 type ParentAdditional {
   userId: String!
   name: String!
@@ -342,6 +349,19 @@ type CreateUserResponse {
   data: UserAuthResponse
 }
 
+type School {
+  id: Int!
+  nameEn: String!
+  nameAr: String!
+  createdAt: DateTime!
+  lastModified: DateTime!
+}
+
+type SchoolPage {
+  cursor: GraphqlCursor!
+  data: [School!]!
+}
+
 """Decimal custom scalar type"""
 scalar Decimal
 
@@ -349,6 +369,8 @@ scalar Decimal
 scalar GraphqlPoint
 
 type Query {
+  meal(id: Int!): Meal!
+  paginateMeals(input: PaginateMealsInput!): MealPage!
   user: [User!]!
   ageRange(id: Int!): AgeRange!
   allergy(id: Int!): Allergy!
@@ -358,8 +380,7 @@ type Query {
   campVariant(id: Int!): CampVariant!
   campVariantRegistration(id: Int!): CampVariantRegistration!
   child(id: Int!): Child!
-  paginateChildren(input: PaginateChildInput!): ChildPage!
-  childAllergy(id: Int!): ChildAllergy!
+  paginateChildren(input: PaginateChildrenInput!): ChildPage!
   childReport(id: Int!): ChildReport!
   childReportHistory(id: Int!): ChildReportHistory!
   discount(id: Int!): Discount!
@@ -368,36 +389,14 @@ type Query {
   eventFile(id: Int!): EventFile!
   file(id: Int!): File!
   location(id: Int!): Location!
-  meal(id: Int!): Meal!
-  paginateMeals(input: PaginateMealsInput!): MealPage!
   parentAdditional(id: Int!): ParentAdditional!
   registrationAttendance(id: Int!): RegistrationAttendance!
   registrationHistory(id: Int!): RegistrationHistory!
   registrationPaymentHistory(id: Int!): RegistrationPaymentHistory!
   settings: [Settings!]!
   setting(id: Int!): Settings!
-}
-
-input PaginateCampsInput {
-  isAsc: Boolean! = false
-  limit: Int = 20
-  afterCursor: String
-  beforeCursor: String
-}
-
-input PaginateChildInput {
-  isAsc: Boolean! = false
-  limit: Int = 20
-  afterCursor: String
-  beforeCursor: String
-  parentId: String!
-}
-
-input PaginateEventsInput {
-  isAsc: Boolean! = false
-  limit: Int = 20
-  afterCursor: String
-  beforeCursor: String
+  school(id: Int!): School!
+  paginateSchools(input: PaginateSchoolsInput!): SchoolPage!
 }
 
 input PaginateMealsInput {
@@ -407,7 +406,42 @@ input PaginateMealsInput {
   beforeCursor: String
 }
 
+input PaginateCampsInput {
+  isAsc: Boolean! = false
+  limit: Int = 20
+  afterCursor: String
+  beforeCursor: String
+}
+
+input PaginateChildrenInput {
+  isAsc: Boolean! = false
+  limit: Int = 20
+  afterCursor: String
+  beforeCursor: String
+  parentId: String
+  name: String
+  campId: Int
+}
+
+input PaginateEventsInput {
+  isAsc: Boolean! = false
+  limit: Int = 20
+  afterCursor: String
+  beforeCursor: String
+}
+
+input PaginateSchoolsInput {
+  isAsc: Boolean! = false
+  limit: Int = 20
+  afterCursor: String
+  beforeCursor: String
+  name: String
+}
+
 type Mutation {
+  createMeal(input: CreateMealInput!): ResponseWrapper!
+  updateMeal(updateMealInput: UpdateMealInput!): Meal!
+  removeMeal(id: Int!): Meal!
   tempLogin(input: TempSignInInput!): JSONObject!
   signIn(input: TokenRequestInput!): UserAuthResponse!
   createUser(input: CreateUserInput!): CreateUserResponse!
@@ -434,9 +468,6 @@ type Mutation {
   createChild(createChildInput: CreateChildInput!): Child!
   updateChild(updateChildInput: UpdateChildInput!): Child!
   removeChild(id: Int!): Child!
-  createChildAllergy(createChildAllergyInput: CreateChildAllergyInput!): ChildAllergy!
-  updateChildAllergy(updateChildAllergyInput: UpdateChildAllergyInput!): ChildAllergy!
-  removeChildAllergy(id: Int!): ChildAllergy!
   createChildReport(createChildReportInput: CreateChildReportInput!): ChildReport!
   updateChildReport(updateChildReportInput: UpdateChildReportInput!): ChildReport!
   removeChildReport(id: Int!): ChildReport!
@@ -458,9 +489,6 @@ type Mutation {
   createLocation(createLocationInput: CreateLocationInput!): Location!
   updateLocation(updateLocationInput: UpdateLocationInput!): Location!
   removeLocation(id: Int!): Location!
-  createMeal(createMealInput: CreateMealInput!): Meal!
-  updateMeal(updateMealInput: UpdateMealInput!): Meal!
-  removeMeal(id: Int!): Meal!
   createParentAdditional(createParentAdditionalInput: CreateParentAdditionalInput!): ParentAdditional!
   updateParentAdditional(updateParentAdditionalInput: UpdateParentAdditionalInput!): ParentAdditional!
   removeParentAdditional(id: Int!): ParentAdditional!
@@ -476,12 +504,21 @@ type Mutation {
   createSetting(createSettingInput: CreateSettingInput!): Settings!
   updateSetting(updateSettingInput: UpdateSettingInput!): Settings!
   removeSetting(id: Int!): Settings!
+  createSchool(createSchoolInput: CreateSchoolInput!): School!
+  updateSchool(updateSchoolInput: UpdateSchoolInput!): School!
+  removeSchool(id: Int!): School!
 }
 
-"""
-The `JSONObject` scalar type represents JSON objects as specified by [ECMA-404](http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf).
-"""
-scalar JSONObject
+input CreateMealInput {
+  name: String!
+  price: Decimal!
+}
+
+input UpdateMealInput {
+  name: String
+  price: Decimal
+  id: Int!
+}
 
 input TempSignInInput {
   email: String!
@@ -576,11 +613,6 @@ input CreateCampVariantInput {
   endDate: DateTime!
 }
 
-input CreateMealInput {
-  name: String!
-  price: Decimal!
-}
-
 input UpdateCampInput {
   name: String
   description: String
@@ -661,17 +693,6 @@ input UpdateChildInput {
   id: Int!
 }
 
-input CreateChildAllergyInput {
-  """Example field (placeholder)"""
-  exampleField: Int!
-}
-
-input UpdateChildAllergyInput {
-  """Example field (placeholder)"""
-  exampleField: Int
-  id: Int!
-}
-
 input CreateChildReportInput {
   """Example field (placeholder)"""
   exampleField: Int!
@@ -749,12 +770,6 @@ input UpdateLocationInput {
   id: Int!
 }
 
-input UpdateMealInput {
-  name: String
-  price: Decimal
-  id: Int!
-}
-
 input UpdateParentAdditionalInput {
   id: Int!
 }
@@ -798,6 +813,17 @@ input CreateSettingInput {
 }
 
 input UpdateSettingInput {
+  """Example field (placeholder)"""
+  exampleField: Int
+  id: Int!
+}
+
+input CreateSchoolInput {
+  """Example field (placeholder)"""
+  exampleField: Int!
+}
+
+input UpdateSchoolInput {
   """Example field (placeholder)"""
   exampleField: Int
   id: Int!

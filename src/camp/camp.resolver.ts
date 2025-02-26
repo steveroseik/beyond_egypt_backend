@@ -1,10 +1,21 @@
-import { Resolver, Query, Mutation, Args, Int } from '@nestjs/graphql';
+import {
+  Resolver,
+  Query,
+  Mutation,
+  Args,
+  Int,
+  ResolveField,
+  Parent,
+  Context,
+} from '@nestjs/graphql';
 import { CampService } from './camp.service';
 import { Camp } from './entities/camp.entity';
 import { CreateCampInput } from './dto/create-camp.input';
 import { UpdateCampInput } from './dto/update-camp.input';
 import { CampPage } from './entities/camp-page.entity';
 import { PaginateCampsInput } from './dto/paginate-camps.input';
+import { Meal } from 'src/meal/entities/meal.entity';
+import { DataloaderRegistry } from 'src/dataloaders/dataloaderRegistry';
 
 @Resolver(() => Camp)
 export class CampResolver {
@@ -38,5 +49,13 @@ export class CampResolver {
   @Query(() => CampPage)
   paginateCamps(@Args('input') input: PaginateCampsInput) {
     return this.campService.paginate(input);
+  }
+
+  @ResolveField(() => [Meal], { nullable: true })
+  meals(
+    @Parent() parent: Camp,
+    @Context() { loaders }: { loaders: DataloaderRegistry },
+  ) {
+    return loaders.MealsLoader.load(parent.id);
   }
 }

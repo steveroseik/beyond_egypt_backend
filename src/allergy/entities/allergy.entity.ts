@@ -19,9 +19,13 @@ export class Allergy {
   @Field()
   id: number;
 
-  @Column('varchar', { name: 'name', length: 255 })
+  @Column('varchar', { name: 'nameEn', length: 255 })
   @Field()
-  name: string;
+  nameEn: string;
+
+  @Column('varchar', { name: 'nameAr', length: 255 })
+  @Field()
+  nameAr: string;
 
   @Column('enum', {
     name: 'category',

@@ -5,14 +5,15 @@ import { CreateMealInput } from './dto/create-meal.input';
 import { UpdateMealInput } from './dto/update-meal.input';
 import { MealPage } from './entities/meal-page.entity';
 import { PaginateMealsInput } from './dto/paginate-meals.input';
+import { ResponseWrapper } from 'support/response-wrapper.entity';
 
 @Resolver(() => Meal)
 export class MealResolver {
   constructor(private readonly mealService: MealService) {}
 
-  @Mutation(() => Meal)
-  createMeal(@Args('createMealInput') createMealInput: CreateMealInput) {
-    return this.mealService.create(createMealInput);
+  @Mutation(() => ResponseWrapper)
+  createMeal(@Args('input') input: CreateMealInput) {
+    return this.mealService.create(input);
   }
 
   @Query(() => [Meal], { name: 'meal' })

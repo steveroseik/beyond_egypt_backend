@@ -1,7 +1,10 @@
+import { MealService } from 'src/meal/meal.service';
+import { MealsLoader } from './loaders/meals.loader';
+
 export class DataloaderRegistry {
   private cache: Record<string, any> = {};
 
-  constructor() {}
+  constructor(private mealService: MealService) {}
 
   /**
    * Fetches a memoized service based on a string key, or invokes fallback to create one.
@@ -11,6 +14,10 @@ export class DataloaderRegistry {
       this.cache[key] = fallback();
     }
     return this.cache[key];
+  }
+
+  public get MealsLoader() {
+    return this.get('MealsLoader', () => MealsLoader.create(this.mealService));
   }
   /**
    * Just a pretty type-safe facade for invoking `this.get`.

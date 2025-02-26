@@ -13,8 +13,29 @@ export class MealService {
     @InjectRepository(Meal) private mealRepository: Repository<Meal>,
   ) {}
 
-  create(createMealInput: CreateMealInput) {
-    return 'This action adds a new meal';
+  async create(createMealInput: CreateMealInput) {
+    try {
+      const meal = await this.mealRepository.insert(createMealInput);
+      if (meal.raw.affectedRows === 1) {
+        return {
+          success: true,
+          message: 'Meal created successfully',
+          data: {
+            id: meal.raw.insertId,
+          },
+        };
+      }
+      return {
+        success: false,
+        message: 'Failed to create meal',
+      };
+    } catch (e) {
+      console.log(e);
+      return {
+        success: false,
+        message: e.message,
+      };
+    }
   }
 
   findAll() {
@@ -46,5 +67,13 @@ export class MealService {
     });
 
     return paginator.paginate(queryBuilder);
+  }
+
+  findMealsByCampIds(campIds: readonly number[]) {
+    return this.mealRepository
+      .createQueryBuilder('meal')
+      .innerJoin('meal.camp', 'camp')
+      .where('camp.id IN (:...campIds)', { campIds })
+      .getMany();
   }
 }
