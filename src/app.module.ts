@@ -35,6 +35,7 @@ import { GraphqlDecimal, GraphqlPoint } from 'support/scalars';
 import { AccessTokenGuard } from './auth/guards/accessToken.guard';
 import { DataloaderRegistryFactory } from './dataloaders/dataloaderRegistryFactory';
 import { AuthModule } from './auth/auth.module';
+import { ApolloServerPluginLandingPageLocalDefault } from '@apollo/server/plugin/landingPage/default';
 
 @Module({
   imports: [
@@ -74,6 +75,12 @@ import { AuthModule } from './auth/auth.module';
         installSubscriptionHandlers: true,
         // fieldResolverEnhancers: ['guards'],
         autoSchemaFile: join(process.cwd(), 'src/schema.gql'),
+        playground: false,
+        plugins: [
+          ApolloServerPluginLandingPageLocalDefault({
+            // Additional configuration options if needed
+          }),
+        ],
         buildSchemaOptions: {
           numberScalarMode: 'integer',
           dateScalarMode: 'isoDate',

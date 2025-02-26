@@ -7,13 +7,14 @@ import { ResponseWrapper } from 'support/response-wrapper.entity';
 import { GraphQLObjectType } from 'graphql';
 import { GraphQLJSONObject } from 'graphql-type-json';
 import { Public } from 'src/auth/decorators/publicDecorator';
+import { CreateUserResponse } from './entities/create-user-response.wrapper';
 
 @Resolver(() => User)
 export class UserResolver {
   constructor(private readonly userService: UserService) {}
 
   @Public()
-  @Mutation(() => GraphQLJSONObject)
+  @Mutation(() => CreateUserResponse)
   createUser(@Args('input') createUserInput: CreateUserInput) {
     return this.userService.create(createUserInput);
   }
@@ -23,10 +24,10 @@ export class UserResolver {
     return this.userService.findAll();
   }
 
-  @Query(() => User, { name: 'user' })
-  findOne(@Args('id', { type: () => Int }) id: number) {
-    return this.userService.findOne(id);
-  }
+  // @Query(() => User, { name: 'user' })
+  // findOne(@Args('id', { type: () => Int }) id: number) {
+  //   return this.userService.findOne(id);
+  // }
 
   @Mutation(() => User)
   updateUser(@Args('updateUserInput') updateUserInput: UpdateUserInput) {

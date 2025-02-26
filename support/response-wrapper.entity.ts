@@ -1,5 +1,7 @@
+import { Type } from '@nestjs/common';
 import { Field, ObjectType } from '@nestjs/graphql';
 import { GraphQLScalarType } from 'graphql';
+import GraphQLJSON, { GraphQLJSONObject } from 'graphql-type-json';
 
 @ObjectType()
 export class ResponseWrapper<T> {
@@ -9,7 +11,7 @@ export class ResponseWrapper<T> {
   @Field(() => String, { defaultValue: 'Request successful' })
   message: string;
 
-  @Field(() => GraphQLScalarType, { nullable: true })
+  @Field(() => GraphQLJSONObject, { nullable: true })
   data?: T;
 
   constructor(data?: T, message: string = 'Request successful') {

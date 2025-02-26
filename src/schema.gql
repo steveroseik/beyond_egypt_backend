@@ -336,6 +336,12 @@ type UserAuthResponse {
   message: String!
 }
 
+type CreateUserResponse {
+  success: Boolean!
+  message: String!
+  data: UserAuthResponse
+}
+
 """Decimal custom scalar type"""
 scalar Decimal
 
@@ -343,7 +349,7 @@ scalar Decimal
 scalar GraphqlPoint
 
 type Query {
-  user(id: Int!): User!
+  user: [User!]!
   ageRange(id: Int!): AgeRange!
   allergy(id: Int!): Allergy!
   camp(id: Int!): Camp!
@@ -404,7 +410,7 @@ input PaginateMealsInput {
 type Mutation {
   tempLogin(input: TempSignInInput!): JSONObject!
   signIn(input: TokenRequestInput!): UserAuthResponse!
-  createUser(input: CreateUserInput!): JSONObject!
+  createUser(input: CreateUserInput!): CreateUserResponse!
   updateUser(updateUserInput: UpdateUserInput!): User!
   removeUser(id: String!): User!
   createAgeRange(createAgeRangeInput: CreateAgeRangeInput!): AgeRange!

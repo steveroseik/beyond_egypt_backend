@@ -2,7 +2,7 @@ import { forwardRef, Inject, Injectable } from '@nestjs/common';
 import { TokenRequestInput } from './dto/tokenRequest.input';
 // import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
-import { Auth } from 'firebase-admin/auth';
+import { Auth, DecodedIdToken } from 'firebase-admin/auth';
 import { DataSource, Repository } from 'typeorm';
 import { UserService } from 'src/user/user.service';
 import { User } from 'src/user/entities/user.entity';
@@ -22,6 +22,8 @@ import {
 import { FirebaseError } from 'firebase/app';
 import { UserAuthResponse } from './entities/user-auth-response.entity';
 import { TempSignInInput } from './dto/temp-signin.input';
+import { UserType } from 'support/enums';
+import { generate } from 'rxjs';
 // import admin from "../main";
 
 @Injectable()
@@ -69,8 +71,13 @@ export class AuthService {
     }
   }
 
-  async verifyFirebaseToken(token: string) {
-    return await this.firebaseAuth.verifyIdToken(token);
+  async verifyFirebaseToken(token: string): Promise<DecodedIdToken | null> {
+    try {
+      return await this.firebaseAuth.verifyIdToken(token);
+    } catch (e) {
+      console.log(e);
+      return null;
+    }
   }
 
   async signIn(tokenPayload: TokenRequestInput): Promise<UserAuthResponse> {
@@ -91,16 +98,7 @@ export class AuthService {
 
       if (!user) throw Error('user_not_registered');
 
-      const accessToken = this.jwtService.sign(
-        {
-          id: user.id,
-          type: user.type,
-        },
-        {
-          expiresIn: '30m',
-          secret: this.configService.get('access_token_secret'),
-        },
-      );
+      const accessToken = this.generateAccessToken(user.id, user.type);
 
       return {
         user: user,
@@ -125,6 +123,19 @@ export class AuthService {
         message: 'User not found or invalid token',
       };
     }
+  }
+
+  generateAccessToken(userId: string, type: UserType) {
+    return this.jwtService.sign(
+      {
+        id: userId,
+        type: type,
+      },
+      {
+        expiresIn: '30m',
+        secret: this.configService.get('access_token_secret'),
+      },
+    );
   }
 
   async isEmailValid(email: string): Promise<number> {
