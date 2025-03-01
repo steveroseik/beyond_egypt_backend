@@ -29,6 +29,7 @@ type File {
   userId: String!
   sizeInKb: Int!
   createdAt: DateTime!
+  url: String!
 }
 
 enum FileType {
@@ -67,6 +68,7 @@ type Camp {
   ageRanges: [AgeRange!]
   files: [File!]
   meals: [Meal!]
+  thumbnail: File!
 }
 
 type AgeRange {
@@ -371,6 +373,7 @@ scalar GraphqlPoint
 type Query {
   meal(id: Int!): Meal!
   paginateMeals(input: PaginateMealsInput!): MealPage!
+  file(id: Int!): File!
   user: [User!]!
   ageRange(id: Int!): AgeRange!
   allergy(id: Int!): Allergy!
@@ -387,7 +390,6 @@ type Query {
   event(id: Int!): Event!
   paginateEvents(input: PaginateEventsInput!): EventPage!
   eventFile(id: Int!): EventFile!
-  file(id: Int!): File!
   location(id: Int!): Location!
   parentAdditional(id: Int!): ParentAdditional!
   registrationAttendance(id: Int!): RegistrationAttendance!
@@ -442,6 +444,9 @@ type Mutation {
   createMeal(input: CreateMealInput!): ResponseWrapper!
   updateMeal(updateMealInput: UpdateMealInput!): Meal!
   removeMeal(id: Int!): Meal!
+  createFile(createFileInput: CreateFileInput!): File!
+  updateFile(updateFileInput: UpdateFileInput!): File!
+  removeFile(id: Int!): File!
   tempLogin(input: TempSignInInput!): JSONObject!
   signIn(input: TokenRequestInput!): UserAuthResponse!
   createUser(input: CreateUserInput!): CreateUserResponse!
@@ -483,9 +488,6 @@ type Mutation {
   createEventFile(createEventFileInput: CreateEventFileInput!): EventFile!
   updateEventFile(updateEventFileInput: UpdateEventFileInput!): EventFile!
   removeEventFile(id: Int!): EventFile!
-  createFile(createFileInput: CreateFileInput!): File!
-  updateFile(updateFileInput: UpdateFileInput!): File!
-  removeFile(id: Int!): File!
   createLocation(createLocationInput: CreateLocationInput!): Location!
   updateLocation(updateLocationInput: UpdateLocationInput!): Location!
   removeLocation(id: Int!): Location!
@@ -517,6 +519,17 @@ input CreateMealInput {
 input UpdateMealInput {
   name: String
   price: Decimal
+  id: Int!
+}
+
+input CreateFileInput {
+  """Example field (placeholder)"""
+  exampleField: Int!
+}
+
+input UpdateFileInput {
+  """Example field (placeholder)"""
+  exampleField: Int
   id: Int!
 }
 
@@ -743,17 +756,6 @@ input CreateEventFileInput {
 }
 
 input UpdateEventFileInput {
-  """Example field (placeholder)"""
-  exampleField: Int
-  id: Int!
-}
-
-input CreateFileInput {
-  """Example field (placeholder)"""
-  exampleField: Int!
-}
-
-input UpdateFileInput {
   """Example field (placeholder)"""
   exampleField: Int
   id: Int!
