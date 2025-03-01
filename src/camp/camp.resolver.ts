@@ -16,6 +16,7 @@ import { CampPage } from './entities/camp-page.entity';
 import { PaginateCampsInput } from './dto/paginate-camps.input';
 import { Meal } from 'src/meal/entities/meal.entity';
 import { DataloaderRegistry } from 'src/dataloaders/dataloaderRegistry';
+import { File } from 'src/file/entities/file.entity';
 
 @Resolver(() => Camp)
 export class CampResolver {
@@ -56,6 +57,19 @@ export class CampResolver {
     @Parent() parent: Camp,
     @Context() { loaders }: { loaders: DataloaderRegistry },
   ) {
-    return loaders.MealsLoader.load(parent.id);
+    return parent.meals ?? loaders.MealsLoader.load(parent.id);
   }
+
+  @ResolveField(() => File)
+  thumbnail(
+    @Parent() parent: Camp,
+    @Context() { loaders }: { loaders: DataloaderRegistry },
+  ) {
+    return loaders.FilesLoader.load(parent.thumbnailId);
+  }
+
+  // @ResolveField(() => [File])
+  // files(@Parent() parent:Camp, @Context() { loaders } : { loaders: DataloaderRegistry }){
+  //   return loaders.FilesLoader.loadMany(parent.files)
+  // }
 }
