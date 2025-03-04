@@ -46,7 +46,7 @@ export class SchoolService {
 
     const paginator = buildPaginator({
       entity: School,
-      alias: 'alias',
+      alias: 'school',
       query: {
         ...input,
       },

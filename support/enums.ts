@@ -101,3 +101,46 @@ export enum UserType {
 registerEnumType(UserType, {
   name: 'UserType',
 });
+
+export enum FileExtensions {
+  // Video extensions
+  mp4 = 'mp4',
+  mkv = 'mkv',
+  avi = 'avi',
+  mov = 'mov',
+  wmv = 'wmv',
+  flv = 'flv',
+
+  // Image extensions
+  jpg = 'jpg',
+  jpeg = 'jpeg',
+  png = 'png',
+  gif = 'gif',
+  bmp = 'bmp',
+  tiff = 'tiff',
+  svg = 'svg',
+  webp = 'webp',
+  jfif = 'jfif',
+
+  // Audio extensions
+  mp3 = 'mp3',
+  wav = 'wav',
+  aac = 'aac',
+  flac = 'flac',
+  ogg = 'ogg',
+  wma = 'wma',
+  m4a = 'm4a',
+
+  // PDF extension
+  pdf = 'pdf',
+
+  // DOCX extensions
+  docx = 'docx',
+  doc = 'doc',
+  dotx = 'dotx',
+  dot = 'dot',
+}
+
+registerEnumType(FileExtensions, {
+  name: 'FileExtensions',
+});

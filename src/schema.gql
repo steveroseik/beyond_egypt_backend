@@ -117,6 +117,18 @@ type Allergy {
   children: [Child!]
 }
 
+type CampVariant {
+  id: Int!
+  campId: Int!
+  name: String
+  price: Decimal
+  startDate: DateTime!
+  endDate: DateTime!
+  createdAt: DateTime!
+  lastModified: DateTime!
+  deletedAt: DateTime
+}
+
 type CampPage {
   cursor: GraphqlCursor!
   data: [Camp!]!
@@ -172,18 +184,6 @@ enum ShirtSize {
   l
   xl
   xxl
-}
-
-type CampVariant {
-  id: Int!
-  campId: Int!
-  name: String
-  price: Decimal
-  startDate: DateTime!
-  endDate: DateTime!
-  createdAt: DateTime!
-  lastModified: DateTime!
-  deletedAt: DateTime
 }
 
 type ChildPage {
@@ -458,7 +458,7 @@ type Mutation {
   createAllergy(createAllergyInput: CreateAllergyInput!): Allergy!
   updateAllergy(updateAllergyInput: UpdateAllergyInput!): Allergy!
   removeAllergy(id: Int!): Allergy!
-  createCamp(input: CreateCampInput!): Camp!
+  createCamp(input: CreateCampInput!): JSONObject!
   updateCamp(updateCampInput: UpdateCampInput!): Camp!
   removeCamp(id: Int!): Camp!
   createCampRegistration(input: CreateCampRegistrationInput!): CampRegistration!

@@ -36,6 +36,7 @@ import { DataloaderRegistryFactory } from './dataloaders/dataloaderRegistryFacto
 import { AuthModule } from './auth/auth.module';
 import { ApolloServerPluginLandingPageLocalDefault } from '@apollo/server/plugin/landingPage/default';
 import { SchoolModule } from './graphql/school/school.module';
+import { AwsBucketModule } from './aws-bucket/aws-bucket.module';
 
 @Module({
   imports: [
@@ -118,6 +119,7 @@ import { SchoolModule } from './graphql/school/school.module';
     UserModule,
     DataloadersModule,
     SchoolModule,
+    AwsBucketModule,
   ],
   controllers: [AppController],
   providers: [

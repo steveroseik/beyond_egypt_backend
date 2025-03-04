@@ -7,6 +7,9 @@ import { buildPaginator } from 'typeorm-cursor-pagination';
 import { DataSource, In, QueryRunner, Repository } from 'typeorm';
 import { Camp } from './entities/camp.entity';
 import { Meal } from 'src/meal/entities/meal.entity';
+import { File } from 'src/file/entities/file.entity';
+import { AgeRange } from 'src/age-range/entities/age-range.entity';
+import { CampVariant } from 'src/camp-variant/entities/camp-variant.entity';
 
 @Injectable()
 export class CampService {
@@ -51,23 +54,29 @@ export class CampService {
 
       await this.handleCampVariants(input, queryRunner, camp.raw.insertId);
 
-      await queryRunner.manager
-        .createQueryBuilder(Camp, 'camp')
-        .relation(Meal, 'meal')
-        .of(camp.raw.insertId)
-        .add(mealIds);
+      if (mealIds?.length) {
+        await queryRunner.manager
+          .createQueryBuilder(Camp, 'camp')
+          .relation(Camp, 'meals')
+          .of(camp.raw.insertId)
+          .add(mealIds);
+      }
 
-      await queryRunner.manager
-        .createQueryBuilder(Camp, 'camp')
-        .relation(Camp, 'file')
-        .of(camp.raw.insertId)
-        .add(fileIds);
+      if (fileIds?.length) {
+        await queryRunner.manager
+          .createQueryBuilder(Camp, 'camp')
+          .relation(Camp, 'files')
+          .of(camp.raw.insertId)
+          .add(fileIds);
+      }
 
-      await queryRunner.manager
-        .createQueryBuilder(Camp, 'camp')
-        .relation(Camp, 'ageRange')
-        .of(camp.raw.insertId)
-        .add(ageRangeIds);
+      if (ageRangeIds?.length) {
+        await queryRunner.manager
+          .createQueryBuilder(Camp, 'camp')
+          .relation(Camp, 'ageRanges')
+          .of(camp.raw.insertId)
+          .add(ageRangeIds);
+      }
 
       await queryRunner.commitTransaction();
       return {
@@ -75,6 +84,7 @@ export class CampService {
         message: 'Camp created successfully',
       };
     } catch (e) {
+      console.log(e);
       await queryRunner.rollbackTransaction();
       return {
         success: false,
@@ -97,13 +107,13 @@ export class CampService {
     const campVariants = input.variants.map((variant) => {
       return {
         ...variant,
-        price: variant.price ?? input.defaultPrice,
+        price: variant.price.toFixed(2) ?? input.defaultPrice,
         campId,
       };
     });
 
     const newCampVariants = await queryRunner.manager.insert(
-      Camp,
+      CampVariant,
       campVariants,
     );
     if (newCampVariants.identifiers.length !== input.variants.length) {
@@ -117,27 +127,37 @@ export class CampService {
       return;
     }
 
-    const existingMeals = await queryRunner.manager.find(Meal, {
-      where: { id: In(input.mealIds) },
-    });
+    if (input.mealIds?.length) {
+      const existingMeals = await queryRunner.manager.find(Meal, {
+        where: { id: In(input.mealIds) },
+      });
 
-    if (existingMeals.length !== input.mealIds.length) {
-      const missingIds = input.mealIds.filter(
-        (id) => !existingMeals.find((meal) => meal.id === id),
-      );
-      throw new Error(
-        `Meals with the following ids do not exist: ${missingIds.join(', ')}`,
-      );
+      if (existingMeals.length !== input.mealIds.length) {
+        const missingIds = input.mealIds.filter(
+          (id) => !existingMeals.find((meal) => meal.id === id),
+        );
+        throw new Error(
+          `Meals with the following ids do not exist: ${missingIds.join(', ')}`,
+        );
+      }
     }
 
-    const newMeals = await queryRunner.manager.insert(Meal, input.meals);
+    if (!input.meals?.length) return input.mealIds;
+
+    const newMeals = await queryRunner.manager.insert(
+      Meal,
+      input.meals.map((meal) => ({
+        ...meal,
+        price: meal.price.toFixed(2),
+      })),
+    );
     if (newMeals.identifiers.length !== input.meals.length) {
       throw new Error('Failed to insert meals');
     }
 
     return [
       ...newMeals.identifiers.map((meal: any) => meal.id),
-      ...input.mealIds,
+      ...(input.mealIds ?? []),
     ];
   }
 
@@ -146,7 +166,7 @@ export class CampService {
       return;
     }
 
-    const existingFiles = await queryRunner.manager.find(Meal, {
+    const existingFiles = await queryRunner.manager.find(File, {
       where: { id: In(input.fileIds) },
     });
     if (existingFiles.length !== input.fileIds.length) {
@@ -166,20 +186,22 @@ export class CampService {
       return;
     }
 
-    const existingAgeRanges = await queryRunner.manager.find(Meal, {
-      where: { id: In(input.ageRangeIds) },
-    });
-    if (existingAgeRanges.length !== input.ageRangeIds.length) {
-      const missingIds = input.ageRangeIds.filter(
-        (id) => !existingAgeRanges.find((ageRange) => ageRange.id === id),
-      );
-      throw new Error(
-        `Age Ranges with the following ids do not exist: ${missingIds.join(', ')}`,
-      );
+    if (input.ageRangeIds?.length) {
+      const existingAgeRanges = await queryRunner.manager.find(AgeRange, {
+        where: { id: In(input.ageRangeIds) },
+      });
+      if (existingAgeRanges.length !== input.ageRangeIds.length) {
+        const missingIds = input.ageRangeIds.filter(
+          (id) => !existingAgeRanges.find((ageRange) => ageRange.id === id),
+        );
+        throw new Error(
+          `Age Ranges with the following ids do not exist: ${missingIds.join(', ')}`,
+        );
+      }
     }
 
     const newAgeRanges = await queryRunner.manager.insert(
-      Meal,
+      AgeRange,
       input.ageRanges,
     );
     if (newAgeRanges.identifiers.length !== input.ageRanges.length) {
@@ -188,7 +210,7 @@ export class CampService {
 
     return [
       ...newAgeRanges.identifiers.map((ageRange: any) => ageRange.id),
-      ...input.ageRangeIds,
+      ...(input.ageRangeIds ?? []),
     ];
   }
 

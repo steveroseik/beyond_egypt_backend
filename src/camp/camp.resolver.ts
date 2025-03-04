@@ -17,12 +17,13 @@ import { PaginateCampsInput } from './dto/paginate-camps.input';
 import { Meal } from 'src/meal/entities/meal.entity';
 import { DataloaderRegistry } from 'src/dataloaders/dataloaderRegistry';
 import { File } from 'src/file/entities/file.entity';
+import { GraphQLJSONObject } from 'graphql-type-json';
 
 @Resolver(() => Camp)
 export class CampResolver {
   constructor(private readonly campService: CampService) {}
 
-  @Mutation(() => Camp)
+  @Mutation(() => GraphQLJSONObject)
   createCamp(@Args('input') input: CreateCampInput) {
     return this.campService.create(input);
   }
