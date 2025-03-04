@@ -30,6 +30,10 @@ export class CampVariant {
   @Field(() => GraphqlDecimal, { nullable: true })
   price?: Decimal;
 
+  @Column('int', { name: 'capacity' })
+  @Field()
+  capacity: number;
+
   @Column('datetime', { name: 'startDate' })
   @Field()
   startDate: Date;

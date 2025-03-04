@@ -10,6 +10,7 @@ import { Meal } from 'src/meal/entities/meal.entity';
 import { File } from 'src/file/entities/file.entity';
 import { AgeRange } from 'src/age-range/entities/age-range.entity';
 import { CampVariant } from 'src/camp-variant/entities/camp-variant.entity';
+import { CreateCampVariantInput } from 'src/camp-variant/dto/create-camp-variant.input';
 
 @Injectable()
 export class CampService {
@@ -32,7 +33,19 @@ export class CampService {
           return {
             success: false,
             message:
-              'Camp must have a default price or each variant must have a price',
+              'Camp must have a default price or each week must have a price',
+          };
+        }
+      }
+    }
+
+    if (!input.defaultCapacity) {
+      for (const variant of input.variants) {
+        if (!variant.capacity) {
+          return {
+            success: false,
+            message:
+              'Camp must have a default capacity or each week must have a capacity',
           };
         }
       }
@@ -107,6 +120,7 @@ export class CampService {
     const campVariants = input.variants.map((variant) => {
       return {
         ...variant,
+        capacity: variant.capacity ?? input.defaultCapacity,
         price: variant.price.toFixed(2) ?? input.defaultPrice,
         campId,
       };

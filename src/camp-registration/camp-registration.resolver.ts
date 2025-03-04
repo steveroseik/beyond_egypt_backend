@@ -21,8 +21,7 @@ export class CampRegistrationResolver {
     if (type !== UserType.parent) {
       input.parentId = id;
       if (
-        (input.status ||
-          input.campVariantRegistrations ||
+        (input.campVariantRegistrations ||
           input.totalPrice ||
           input.oneDayPrice,
         input.paymentMethod)

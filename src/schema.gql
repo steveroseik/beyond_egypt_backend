@@ -59,7 +59,7 @@ type Camp {
   hasShirts: Boolean!
   eventId: Int
   isPrivate: Boolean!
-  capacity: Int!
+  defaultCapacity: Int
   locationId: Int!
   discountId: Int!
   createdAt: DateTime!
@@ -122,6 +122,7 @@ type CampVariant {
   campId: Int!
   name: String
   price: Decimal
+  capacity: Int!
   startDate: DateTime!
   endDate: DateTime!
   createdAt: DateTime!
@@ -302,14 +303,22 @@ type RegistrationAttendance {
   deletedAt: DateTime
 }
 
-type RegistrationPaymentHistory {
+type RegistrationPayment {
   id: Int!
   campRegistrationId: Int!
   paymentMethod: PaymentMethod!
+  status: PaymentStatus!
   total: Decimal!
   receiptId: Int
   userId: Int!
   createdAt: DateTime!
+}
+
+enum PaymentStatus {
+  pending
+  paid
+  failed
+  refunded
 }
 
 type Settings {
@@ -364,6 +373,17 @@ type SchoolPage {
   data: [School!]!
 }
 
+type RegistrationReserve {
+  id: Int!
+  campRegistrationId: Int!
+  campVariantId: Int!
+  count: Int!
+  paymentId: Int!
+  userId: String!
+  expirationDate: DateTime!
+  createdAt: DateTime!
+}
+
 """Decimal custom scalar type"""
 scalar Decimal
 
@@ -394,11 +414,12 @@ type Query {
   parentAdditional(id: Int!): ParentAdditional!
   registrationAttendance(id: Int!): RegistrationAttendance!
   registrationHistory(id: Int!): RegistrationHistory!
-  registrationPaymentHistory(id: Int!): RegistrationPaymentHistory!
+  registrationPaymentHistory(id: Int!): RegistrationPayment!
   settings: [Settings!]!
   setting(id: Int!): Settings!
   school(id: Int!): School!
   paginateSchools(input: PaginateSchoolsInput!): SchoolPage!
+  registrationReserve(id: Int!): RegistrationReserve!
 }
 
 input PaginateMealsInput {
@@ -500,15 +521,18 @@ type Mutation {
   createRegistrationHistory(createRegistrationHistoryInput: CreateRegistrationHistoryInput!): RegistrationHistory!
   updateRegistrationHistory(updateRegistrationHistoryInput: UpdateRegistrationHistoryInput!): RegistrationHistory!
   removeRegistrationHistory(id: Int!): RegistrationHistory!
-  createRegistrationPaymentHistory(createRegistrationPaymentHistoryInput: CreateRegistrationPaymentHistoryInput!): RegistrationPaymentHistory!
-  updateRegistrationPaymentHistory(updateRegistrationPaymentHistoryInput: UpdateRegistrationPaymentHistoryInput!): RegistrationPaymentHistory!
-  removeRegistrationPaymentHistory(id: Int!): RegistrationPaymentHistory!
+  createRegistrationPaymentHistory(createRegistrationPaymentHistoryInput: CreateRegistrationPaymentHistoryInput!): RegistrationPayment!
+  updateRegistrationPaymentHistory(updateRegistrationPaymentHistoryInput: UpdateRegistrationPaymentHistoryInput!): RegistrationPayment!
+  removeRegistrationPaymentHistory(id: Int!): RegistrationPayment!
   createSetting(createSettingInput: CreateSettingInput!): Settings!
   updateSetting(updateSettingInput: UpdateSettingInput!): Settings!
   removeSetting(id: Int!): Settings!
   createSchool(createSchoolInput: CreateSchoolInput!): School!
   updateSchool(updateSchoolInput: UpdateSchoolInput!): School!
   removeSchool(id: Int!): School!
+  createRegistrationReserve(createRegistrationReserveInput: CreateRegistrationReserveInput!): RegistrationReserve!
+  updateRegistrationReserve(updateRegistrationReserveInput: UpdateRegistrationReserveInput!): RegistrationReserve!
+  removeRegistrationReserve(id: Int!): RegistrationReserve!
 }
 
 input CreateMealInput {
@@ -608,7 +632,7 @@ input CreateCampInput {
   hasShirts: Boolean!
   eventId: Int
   isPrivate: Boolean!
-  capacity: Int!
+  defaultCapacity: Int
   locationId: Int!
   discountId: Int
   variants: [CreateCampVariantInput!]!
@@ -622,6 +646,7 @@ input CreateCampInput {
 input CreateCampVariantInput {
   name: String
   price: Decimal
+  capacity: Int
   startDate: DateTime!
   endDate: DateTime!
 }
@@ -634,7 +659,7 @@ input UpdateCampInput {
   hasShirts: Boolean
   eventId: Int
   isPrivate: Boolean
-  capacity: Int
+  defaultCapacity: Int
   locationId: Int
   discountId: Int
   variants: [CreateCampVariantInput!]
@@ -652,7 +677,6 @@ input CreateCampRegistrationInput {
   oneDayPrice: Decimal
   totalPrice: Decimal
   paymentMethod: PaymentMethod
-  status: CampRegistrationStatus = idle
   campVariantRegistrations: [CreateCampVariantRegistrationInput!]
 }
 
@@ -670,7 +694,6 @@ input UpdateCampRegistrationInput {
   oneDayPrice: Decimal
   totalPrice: Decimal
   paymentMethod: PaymentMethod
-  status: CampRegistrationStatus = idle
   campVariantRegistrations: [CreateCampVariantRegistrationInput!]
   id: Int!
 }
@@ -678,6 +701,7 @@ input UpdateCampRegistrationInput {
 input UpdateCampVariantInput {
   name: String
   price: Decimal
+  capacity: Int
   startDate: DateTime
   endDate: DateTime
   id: Int!
@@ -826,6 +850,17 @@ input CreateSchoolInput {
 }
 
 input UpdateSchoolInput {
+  """Example field (placeholder)"""
+  exampleField: Int
+  id: Int!
+}
+
+input CreateRegistrationReserveInput {
+  """Example field (placeholder)"""
+  exampleField: Int!
+}
+
+input UpdateRegistrationReserveInput {
   """Example field (placeholder)"""
   exampleField: Int
   id: Int!

@@ -20,7 +20,7 @@ import { MealModule } from './meal/meal.module';
 import { ParentAdditionalModule } from './parent-additional/parent-additional.module';
 import { RegistrationAttendanceModule } from './registration-attendance/registration-attendance.module';
 import { RegistrationHistoryModule } from './registration-history/registration-history.module';
-import { RegistrationPaymentHistoryModule } from './registration-payment-history/registration-payment-history.module';
+import { RegistrationPaymentHistoryModule } from './registration-payment/registration-payment.module';
 import { SettingsModule } from './settings/settings.module';
 import { UserModule } from './user/user.module';
 import { DataloadersModule } from './dataloaders/dataloaders.module';
@@ -37,6 +37,7 @@ import { AuthModule } from './auth/auth.module';
 import { ApolloServerPluginLandingPageLocalDefault } from '@apollo/server/plugin/landingPage/default';
 import { SchoolModule } from './graphql/school/school.module';
 import { AwsBucketModule } from './aws-bucket/aws-bucket.module';
+import { RegistrationReserveModule } from './registration-reserve/registration-reserve.module';
 
 @Module({
   imports: [
@@ -120,6 +121,7 @@ import { AwsBucketModule } from './aws-bucket/aws-bucket.module';
     DataloadersModule,
     SchoolModule,
     AwsBucketModule,
+    RegistrationReserveModule,
   ],
   controllers: [AppController],
   providers: [

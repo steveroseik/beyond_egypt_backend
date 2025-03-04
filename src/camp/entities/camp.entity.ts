@@ -68,9 +68,9 @@ export class Camp {
   @Field()
   isPrivate: boolean;
 
-  @Column('int', { name: 'capacity' })
-  @Field()
-  capacity: number;
+  @Column('int', { name: 'defaultCapacity', nullable: true })
+  @Field({ nullable: true })
+  defaultCapacity?: number;
 
   @Column('int', { name: 'locationId' })
   @Field()

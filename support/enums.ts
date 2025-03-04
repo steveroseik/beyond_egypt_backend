@@ -49,6 +49,17 @@ registerEnumType(CampRegistrationStatus, {
   name: 'CampRegistrationStatus',
 });
 
+export enum PaymentStatus {
+  pending = 'pending',
+  paid = 'paid',
+  failed = 'failed',
+  refunded = 'refunded',
+}
+
+registerEnumType(PaymentStatus, {
+  name: 'PaymentStatus',
+});
+
 export enum ShirtSize {
   xxs = 'xxs',
   xs = 'xs',

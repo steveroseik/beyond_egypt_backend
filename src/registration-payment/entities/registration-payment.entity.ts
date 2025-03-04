@@ -1,6 +1,6 @@
 import { ObjectType, Field, Int } from '@nestjs/graphql';
 import Decimal from 'decimal.js';
-import { PaymentMethod } from 'support/enums';
+import { PaymentMethod, PaymentStatus } from 'support/enums';
 import { GraphqlDecimal } from 'support/scalars';
 import {
   Column,
@@ -10,8 +10,8 @@ import {
 } from 'typeorm';
 
 @ObjectType()
-@Entity('registration-payment-history', { schema: 'beyond_egypt' })
-export class RegistrationPaymentHistory {
+@Entity('registration-payment', { schema: 'beyond_egypt' })
+export class RegistrationPayment {
   @PrimaryGeneratedColumn()
   @Field()
   id: number;
@@ -22,11 +22,18 @@ export class RegistrationPaymentHistory {
 
   @Column('enum', {
     name: 'paymentMethod',
-    nullable: true,
     enum: PaymentMethod,
   })
   @Field(() => PaymentMethod)
   paymentMethod: PaymentMethod;
+
+  @Column('enum', {
+    name: 'status',
+    enum: PaymentStatus,
+    default: PaymentStatus.pending,
+  })
+  @Field(() => PaymentStatus)
+  status: PaymentStatus;
 
   @Column('decimal', { name: 'total', precision: 10, scale: 2 })
   @Field(() => GraphqlDecimal)

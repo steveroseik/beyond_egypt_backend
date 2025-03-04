@@ -26,8 +26,8 @@ export class CreateCampInput {
   @Field()
   isPrivate: boolean;
 
-  @Field()
-  capacity: number;
+  @Field({ nullable: true })
+  defaultCapacity?: number;
 
   @Field()
   locationId: number;

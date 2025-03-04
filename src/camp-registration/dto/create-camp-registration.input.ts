@@ -21,12 +21,6 @@ export class CreateCampRegistrationInput {
   @Field(() => PaymentMethod, { nullable: true })
   paymentMethod?: PaymentMethod;
 
-  @Field(() => CampRegistrationStatus, {
-    defaultValue: CampRegistrationStatus.idle,
-    nullable: true,
-  })
-  status?: CampRegistrationStatus;
-
   @Field(() => [CreateCampVariantRegistrationInput], { nullable: true })
   campVariantRegistrations?: CreateCampVariantRegistrationInput[];
 }
