@@ -35,4 +35,12 @@ export class FileService {
   remove(id: number) {
     return `This action removes a #${id} file`;
   }
+
+  findFilesByCampIds(keys: readonly number[]) {
+    return this.repo
+      .createQueryBuilder('file')
+      .leftJoin('file.camps', 'camp')
+      .where('camp.id IN (:...keys)', { keys })
+      .getMany();
+  }
 }

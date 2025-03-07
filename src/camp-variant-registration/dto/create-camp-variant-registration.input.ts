@@ -13,7 +13,6 @@ export class CreateCampVariantRegistrationInput {
   @Field()
   campVariantId: number;
 
-  @Field(() => GraphqlDecimal)
   price: Decimal;
 
   @Field({ nullable: true })

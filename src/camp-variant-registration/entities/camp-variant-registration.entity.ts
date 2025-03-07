@@ -1,5 +1,6 @@
 import { ObjectType, Field, Int } from '@nestjs/graphql';
 import Decimal from 'decimal.js';
+import { CampRegistration } from 'src/camp-registration/entities/camp-registration.entity';
 import { ShirtSize } from 'support/enums';
 import { GraphqlDecimal } from 'support/scalars';
 import {
@@ -7,6 +8,7 @@ import {
   CreateDateColumn,
   DeleteDateColumn,
   Entity,
+  ManyToOne,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
@@ -66,4 +68,11 @@ export class CampVariantRegistration {
   @DeleteDateColumn({ name: 'deletedAt', precision: 3 })
   @Field({ nullable: true })
   deletedAt?: Date;
+
+  @ManyToOne(
+    () => CampRegistration,
+    (campRegistration) => campRegistration.campVariantRegistrations,
+  )
+  @Field(() => CampRegistration)
+  campRegistration: CampRegistration;
 }

@@ -31,6 +31,10 @@ export class UserService {
         input.firebaseToken,
       );
 
+      if (!firebaseData) {
+        throw new Error('Invalid or expired token');
+      }
+
       if (input.email !== firebaseData.email) {
         throw new Error('Email does not match token');
       }

@@ -16,6 +16,7 @@ import {
 @Entity('child', { schema: 'beyond_egypt' })
 export class Child {
   @PrimaryGeneratedColumn()
+  @Field()
   id: number;
 
   @Column('varchar', { name: 'parentId', length: 255 })

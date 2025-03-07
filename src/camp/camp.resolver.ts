@@ -18,6 +18,7 @@ import { Meal } from 'src/meal/entities/meal.entity';
 import { DataloaderRegistry } from 'src/dataloaders/dataloaderRegistry';
 import { File } from 'src/file/entities/file.entity';
 import { GraphQLJSONObject } from 'graphql-type-json';
+import { CampVariant } from 'src/camp-variant/entities/camp-variant.entity';
 
 @Resolver(() => Camp)
 export class CampResolver {
@@ -69,8 +70,21 @@ export class CampResolver {
     return loaders.FilesLoader.load(parent.thumbnailId);
   }
 
-  // @ResolveField(() => [File])
-  // files(@Parent() parent:Camp, @Context() { loaders } : { loaders: DataloaderRegistry }){
-  //   return loaders.FilesLoader.loadMany(parent.files)
-  // }
+  @ResolveField(() => [CampVariant])
+  campVariants(
+    @Parent() parent: Camp,
+    @Context() { loaders }: { loaders: DataloaderRegistry },
+  ) {
+    return parent.campVariants?.length
+      ? parent.campVariants
+      : loaders.CampVariantsDataLoader.load(parent.id);
+  }
+
+  @ResolveField(() => [File])
+  files(
+    @Parent() parent: Camp,
+    @Context() { loaders }: { loaders: DataloaderRegistry },
+  ) {
+    return loaders.CampFilesDataLoader.load(parent.id);
+  }
 }

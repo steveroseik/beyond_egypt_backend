@@ -1,5 +1,6 @@
 import { ObjectType, Field, Int } from '@nestjs/graphql';
 import Decimal from 'decimal.js';
+import { CampVariantRegistration } from 'src/camp-variant-registration/entities/camp-variant-registration.entity';
 import { Discount } from 'src/discount/entities/discount.entity';
 import { CampRegistrationStatus, PaymentMethod } from 'support/enums';
 import { GraphqlDecimal } from 'support/scalars';
@@ -13,6 +14,7 @@ import {
   PrimaryGeneratedColumn,
   ManyToMany,
   JoinTable,
+  OneToMany,
 } from 'typeorm';
 
 @ObjectType()
@@ -41,10 +43,11 @@ export class CampRegistration {
   @Column('decimal', {
     name: 'totalPrice',
     precision: 10,
+    nullable: true,
     scale: 0,
   })
-  @Field(() => GraphqlDecimal)
-  totalPrice: Decimal;
+  @Field(() => GraphqlDecimal, { nullable: true })
+  totalPrice?: Decimal;
 
   @Column('enum', {
     name: 'paymentMethod',
@@ -81,4 +84,11 @@ export class CampRegistration {
   @DeleteDateColumn({ name: 'deletedAt', precision: 3 })
   @Field({ nullable: true })
   deletedAt?: Date;
+
+  @OneToMany(
+    () => CampVariantRegistration,
+    (campVariantRegistration) => campVariantRegistration.campRegistration,
+  )
+  @Field(() => [CampVariantRegistration])
+  campVariantRegistrations: CampVariantRegistration[];
 }

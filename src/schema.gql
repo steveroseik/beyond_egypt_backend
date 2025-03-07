@@ -2,6 +2,25 @@
 # THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
 # ------------------------------------------------------
 
+type CampVariant {
+  id: Int!
+  campId: Int!
+  name: String
+  price: Decimal
+  capacity: Int!
+  startDate: DateTime!
+  endDate: DateTime!
+  createdAt: DateTime!
+  lastModified: DateTime!
+  deletedAt: DateTime
+  camp: Camp!
+}
+
+"""
+A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date-time format.
+"""
+scalar DateTime
+
 type Event {
   id: Int!
   name: String!
@@ -15,11 +34,6 @@ type Event {
   earlyBirdId: Int
   files: [File!]!
 }
-
-"""
-A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date-time format.
-"""
-scalar DateTime
 
 type File {
   id: Int!
@@ -68,6 +82,7 @@ type Camp {
   ageRanges: [AgeRange!]
   files: [File!]
   meals: [Meal!]
+  campVariants: [CampVariant!]
   thumbnail: File!
 }
 
@@ -83,6 +98,7 @@ type AgeRange {
 }
 
 type Child {
+  id: Int!
   parentId: String!
   name: String!
   birthdate: DateTime!
@@ -117,19 +133,6 @@ type Allergy {
   children: [Child!]
 }
 
-type CampVariant {
-  id: Int!
-  campId: Int!
-  name: String
-  price: Decimal
-  capacity: Int!
-  startDate: DateTime!
-  endDate: DateTime!
-  createdAt: DateTime!
-  lastModified: DateTime!
-  deletedAt: DateTime
-}
-
 type CampPage {
   cursor: GraphqlCursor!
   data: [Camp!]!
@@ -138,16 +141,41 @@ type CampPage {
 """Cursor scalar type for pagination"""
 scalar GraphqlCursor
 
+type CampVariantRegistration {
+  id: Int!
+  childId: Int!
+  campRegistrationId: Int!
+  campVariantId: Int!
+  price: Decimal!
+  mealId: Int
+  shirtSize: ShirtSize
+  createdAt: DateTime!
+  lastModified: DateTime!
+  deletedAt: DateTime
+  campRegistration: CampRegistration!
+}
+
+enum ShirtSize {
+  xxs
+  xs
+  s
+  m
+  l
+  xl
+  xxl
+}
+
 type CampRegistration {
   parentId: String!
   campId: Int!
   oneDayPrice: Decimal
-  totalPrice: Decimal!
+  totalPrice: Decimal
   paymentMethod: PaymentMethod!
   status: CampRegistrationStatus!
   createdAt: DateTime!
   lastModified: DateTime!
   deletedAt: DateTime
+  campVariantRegistrations: [CampVariantRegistration!]!
 }
 
 enum PaymentMethod {
@@ -162,29 +190,6 @@ enum CampRegistrationStatus {
   rejected
   cancelled
   modified
-}
-
-type CampVariantRegistration {
-  id: Int!
-  childId: Int!
-  campRegistrationId: Int!
-  campVariantId: Int!
-  price: Decimal!
-  mealId: Int
-  shirtSize: ShirtSize
-  createdAt: DateTime!
-  lastModified: DateTime!
-  deletedAt: DateTime
-}
-
-enum ShirtSize {
-  xxs
-  xs
-  s
-  m
-  l
-  xl
-  xxl
 }
 
 type ChildPage {
@@ -394,13 +399,14 @@ type Query {
   meal(id: Int!): Meal!
   paginateMeals(input: PaginateMealsInput!): MealPage!
   file(id: Int!): File!
+  campVariant(id: Int!): CampVariant!
+  location(id: Int!): Location!
   user: [User!]!
   ageRange(id: Int!): AgeRange!
   allergy(id: Int!): Allergy!
   camp(id: Int!): Camp!
   paginateCamps(input: PaginateCampsInput!): CampPage!
   campRegistration(id: Int!): CampRegistration!
-  campVariant(id: Int!): CampVariant!
   campVariantRegistration(id: Int!): CampVariantRegistration!
   child(id: Int!): Child!
   paginateChildren(input: PaginateChildrenInput!): ChildPage!
@@ -410,7 +416,6 @@ type Query {
   event(id: Int!): Event!
   paginateEvents(input: PaginateEventsInput!): EventPage!
   eventFile(id: Int!): EventFile!
-  location(id: Int!): Location!
   parentAdditional(id: Int!): ParentAdditional!
   registrationAttendance(id: Int!): RegistrationAttendance!
   registrationHistory(id: Int!): RegistrationHistory!
@@ -468,6 +473,12 @@ type Mutation {
   createFile(createFileInput: CreateFileInput!): File!
   updateFile(updateFileInput: UpdateFileInput!): File!
   removeFile(id: Int!): File!
+  createCampVariant(createCampVariantInput: CreateCampVariantInput!): CampVariant!
+  updateCampVariant(updateCampVariantInput: UpdateCampVariantInput!): CampVariant!
+  removeCampVariant(id: Int!): CampVariant!
+  createLocation(createLocationInput: CreateLocationInput!): Location!
+  updateLocation(updateLocationInput: UpdateLocationInput!): Location!
+  removeLocation(id: Int!): Location!
   tempLogin(input: TempSignInInput!): JSONObject!
   signIn(input: TokenRequestInput!): UserAuthResponse!
   createUser(input: CreateUserInput!): CreateUserResponse!
@@ -482,12 +493,9 @@ type Mutation {
   createCamp(input: CreateCampInput!): JSONObject!
   updateCamp(updateCampInput: UpdateCampInput!): Camp!
   removeCamp(id: Int!): Camp!
-  createCampRegistration(input: CreateCampRegistrationInput!): CampRegistration!
-  updateCampRegistration(updateCampRegistrationInput: UpdateCampRegistrationInput!): CampRegistration!
+  createCampRegistration(input: CreateCampRegistrationInput!): JSONObject!
+  completeCampRegistration(input: UpdateCampRegistrationInput!): JSONObject!
   removeCampRegistration(id: Int!): CampRegistration!
-  createCampVariant(createCampVariantInput: CreateCampVariantInput!): CampVariant!
-  updateCampVariant(updateCampVariantInput: UpdateCampVariantInput!): CampVariant!
-  removeCampVariant(id: Int!): CampVariant!
   createCampVariantRegistration(createCampVariantRegistrationInput: CreateCampVariantRegistrationInput!): CampVariantRegistration!
   updateCampVariantRegistration(updateCampVariantRegistrationInput: UpdateCampVariantRegistrationInput!): CampVariantRegistration!
   removeCampVariantRegistration(id: Int!): CampVariantRegistration!
@@ -509,9 +517,6 @@ type Mutation {
   createEventFile(createEventFileInput: CreateEventFileInput!): EventFile!
   updateEventFile(updateEventFileInput: UpdateEventFileInput!): EventFile!
   removeEventFile(id: Int!): EventFile!
-  createLocation(createLocationInput: CreateLocationInput!): Location!
-  updateLocation(updateLocationInput: UpdateLocationInput!): Location!
-  removeLocation(id: Int!): Location!
   createParentAdditional(createParentAdditionalInput: CreateParentAdditionalInput!): ParentAdditional!
   updateParentAdditional(updateParentAdditionalInput: UpdateParentAdditionalInput!): ParentAdditional!
   removeParentAdditional(id: Int!): ParentAdditional!
@@ -552,6 +557,34 @@ input CreateFileInput {
 }
 
 input UpdateFileInput {
+  """Example field (placeholder)"""
+  exampleField: Int
+  id: Int!
+}
+
+input CreateCampVariantInput {
+  name: String
+  price: Decimal
+  capacity: Int
+  startDate: DateTime!
+  endDate: DateTime!
+}
+
+input UpdateCampVariantInput {
+  name: String
+  price: Decimal
+  capacity: Int
+  startDate: DateTime
+  endDate: DateTime
+  id: Int!
+}
+
+input CreateLocationInput {
+  """Example field (placeholder)"""
+  exampleField: Int!
+}
+
+input UpdateLocationInput {
   """Example field (placeholder)"""
   exampleField: Int
   id: Int!
@@ -643,14 +676,6 @@ input CreateCampInput {
   meals: [CreateMealInput!]
 }
 
-input CreateCampVariantInput {
-  name: String
-  price: Decimal
-  capacity: Int
-  startDate: DateTime!
-  endDate: DateTime!
-}
-
 input UpdateCampInput {
   name: String
   description: String
@@ -683,7 +708,6 @@ input CreateCampRegistrationInput {
 input CreateCampVariantRegistrationInput {
   childId: Int!
   campVariantId: Int!
-  price: Decimal!
   mealId: Int
   shirtSize: ShirtSize
 }
@@ -696,21 +720,12 @@ input UpdateCampRegistrationInput {
   paymentMethod: PaymentMethod
   campVariantRegistrations: [CreateCampVariantRegistrationInput!]
   id: Int!
-}
-
-input UpdateCampVariantInput {
-  name: String
-  price: Decimal
-  capacity: Int
-  startDate: DateTime
-  endDate: DateTime
-  id: Int!
+  variantsToDelete: [Int!]
 }
 
 input UpdateCampVariantRegistrationInput {
   childId: Int
   campVariantId: Int
-  price: Decimal
   mealId: Int
   shirtSize: ShirtSize
   id: Int!
@@ -780,17 +795,6 @@ input CreateEventFileInput {
 }
 
 input UpdateEventFileInput {
-  """Example field (placeholder)"""
-  exampleField: Int
-  id: Int!
-}
-
-input CreateLocationInput {
-  """Example field (placeholder)"""
-  exampleField: Int!
-}
-
-input UpdateLocationInput {
   """Example field (placeholder)"""
   exampleField: Int
   id: Int!

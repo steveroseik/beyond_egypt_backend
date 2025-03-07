@@ -5,6 +5,7 @@ import { CreateCampRegistrationInput } from './dto/create-camp-registration.inpu
 import { UpdateCampRegistrationInput } from './dto/update-camp-registration.input';
 import { CurrentUser } from 'src/auth/decorators/currentUserDecorator';
 import { UserType } from 'support/enums';
+import { GraphQLJSONObject } from 'graphql-type-json';
 
 @Resolver(() => CampRegistration)
 export class CampRegistrationResolver {
@@ -12,23 +13,23 @@ export class CampRegistrationResolver {
     private readonly campRegistrationService: CampRegistrationService,
   ) {}
 
-  @Mutation(() => CampRegistration)
+  @Mutation(() => GraphQLJSONObject)
   createCampRegistration(
     @Args('input') input: CreateCampRegistrationInput,
     @CurrentUser('type') type: UserType,
     @CurrentUser('id') id: string,
   ) {
-    if (type !== UserType.parent) {
+    if (type === UserType.parent) {
       input.parentId = id;
       if (
-        (input.campVariantRegistrations ||
-          input.totalPrice ||
-          input.oneDayPrice,
-        input.paymentMethod)
+        input.campVariantRegistrations?.length ||
+        input.totalPrice ||
+        input.oneDayPrice ||
+        input.paymentMethod
       ) {
         return {
           success: false,
-          message: 'Unauthorized, admin action done by parent',
+          message: 'Unauthorized, admin actions done by parent',
         };
       }
     }
@@ -46,14 +47,17 @@ export class CampRegistrationResolver {
     return this.campRegistrationService.findOne(id);
   }
 
-  @Mutation(() => CampRegistration)
-  updateCampRegistration(
-    @Args('updateCampRegistrationInput')
-    updateCampRegistrationInput: UpdateCampRegistrationInput,
+  @Mutation(() => GraphQLJSONObject)
+  completeCampRegistration(
+    @Args('input')
+    input: UpdateCampRegistrationInput,
+    @CurrentUser('id') userId: string,
+    @CurrentUser('type') type: UserType,
   ) {
-    return this.campRegistrationService.update(
-      updateCampRegistrationInput.id,
-      updateCampRegistrationInput,
+    return this.campRegistrationService.completeCampRegistration(
+      input,
+      userId,
+      type,
     );
   }
 

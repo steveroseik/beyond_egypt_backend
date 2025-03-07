@@ -1,5 +1,6 @@
 import { ObjectType, Field, Int } from '@nestjs/graphql';
 import Decimal from 'decimal.js';
+import { Camp } from 'src/camp/entities/camp.entity';
 import { GraphqlDecimal } from 'support/scalars';
 import {
   Entity,
@@ -9,6 +10,8 @@ import {
   DeleteDateColumn,
   PrimaryColumn,
   PrimaryGeneratedColumn,
+  ManyToOne,
+  JoinColumn,
 } from 'typeorm';
 
 @ObjectType()
@@ -62,4 +65,13 @@ export class CampVariant {
   @DeleteDateColumn({ name: 'deletedAt', precision: 3 })
   @Field({ nullable: true })
   deletedAt?: Date;
+
+  @ManyToOne(() => Camp, (camp) => camp.campVariants, {
+    cascade: true,
+    onDelete: 'CASCADE',
+    onUpdate: 'CASCADE',
+  })
+  @JoinColumn({ name: 'campId', referencedColumnName: 'id' })
+  @Field(() => Camp)
+  camp: Camp;
 }

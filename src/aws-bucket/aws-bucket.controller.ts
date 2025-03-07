@@ -15,15 +15,56 @@ import {
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
-import { FileInterceptor } from '@nestjs/platform-express';
+import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import { AwsBucketService } from './aws-bucket.service';
 import { CurrentUser } from 'src/auth/decorators/currentUserDecorator';
+import { memoryStorage } from 'multer';
 
 const MAX_FILE_SIZE = 15 * 1024 * 1024; // 10MB
 
 @Controller('aws')
 export class AwsBucketController {
   constructor(private readonly bucketService: AwsBucketService) {}
+
+  @Post('/files')
+  @UseInterceptors(
+    FilesInterceptor('files', null, { storage: memoryStorage() }),
+  )
+  async uploadFiles(
+    @UploadedFiles(
+      new ParseFilePipe({
+        validators: [
+          new MaxFileSizeValidator({
+            maxSize: MAX_FILE_SIZE,
+            message: 'File is too large. Max file size is 15MB',
+          }),
+        ],
+        fileIsRequired: true,
+      }),
+    )
+    files: Express.Multer.File[],
+    @Body('isPublic') publicBool: string,
+    @CurrentUser('id') userId: string,
+  ) {
+    const isPublicBool = publicBool === 'true';
+    const uploadResults = await Promise.all(
+      files.map((file) =>
+        this.bucketService.uploadSingleFile({
+          file,
+          isPublic: isPublicBool,
+          userId,
+        }),
+      ),
+    );
+
+    return uploadResults.map(({ file, url, isPublic }, index) => ({
+      file,
+      url,
+      isPublic,
+      name: files[index].originalname,
+      extension: files[index].originalname.split('.').pop(),
+    }));
+  }
 
   @Post('/file')
   @UseInterceptors(FileInterceptor('file'))
