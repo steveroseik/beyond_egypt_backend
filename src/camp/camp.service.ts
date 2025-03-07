@@ -233,7 +233,7 @@ export class CampService {
   }
 
   findOne(id: number) {
-    return `This action returns a #${id} camp`;
+    return this.repo.findOne({ where: { id } });
   }
 
   update(id: number, updateCampInput: UpdateCampInput) {
