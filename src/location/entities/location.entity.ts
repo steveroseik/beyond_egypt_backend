@@ -1,10 +1,12 @@
 import { ObjectType, Field, Int } from '@nestjs/graphql';
+import { Camp } from 'src/camp/entities/camp.entity';
 import { GraphqlPoint } from 'support/scalars';
 import {
   Column,
   CreateDateColumn,
   DeleteDateColumn,
   Entity,
+  OneToMany,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
@@ -44,4 +46,8 @@ export class Location {
   @DeleteDateColumn({ name: 'deletedAt', precision: 3 })
   @Field({ nullable: true })
   deletedAt?: Date;
+
+  @OneToMany(() => Camp, (camp) => camp.location, { nullable: true })
+  @Field(() => [Camp], { nullable: true })
+  camps?: Camp[];
 }

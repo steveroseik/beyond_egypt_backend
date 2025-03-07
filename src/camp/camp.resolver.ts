@@ -19,6 +19,7 @@ import { DataloaderRegistry } from 'src/dataloaders/dataloaderRegistry';
 import { File } from 'src/file/entities/file.entity';
 import { GraphQLJSONObject } from 'graphql-type-json';
 import { CampVariant } from 'src/camp-variant/entities/camp-variant.entity';
+import { Location } from 'src/location/entities/location.entity';
 
 @Resolver(() => Camp)
 export class CampResolver {
@@ -86,5 +87,13 @@ export class CampResolver {
     @Context() { loaders }: { loaders: DataloaderRegistry },
   ) {
     return loaders.CampFilesDataLoader.load(parent.id);
+  }
+
+  @ResolveField(() => Location)
+  location(
+    @Parent() parent: Camp,
+    @Context() { loaders }: { loaders: DataloaderRegistry },
+  ) {
+    return loaders.LocationsLoader.load(parent.locationId);
   }
 }

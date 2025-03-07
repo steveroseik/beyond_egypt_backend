@@ -2,6 +2,7 @@ import { ObjectType, Field, Int } from '@nestjs/graphql';
 import { AgeRange } from 'src/age-range/entities/age-range.entity';
 import { CampVariant } from 'src/camp-variant/entities/camp-variant.entity';
 import { File } from 'src/file/entities/file.entity';
+import { Location } from 'src/location/entities/location.entity';
 import { Meal } from 'src/meal/entities/meal.entity';
 import {
   Entity,
@@ -15,6 +16,7 @@ import {
   PrimaryGeneratedColumn,
   OneToMany,
   JoinColumn,
+  ManyToOne,
 } from 'typeorm';
 
 @Entity('camp', { schema: 'beyond_egypt' })
@@ -152,4 +154,13 @@ export class Camp {
   @OneToMany(() => CampVariant, (campVariant) => campVariant.camp)
   @Field(() => [CampVariant], { nullable: true })
   campVariants?: CampVariant[];
+
+  @ManyToOne(() => Location, (location) => location.camps, {
+    cascade: true,
+    onDelete: 'CASCADE',
+    onUpdate: 'CASCADE',
+  })
+  @JoinColumn({ name: 'locationId', referencedColumnName: 'id' })
+  @Field(() => Location)
+  location: Location;
 }

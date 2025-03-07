@@ -55,6 +55,16 @@ enum FileType {
   other
 }
 
+type Location {
+  id: Int!
+  name: String!
+  geoPoint: GraphqlPoint
+  createdAt: DateTime!
+  lastModified: DateTime!
+  deletedAt: DateTime
+  camps: [Camp!]
+}
+
 type Meal {
   id: Int!
   name: String!
@@ -83,6 +93,7 @@ type Camp {
   files: [File!]
   meals: [Meal!]
   campVariants: [CampVariant!]
+  location: Location!
   thumbnail: File!
 }
 
@@ -257,15 +268,6 @@ type EventPage {
 type EventFile {
   """Example field (placeholder)"""
   exampleField: Int!
-}
-
-type Location {
-  id: Int!
-  name: String!
-  geoPoint: GraphqlPoint
-  createdAt: DateTime!
-  lastModified: DateTime!
-  deletedAt: DateTime
 }
 
 type MealPage {
