@@ -35,4 +35,8 @@ export class CampVariantService {
   findCampVariantsByCampId(keys: readonly number[]) {
     return this.repo.find({ where: { campId: In(keys) } });
   }
+
+  findAllByKeys(keys: readonly number[]) {
+    return this.repo.find({ where: { id: In(keys) } });
+  }
 }

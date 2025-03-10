@@ -2,7 +2,7 @@ import { forwardRef, Inject, Injectable } from '@nestjs/common';
 import { CreateUserInput } from './dto/create-user.input';
 import { UpdateUserInput } from './dto/update-user.input';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, QueryRunner, Repository } from 'typeorm';
+import { DataSource, In, QueryRunner, Repository } from 'typeorm';
 import { User } from './entities/user.entity';
 import { UserType } from 'support/enums';
 import { ResponseWrapper } from 'support/response-wrapper.entity';
@@ -165,8 +165,140 @@ export class UserService {
     return this.repo.findOne({ where: { email: email, id: id } });
   }
 
-  update(id: number, updateUserInput: UpdateUserInput) {
-    return `This action updates a #${id} user`;
+  async update(input: UpdateUserInput) {
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      const user = await this.repo.findOne({ where: { id: input.id } });
+      if (!user) {
+        throw new Error('User not found');
+      }
+
+      if (input.phone || input.occupation || input.name) {
+        const updated = await this.repo.update(input.id, {
+          phone: input.phone,
+          occupation: input.occupation,
+          name: input.name,
+        });
+
+        if (updated.affected !== 1) {
+          throw new Error('Failed to update user');
+        }
+      }
+
+      if (user.type === UserType.parent) {
+        if (input.childrenToDelete?.length) {
+          const children = await queryRunner.manager.find(Child, {
+            where: { id: In(input.childrenToDelete) },
+          });
+          if (children.length !== input.childrenToDelete.length) {
+            throw new Error('Some children not found');
+          }
+
+          const deleted = await queryRunner.manager.delete(
+            Child,
+            input.childrenToDelete,
+          );
+
+          if (deleted.affected !== input.childrenToDelete.length) {
+            throw new Error('Failed to delete children');
+          }
+        }
+
+        if (input.parentAdditionalToDelete?.length) {
+          const parentAdditional = await queryRunner.manager.find(User, {
+            where: { id: In(input.parentAdditionalToDelete) },
+          });
+          if (
+            parentAdditional.length !== input.parentAdditionalToDelete.length
+          ) {
+            throw new Error('Some parent additional not found');
+          }
+
+          const deleted = await queryRunner.manager.delete(
+            User,
+            input.parentAdditionalToDelete,
+          );
+
+          if (deleted.affected !== input.parentAdditionalToDelete.length) {
+            throw new Error('Failed to delete parent additional');
+          }
+        }
+
+        if (input.childrenToAdd?.length) {
+          const children = input.childrenToAdd.map((child) => {
+            return {
+              parentId: input.id,
+              name: child.name,
+              birthdate: child.birthdate,
+              schoolId: child.schoolId,
+              medicalInfo: child.medicalInfo,
+              parentRelation: child.parentRelation,
+              isMale: child.isMale,
+              extraNotes: child.extraNotes,
+              imageFileId: child.imageFileId,
+              otherAllergies: child.otherAllergies,
+            };
+          });
+
+          const childrenResult = await queryRunner.manager.insert(
+            Child,
+            children,
+          );
+
+          if (childrenResult.raw.affectedRows !== input.childrenToAdd.length) {
+            throw new Error('Failed to create children');
+          }
+
+          for (const [i, id] of childrenResult.identifiers.entries()) {
+            const child = input.childrenToAdd[i];
+
+            if (child.allergies?.length) {
+              await queryRunner.manager
+                .createQueryBuilder(Child, 'child')
+                .relation(Child, 'allergies')
+                .of(id)
+                .add(child.allergies);
+            }
+          }
+        }
+
+        if (input.parentAdditionalToAdd?.length) {
+          const parentAdditional = input.parentAdditionalToAdd.map(
+            (additional) => {
+              return { ...additional, id: input.id };
+            },
+          );
+
+          const parentAdditionalResult =
+            await this.repo.insert(parentAdditional);
+
+          if (
+            parentAdditionalResult.raw.affectedRows !==
+            input.parentAdditionalToAdd.length
+          ) {
+            throw new Error('Failed to create parent additional');
+          }
+        }
+      }
+
+      await queryRunner.commitTransaction();
+      return {
+        success: true,
+        message: 'User updated successfully',
+      };
+    } catch (e) {
+      await queryRunner.rollbackTransaction();
+      console.log(e);
+      return {
+        success: false,
+        message: e.message,
+      };
+    } finally {
+      await queryRunner.release();
+    }
   }
 
   remove(id: string) {

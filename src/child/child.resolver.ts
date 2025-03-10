@@ -8,6 +8,7 @@ import { PaginateChildrenInput } from './dto/paginate-children.input';
 import { CurrentUser } from 'src/auth/decorators/currentUserDecorator';
 import { UserType } from 'support/enums';
 import { User } from 'src/user/entities/user.entity';
+import { GraphQLJSONObject } from 'graphql-type-json';
 
 @Resolver(() => Child)
 export class ChildResolver {
@@ -18,19 +19,18 @@ export class ChildResolver {
     return this.childService.create(createChildInput);
   }
 
-  @Query(() => [Child], { name: 'child' })
-  findAll() {
-    return this.childService.findAll();
-  }
-
   @Query(() => Child, { name: 'child' })
   findOne(@Args('id', { type: () => Int }) id: number) {
     return this.childService.findOne(id);
   }
 
-  @Mutation(() => Child)
-  updateChild(@Args('updateChildInput') updateChildInput: UpdateChildInput) {
-    return this.childService.update(updateChildInput.id, updateChildInput);
+  @Mutation(() => GraphQLJSONObject)
+  updateChild(
+    @Args('input') input: UpdateChildInput,
+    @CurrentUser('id') userId: string,
+    @CurrentUser('type') userType: UserType,
+  ) {
+    return this.childService.update(input, userId, userType);
   }
 
   @Mutation(() => Child)

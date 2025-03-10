@@ -4,6 +4,8 @@ import { MealService } from 'src/meal/meal.service';
 import { FileService } from 'src/file/file.service';
 import { CampVariantService } from 'src/camp-variant/camp-variant.service';
 import { LocationService } from 'src/location/location.service';
+import { ChildService } from 'src/child/child.service';
+import { ParentAdditionalService } from 'src/parent-additional/parent-additional.service';
 
 @Injectable()
 export class DataloaderRegistryFactory {
@@ -12,6 +14,8 @@ export class DataloaderRegistryFactory {
     private fileService: FileService,
     private campVariantService: CampVariantService,
     private locationService: LocationService,
+    private childService: ChildService,
+    private parentAdditionalService: ParentAdditionalService,
   ) {}
 
   public create() {
@@ -20,6 +24,8 @@ export class DataloaderRegistryFactory {
       this.fileService,
       this.campVariantService,
       this.locationService,
+      this.childService,
+      this.parentAdditionalService,
     );
   }
 }

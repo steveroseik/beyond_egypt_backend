@@ -1,5 +1,6 @@
 import { ObjectType, Field, Int } from '@nestjs/graphql';
 import { Allergy } from 'src/allergy/entities/allergy.entity';
+import { CampVariantRegistration } from 'src/camp-variant-registration/entities/camp-variant-registration.entity';
 import { ParentRelation } from 'support/enums';
 import {
   Column,
@@ -8,6 +9,7 @@ import {
   Entity,
   JoinTable,
   ManyToMany,
+  OneToMany,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
@@ -104,4 +106,11 @@ export class Child {
   })
   @Field(() => [Allergy], { nullable: true })
   allergies?: Allergy[];
+
+  @OneToMany(
+    () => CampVariantRegistration,
+    (registration) => registration.child,
+  )
+  @Field(() => [CampVariantRegistration])
+  campVariantRegistrations: CampVariantRegistration[];
 }

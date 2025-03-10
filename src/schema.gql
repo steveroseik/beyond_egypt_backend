@@ -2,6 +2,101 @@
 # THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
 # ------------------------------------------------------
 
+type CampRegistration {
+  parentId: String!
+  campId: Int!
+  oneDayPrice: Decimal
+  totalPrice: Decimal
+  paymentMethod: PaymentMethod!
+  status: CampRegistrationStatus!
+  createdAt: DateTime!
+  lastModified: DateTime!
+  deletedAt: DateTime
+  campVariantRegistrations: [CampVariantRegistration!]!
+}
+
+enum PaymentMethod {
+  fawry
+  instapay
+  cash
+}
+
+enum CampRegistrationStatus {
+  idle
+  accepted
+  rejected
+  cancelled
+  modified
+}
+
+"""
+A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date-time format.
+"""
+scalar DateTime
+
+type Allergy {
+  id: Int!
+  nameEn: String!
+  nameAr: String!
+  category: Int!
+  createdAt: DateTime!
+  lastModified: DateTime!
+  deletedAt: DateTime
+  children: [Child!]
+}
+
+type Child {
+  id: Int!
+  parentId: String!
+  name: String!
+  birthdate: DateTime!
+  schoolId: Int!
+  isMale: Boolean!
+  parentRelation: ParentRelation!
+  imageFileId: Int
+  medicalInfo: String
+  otherAllergies: String
+  extraNotes: String
+  createdAt: DateTime!
+  lastModified: DateTime!
+  deletedAt: DateTime
+  allergies: [Allergy!]
+  campVariantRegistrations: [CampVariantRegistration!]!
+}
+
+enum ParentRelation {
+  father
+  mother
+  grandParent
+  uncle
+}
+
+type CampVariantRegistration {
+  id: Int!
+  childId: Int!
+  campRegistrationId: Int!
+  campVariantId: Int!
+  price: Decimal!
+  mealId: Int
+  shirtSize: ShirtSize
+  createdAt: DateTime!
+  lastModified: DateTime!
+  deletedAt: DateTime
+  campRegistration: CampRegistration!
+  child: Child!
+  campVariant: CampVariant!
+}
+
+enum ShirtSize {
+  xxs
+  xs
+  s
+  m
+  l
+  xl
+  xxl
+}
+
 type CampVariant {
   id: Int!
   campId: Int!
@@ -14,12 +109,8 @@ type CampVariant {
   lastModified: DateTime!
   deletedAt: DateTime
   camp: Camp!
+  campVariantRegistrations: [CampVariantRegistration!]!
 }
-
-"""
-A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date-time format.
-"""
-scalar DateTime
 
 type Event {
   id: Int!
@@ -108,42 +199,6 @@ type AgeRange {
   camps: [Camp!]
 }
 
-type Child {
-  id: Int!
-  parentId: String!
-  name: String!
-  birthdate: DateTime!
-  schoolId: Int!
-  isMale: Boolean!
-  parentRelation: ParentRelation!
-  imageFileId: Int
-  medicalInfo: String
-  otherAllergies: String
-  extraNotes: String
-  createdAt: DateTime!
-  lastModified: DateTime!
-  deletedAt: DateTime
-  allergies: [Allergy!]
-}
-
-enum ParentRelation {
-  father
-  mother
-  grandParent
-  uncle
-}
-
-type Allergy {
-  id: Int!
-  nameEn: String!
-  nameAr: String!
-  category: Int!
-  createdAt: DateTime!
-  lastModified: DateTime!
-  deletedAt: DateTime
-  children: [Child!]
-}
-
 type CampPage {
   cursor: GraphqlCursor!
   data: [Camp!]!
@@ -152,55 +207,9 @@ type CampPage {
 """Cursor scalar type for pagination"""
 scalar GraphqlCursor
 
-type CampVariantRegistration {
-  id: Int!
-  childId: Int!
-  campRegistrationId: Int!
-  campVariantId: Int!
-  price: Decimal!
-  mealId: Int
-  shirtSize: ShirtSize
-  createdAt: DateTime!
-  lastModified: DateTime!
-  deletedAt: DateTime
-  campRegistration: CampRegistration!
-}
-
-enum ShirtSize {
-  xxs
-  xs
-  s
-  m
-  l
-  xl
-  xxl
-}
-
-type CampRegistration {
-  parentId: String!
-  campId: Int!
-  oneDayPrice: Decimal
-  totalPrice: Decimal
-  paymentMethod: PaymentMethod!
-  status: CampRegistrationStatus!
-  createdAt: DateTime!
-  lastModified: DateTime!
-  deletedAt: DateTime
-  campVariantRegistrations: [CampVariantRegistration!]!
-}
-
-enum PaymentMethod {
-  fawry
-  instapay
-  cash
-}
-
-enum CampRegistrationStatus {
-  idle
-  accepted
-  rejected
-  cancelled
-  modified
+type CampRegistrationPage {
+  cursor: GraphqlCursor!
+  data: [CampRegistration!]!
 }
 
 type ChildPage {
@@ -344,6 +353,8 @@ type User {
   createdAt: DateTime!
   lastModified: DateTime!
   deletedAt: DateTime
+  parentAdditionals: [ParentAdditional!]!
+  children: [Child!]!
 }
 
 enum UserType {
@@ -403,22 +414,24 @@ type Query {
   file(id: Int!): File!
   campVariant(id: Int!): CampVariant!
   location(id: Int!): Location!
+  parentAdditional(id: Int!): ParentAdditional!
+  child(id: Int!): Child!
+  paginateChildren(input: PaginateChildrenInput!): ChildPage!
   user: [User!]!
+  findOneUser(id: Int!): User!
   ageRange(id: Int!): AgeRange!
   allergy(id: Int!): Allergy!
   camp(id: Int!): Camp!
   paginateCamps(input: PaginateCampsInput!): CampPage!
   campRegistration(id: Int!): CampRegistration!
+  paginateCampRegistrations(input: PaginateCampRegistrationsInput!): CampRegistrationPage!
   campVariantRegistration(id: Int!): CampVariantRegistration!
-  child(id: Int!): Child!
-  paginateChildren(input: PaginateChildrenInput!): ChildPage!
   childReport(id: Int!): ChildReport!
   childReportHistory(id: Int!): ChildReportHistory!
   discount(id: Int!): Discount!
   event(id: Int!): Event!
   paginateEvents(input: PaginateEventsInput!): EventPage!
   eventFile(id: Int!): EventFile!
-  parentAdditional(id: Int!): ParentAdditional!
   registrationAttendance(id: Int!): RegistrationAttendance!
   registrationHistory(id: Int!): RegistrationHistory!
   registrationPaymentHistory(id: Int!): RegistrationPayment!
@@ -436,13 +449,6 @@ input PaginateMealsInput {
   beforeCursor: String
 }
 
-input PaginateCampsInput {
-  isAsc: Boolean! = false
-  limit: Int = 20
-  afterCursor: String
-  beforeCursor: String
-}
-
 input PaginateChildrenInput {
   isAsc: Boolean! = false
   limit: Int = 20
@@ -451,6 +457,23 @@ input PaginateChildrenInput {
   parentId: String
   name: String
   campId: Int
+}
+
+input PaginateCampsInput {
+  isAsc: Boolean! = false
+  limit: Int = 20
+  afterCursor: String
+  beforeCursor: String
+}
+
+input PaginateCampRegistrationsInput {
+  isAsc: Boolean! = false
+  limit: Int = 20
+  afterCursor: String
+  beforeCursor: String
+  campIds: [Int!]
+  childIds: [Int!]
+  parentIds: [String!]
 }
 
 input PaginateEventsInput {
@@ -481,10 +504,16 @@ type Mutation {
   createLocation(createLocationInput: CreateLocationInput!): Location!
   updateLocation(updateLocationInput: UpdateLocationInput!): Location!
   removeLocation(id: Int!): Location!
+  createParentAdditional(createParentAdditionalInput: CreateParentAdditionalInput!): ParentAdditional!
+  updateParentAdditional(updateParentAdditionalInput: UpdateParentAdditionalInput!): ParentAdditional!
+  removeParentAdditional(id: Int!): ParentAdditional!
+  createChild(createChildInput: CreateChildInput!): Child!
+  updateChild(input: UpdateChildInput!): JSONObject!
+  removeChild(id: Int!): Child!
   tempLogin(input: TempSignInInput!): JSONObject!
   signIn(input: TokenRequestInput!): UserAuthResponse!
   createUser(input: CreateUserInput!): CreateUserResponse!
-  updateUser(updateUserInput: UpdateUserInput!): User!
+  updateUser(input: UpdateUserInput!): JSONObject!
   removeUser(id: String!): User!
   createAgeRange(createAgeRangeInput: CreateAgeRangeInput!): AgeRange!
   updateAgeRange(updateAgeRangeInput: UpdateAgeRangeInput!): AgeRange!
@@ -501,9 +530,6 @@ type Mutation {
   createCampVariantRegistration(createCampVariantRegistrationInput: CreateCampVariantRegistrationInput!): CampVariantRegistration!
   updateCampVariantRegistration(updateCampVariantRegistrationInput: UpdateCampVariantRegistrationInput!): CampVariantRegistration!
   removeCampVariantRegistration(id: Int!): CampVariantRegistration!
-  createChild(createChildInput: CreateChildInput!): Child!
-  updateChild(updateChildInput: UpdateChildInput!): Child!
-  removeChild(id: Int!): Child!
   createChildReport(createChildReportInput: CreateChildReportInput!): ChildReport!
   updateChildReport(updateChildReportInput: UpdateChildReportInput!): ChildReport!
   removeChildReport(id: Int!): ChildReport!
@@ -519,9 +545,6 @@ type Mutation {
   createEventFile(createEventFileInput: CreateEventFileInput!): EventFile!
   updateEventFile(updateEventFileInput: UpdateEventFileInput!): EventFile!
   removeEventFile(id: Int!): EventFile!
-  createParentAdditional(createParentAdditionalInput: CreateParentAdditionalInput!): ParentAdditional!
-  updateParentAdditional(updateParentAdditionalInput: UpdateParentAdditionalInput!): ParentAdditional!
-  removeParentAdditional(id: Int!): ParentAdditional!
   createRegistrationAttendance(createRegistrationAttendanceInput: CreateRegistrationAttendanceInput!): RegistrationAttendance!
   updateRegistrationAttendance(updateRegistrationAttendanceInput: UpdateRegistrationAttendanceInput!): RegistrationAttendance!
   removeRegistrationAttendance(id: Int!): RegistrationAttendance!
@@ -592,6 +615,44 @@ input UpdateLocationInput {
   id: Int!
 }
 
+input CreateParentAdditionalInput {
+  name: String!
+  email: String
+  phone: String!
+}
+
+input UpdateParentAdditionalInput {
+  id: Int!
+}
+
+input CreateChildInput {
+  name: String!
+  birthdate: DateTime!
+  schoolId: Int!
+  isMale: Boolean!
+  parentRelation: ParentRelation!
+  imageFileId: Int
+  medicalInfo: String
+  otherAllergies: String
+  extraNotes: String
+  allergies: [Int!]
+}
+
+input UpdateChildInput {
+  id: Int!
+  name: String
+  birthdate: DateTime
+  schoolId: Int
+  isMale: Boolean
+  parentRelation: ParentRelation
+  imageFileId: Int
+  medicalInfo: String
+  otherAllergies: String
+  extraNotes: String
+  allergiesToDelete: [Int!] = []
+  allergiesToAdd: [Int!] = []
+}
+
 input TempSignInInput {
   email: String!
   password: String!
@@ -612,27 +673,15 @@ input CreateUserInput {
   children: [CreateChildInput!]
 }
 
-input CreateParentAdditionalInput {
-  name: String!
-  email: String
-  phone: String!
-}
-
-input CreateChildInput {
-  name: String!
-  birthdate: DateTime!
-  schoolId: Int!
-  isMale: Boolean!
-  parentRelation: ParentRelation!
-  imageFileId: Int
-  medicalInfo: String
-  otherAllergies: String
-  extraNotes: String
-  allergies: [Int!]
-}
-
 input UpdateUserInput {
-  id: Int!
+  id: String!
+  childrenToDelete: [Int!] = []
+  parentAdditionalToDelete: [Int!] = []
+  childrenToAdd: [CreateChildInput!] = []
+  parentAdditionalToAdd: [CreateParentAdditionalInput!] = []
+  name: String
+  phone: String
+  occupation: String
 }
 
 input CreateAgeRangeInput {
@@ -733,20 +782,6 @@ input UpdateCampVariantRegistrationInput {
   id: Int!
 }
 
-input UpdateChildInput {
-  name: String
-  birthdate: DateTime
-  schoolId: Int
-  isMale: Boolean
-  parentRelation: ParentRelation
-  imageFileId: Int
-  medicalInfo: String
-  otherAllergies: String
-  extraNotes: String
-  allergies: [Int!]
-  id: Int!
-}
-
 input CreateChildReportInput {
   """Example field (placeholder)"""
   exampleField: Int!
@@ -799,10 +834,6 @@ input CreateEventFileInput {
 input UpdateEventFileInput {
   """Example field (placeholder)"""
   exampleField: Int
-  id: Int!
-}
-
-input UpdateParentAdditionalInput {
   id: Int!
 }
 

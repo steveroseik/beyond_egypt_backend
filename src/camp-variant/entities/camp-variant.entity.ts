@@ -1,5 +1,6 @@
 import { ObjectType, Field, Int } from '@nestjs/graphql';
 import Decimal from 'decimal.js';
+import { CampVariantRegistration } from 'src/camp-variant-registration/entities/camp-variant-registration.entity';
 import { Camp } from 'src/camp/entities/camp.entity';
 import { GraphqlDecimal } from 'support/scalars';
 import {
@@ -12,6 +13,7 @@ import {
   PrimaryGeneratedColumn,
   ManyToOne,
   JoinColumn,
+  OneToMany,
 } from 'typeorm';
 
 @ObjectType()
@@ -74,4 +76,11 @@ export class CampVariant {
   @JoinColumn({ name: 'campId', referencedColumnName: 'id' })
   @Field(() => Camp)
   camp: Camp;
+
+  @OneToMany(
+    () => CampVariantRegistration,
+    (campVariantRegistration) => campVariantRegistration.campVariant,
+  )
+  @Field(() => [CampVariantRegistration])
+  campVariantRegistrations: CampVariantRegistration[];
 }

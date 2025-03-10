@@ -35,7 +35,7 @@ import { AccessTokenGuard } from './auth/guards/accessToken.guard';
 import { DataloaderRegistryFactory } from './dataloaders/dataloaderRegistryFactory';
 import { AuthModule } from './auth/auth.module';
 import { ApolloServerPluginLandingPageLocalDefault } from '@apollo/server/plugin/landingPage/default';
-import { SchoolModule } from './graphql/school/school.module';
+import { SchoolModule } from './school/school.module';
 import { AwsBucketModule } from './aws-bucket/aws-bucket.module';
 import { RegistrationReserveModule } from './registration-reserve/registration-reserve.module';
 

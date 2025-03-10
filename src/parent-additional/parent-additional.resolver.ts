@@ -6,16 +6,16 @@ import { UpdateParentAdditionalInput } from './dto/update-parent-additional.inpu
 
 @Resolver(() => ParentAdditional)
 export class ParentAdditionalResolver {
-  constructor(private readonly parentAdditionalService: ParentAdditionalService) {}
+  constructor(
+    private readonly parentAdditionalService: ParentAdditionalService,
+  ) {}
 
   @Mutation(() => ParentAdditional)
-  createParentAdditional(@Args('createParentAdditionalInput') createParentAdditionalInput: CreateParentAdditionalInput) {
+  createParentAdditional(
+    @Args('createParentAdditionalInput')
+    createParentAdditionalInput: CreateParentAdditionalInput,
+  ) {
     return this.parentAdditionalService.create(createParentAdditionalInput);
-  }
-
-  @Query(() => [ParentAdditional], { name: 'parentAdditional' })
-  findAll() {
-    return this.parentAdditionalService.findAll();
   }
 
   @Query(() => ParentAdditional, { name: 'parentAdditional' })
@@ -24,8 +24,14 @@ export class ParentAdditionalResolver {
   }
 
   @Mutation(() => ParentAdditional)
-  updateParentAdditional(@Args('updateParentAdditionalInput') updateParentAdditionalInput: UpdateParentAdditionalInput) {
-    return this.parentAdditionalService.update(updateParentAdditionalInput.id, updateParentAdditionalInput);
+  updateParentAdditional(
+    @Args('updateParentAdditionalInput')
+    updateParentAdditionalInput: UpdateParentAdditionalInput,
+  ) {
+    return this.parentAdditionalService.update(
+      updateParentAdditionalInput.id,
+      updateParentAdditionalInput,
+    );
   }
 
   @Mutation(() => ParentAdditional)

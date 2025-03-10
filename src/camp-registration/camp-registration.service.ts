@@ -12,6 +12,8 @@ import { CampVariant } from 'src/camp-variant/entities/camp-variant.entity';
 import Decimal from 'decimal.js';
 import e from 'express';
 import { on } from 'events';
+import { PaginateCampRegistrationsInput } from './dto/paginate-camp-registrations.input';
+import { buildPaginator } from 'typeorm-cursor-pagination';
 
 @Injectable()
 export class CampRegistrationService {
@@ -444,6 +446,34 @@ export class CampRegistrationService {
         };
       }
     }
+  }
+
+  async paginateCampRegistrations(input: PaginateCampRegistrationsInput) {
+    const queryBuilder = this.repo.createQueryBuilder('campRegistration');
+
+    if (input.parentIds) {
+      queryBuilder.andWhere('campRegistration.parentId IN (:...parentIds)', {
+        parentIds: input.parentIds,
+      });
+    }
+
+    if (input.campIds) {
+      queryBuilder.andWhere('campRegistration.campId IN (:...campIds)', {
+        campIds: input.campIds,
+      });
+    }
+
+    const paginator = buildPaginator({
+      entity: CampRegistration,
+      alias: 'campRegistration',
+      paginationKeys: ['createdAt', 'id'],
+      query: {
+        ...input,
+        order: input.isAsc ? 'ASC' : 'DESC',
+      },
+    });
+
+    return paginator.paginate(queryBuilder);
   }
 
   remove(id: number) {

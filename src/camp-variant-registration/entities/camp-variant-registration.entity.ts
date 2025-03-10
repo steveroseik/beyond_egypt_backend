@@ -1,6 +1,8 @@
 import { ObjectType, Field, Int } from '@nestjs/graphql';
 import Decimal from 'decimal.js';
 import { CampRegistration } from 'src/camp-registration/entities/camp-registration.entity';
+import { CampVariant } from 'src/camp-variant/entities/camp-variant.entity';
+import { Child } from 'src/child/entities/child.entity';
 import { ShirtSize } from 'support/enums';
 import { GraphqlDecimal } from 'support/scalars';
 import {
@@ -8,6 +10,7 @@ import {
   CreateDateColumn,
   DeleteDateColumn,
   Entity,
+  JoinColumn,
   ManyToOne,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
@@ -73,6 +76,29 @@ export class CampVariantRegistration {
     () => CampRegistration,
     (campRegistration) => campRegistration.campVariantRegistrations,
   )
+  @JoinColumn({ name: 'campRegistrationId', referencedColumnName: 'id' })
   @Field(() => CampRegistration)
   campRegistration: CampRegistration;
+
+  @ManyToOne(() => Child, (child) => child.campVariantRegistrations, {
+    cascade: true,
+    onDelete: 'RESTRICT',
+    onUpdate: 'CASCADE',
+  })
+  @JoinColumn({ name: 'childId', referencedColumnName: 'id' })
+  @Field(() => Child)
+  child: Child;
+
+  @ManyToOne(
+    () => CampVariant,
+    (campVariant) => campVariant.campVariantRegistrations,
+    {
+      cascade: true,
+      onDelete: 'RESTRICT',
+      onUpdate: 'CASCADE',
+    },
+  )
+  @JoinColumn({ name: 'campVariantId', referencedColumnName: 'id' })
+  @Field(() => CampVariant)
+  campVariant: CampVariant;
 }

@@ -1,4 +1,13 @@
-import { Resolver, Query, Mutation, Args, Int } from '@nestjs/graphql';
+import {
+  Resolver,
+  Query,
+  Mutation,
+  Args,
+  Int,
+  ResolveField,
+  Parent,
+  Context,
+} from '@nestjs/graphql';
 import { UserService } from './user.service';
 import { User } from './entities/user.entity';
 import { CreateUserInput } from './dto/create-user.input';
@@ -8,6 +17,11 @@ import { GraphQLObjectType } from 'graphql';
 import { GraphQLJSONObject } from 'graphql-type-json';
 import { Public } from 'src/auth/decorators/publicDecorator';
 import { CreateUserResponse } from './entities/create-user-response.wrapper';
+import { ParentAdditional } from 'src/parent-additional/entities/parent-additional.entity';
+import { DataloaderRegistry } from 'src/dataloaders/dataloaderRegistry';
+import { Child } from 'src/child/entities/child.entity';
+import { CurrentUser } from 'src/auth/decorators/currentUserDecorator';
+import { UserType } from 'support/enums';
 
 @Resolver(() => User)
 export class UserResolver {
@@ -24,18 +38,41 @@ export class UserResolver {
     return this.userService.findAll();
   }
 
-  // @Query(() => User, { name: 'user' })
-  // findOne(@Args('id', { type: () => Int }) id: number) {
-  //   return this.userService.findOne(id);
-  // }
+  @Query(() => User)
+  findOneUser(@Args('id', { type: () => Int }) id: string) {
+    return this.userService.findOne(id);
+  }
 
-  @Mutation(() => User)
-  updateUser(@Args('updateUserInput') updateUserInput: UpdateUserInput) {
-    return this.userService.update(updateUserInput.id, updateUserInput);
+  @Mutation(() => GraphQLJSONObject)
+  updateUser(
+    @Args('input') input: UpdateUserInput,
+    @CurrentUser('id') userId: string,
+    @CurrentUser('type') userType: UserType,
+  ) {
+    if (userType == UserType.parent) {
+      input.id = userId;
+    }
+    return this.userService.update(input);
   }
 
   @Mutation(() => User)
   removeUser(@Args('id') id: string) {
     return this.userService.remove(id);
+  }
+
+  @ResolveField(() => [ParentAdditional])
+  parentAdditionals(
+    @Parent() parent: User,
+    @Context() { loaders }: { loaders: DataloaderRegistry },
+  ) {
+    return loaders.ParentAdditionalDataLoader.load(parent.id);
+  }
+
+  @ResolveField(() => [Child])
+  children(
+    @Parent() parent: User,
+    @Context() { loaders }: { loaders: DataloaderRegistry },
+  ) {
+    return loaders.ChildByParentDataLoader.load(parent.id);
   }
 }

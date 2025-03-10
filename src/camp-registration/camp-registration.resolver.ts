@@ -6,6 +6,8 @@ import { UpdateCampRegistrationInput } from './dto/update-camp-registration.inpu
 import { CurrentUser } from 'src/auth/decorators/currentUserDecorator';
 import { UserType } from 'support/enums';
 import { GraphQLJSONObject } from 'graphql-type-json';
+import { CampRegistrationPage } from './entities/camp-registration-page.entity';
+import { PaginateCampRegistrationsInput } from './dto/paginate-camp-registrations.input';
 
 @Resolver(() => CampRegistration)
 export class CampRegistrationResolver {
@@ -64,5 +66,17 @@ export class CampRegistrationResolver {
   @Mutation(() => CampRegistration)
   removeCampRegistration(@Args('id', { type: () => Int }) id: number) {
     return this.campRegistrationService.remove(id);
+  }
+
+  @Query(() => CampRegistrationPage)
+  paginateCampRegistrations(
+    @Args('input') input: PaginateCampRegistrationsInput,
+    @CurrentUser('type') type: UserType,
+    @CurrentUser('id') id: string,
+  ) {
+    if (type == UserType.parent) {
+      input.parentIds = [id];
+    }
+    return this.campRegistrationService.paginateCampRegistrations(input);
   }
 }
