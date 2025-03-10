@@ -20,6 +20,7 @@ import { File } from 'src/file/entities/file.entity';
 import { GraphQLJSONObject } from 'graphql-type-json';
 import { CampVariant } from 'src/camp-variant/entities/camp-variant.entity';
 import { Location } from 'src/location/entities/location.entity';
+import { Public } from 'src/auth/decorators/publicDecorator';
 
 @Resolver(() => Camp)
 export class CampResolver {
@@ -35,8 +36,8 @@ export class CampResolver {
     return this.campService.findAll();
   }
 
-  @Query(() => Camp, { name: 'camp' })
-  findOne(@Args('id', { type: () => Int }) id: number) {
+  @Query(() => Camp)
+  findOneCamp(@Args('id', { type: () => Int }) id: number) {
     return this.campService.findOne(id);
   }
 
@@ -50,6 +51,7 @@ export class CampResolver {
     return this.campService.remove(id);
   }
 
+  @Public()
   @Query(() => CampPage)
   paginateCamps(@Args('input') input: PaginateCampsInput) {
     return this.campService.paginate(input);
@@ -78,7 +80,7 @@ export class CampResolver {
   ) {
     return parent.campVariants?.length
       ? parent.campVariants
-      : loaders.CampVariantsDataLoader.load(parent.id);
+      : loaders.CampVariantsByCampDataLoader.load(parent.id);
   }
 
   @ResolveField(() => [File])

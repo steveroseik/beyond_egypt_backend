@@ -5,13 +5,18 @@ import {
   DeleteDateColumn,
   Entity,
   PrimaryColumn,
+  PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
 
 @ObjectType()
 @Entity('parent-additional', { schema: 'beyond_egypt' })
 export class ParentAdditional {
-  @PrimaryColumn()
+  @PrimaryGeneratedColumn()
+  @Field()
+  id: number;
+
+  @Column({ name: 'userId' })
   @Field()
   userId: string;
 

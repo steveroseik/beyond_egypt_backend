@@ -296,6 +296,7 @@ The `JSONObject` scalar type represents JSON objects as specified by [ECMA-404](
 scalar JSONObject
 
 type ParentAdditional {
+  id: Int!
   userId: String!
   name: String!
   email: String
@@ -421,7 +422,8 @@ type Query {
   findOneUser(id: Int!): User!
   ageRange(id: Int!): AgeRange!
   allergy(id: Int!): Allergy!
-  camp(id: Int!): Camp!
+  camp: [Camp!]!
+  findOneCamp(id: Int!): Camp!
   paginateCamps(input: PaginateCampsInput!): CampPage!
   campRegistration(id: Int!): CampRegistration!
   paginateCampRegistrations(input: PaginateCampRegistrationsInput!): CampRegistrationPage!

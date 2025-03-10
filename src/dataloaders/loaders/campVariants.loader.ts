@@ -7,6 +7,7 @@ export class CampVariantsDataLoader {
     return new DataLoader<number, CampVariant>(
       async (keys: readonly number[]) => {
         const files = await service.findAllByKeys(keys);
+
         return keys.map((key) => files.find((file) => file.id === key));
       },
     );

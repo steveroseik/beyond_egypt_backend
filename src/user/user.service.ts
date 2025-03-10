@@ -11,6 +11,7 @@ import { Child } from 'src/child/entities/child.entity';
 import { UserAuthResponse } from 'src/auth/entities/user-auth-response.entity';
 import { DecodedIdToken } from 'firebase-admin/auth';
 import { CreateUserResponse } from './entities/create-user-response.wrapper';
+import { ParentAdditional } from 'src/parent-additional/entities/parent-additional.entity';
 
 @Injectable()
 export class UserService {
@@ -208,9 +209,12 @@ export class UserService {
         }
 
         if (input.parentAdditionalToDelete?.length) {
-          const parentAdditional = await queryRunner.manager.find(User, {
-            where: { id: In(input.parentAdditionalToDelete) },
-          });
+          const parentAdditional = await queryRunner.manager.find(
+            ParentAdditional,
+            {
+              where: { id: In(input.parentAdditionalToDelete) },
+            },
+          );
           if (
             parentAdditional.length !== input.parentAdditionalToDelete.length
           ) {
@@ -218,7 +222,7 @@ export class UserService {
           }
 
           const deleted = await queryRunner.manager.delete(
-            User,
+            ParentAdditional,
             input.parentAdditionalToDelete,
           );
 
