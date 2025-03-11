@@ -7,4 +7,10 @@ import { ResponseWrapper } from 'support/response-wrapper.entity';
 export class CreateUserResponse extends ResponseWrapper<UserAuthResponse> {
   @Field(() => UserAuthResponse, { nullable: true })
   data?: UserAuthResponse;
+
+  @Field()
+  success: boolean;
+
+  @Field()
+  message: string;
 }

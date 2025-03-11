@@ -14,6 +14,7 @@ import e from 'express';
 import { on } from 'events';
 import { PaginateCampRegistrationsInput } from './dto/paginate-camp-registrations.input';
 import { buildPaginator } from 'typeorm-cursor-pagination';
+import { ProcessCampRegistration } from './dto/process-camp-registration.input';
 
 @Injectable()
 export class CampRegistrationService {
@@ -474,6 +475,28 @@ export class CampRegistrationService {
     });
 
     return paginator.paginate(queryBuilder);
+  }
+
+  async processCampRegistration(
+    input: ProcessCampRegistration,
+    userId: string,
+    userType: UserType,
+  ) {
+    try {
+      const campRegistration = this.repo.findOne({
+        where: { id: input.campRegistrationId },
+      });
+
+      if (!campRegistration) {
+        throw new Error('Camp registration not found');
+      }
+    } catch (e) {
+      console.log(e);
+      return {
+        success: false,
+        message: e.message,
+      };
+    }
   }
 
   remove(id: number) {

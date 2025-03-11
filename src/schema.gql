@@ -419,7 +419,7 @@ type Query {
   child(id: Int!): Child!
   paginateChildren(input: PaginateChildrenInput!): ChildPage!
   user: [User!]!
-  findOneUser(id: Int!): User!
+  findOneUser(id: String!): User!
   ageRange(id: Int!): AgeRange!
   allergy(id: Int!): Allergy!
   camp: [Camp!]!
@@ -529,6 +529,7 @@ type Mutation {
   createCampRegistration(input: CreateCampRegistrationInput!): JSONObject!
   completeCampRegistration(input: UpdateCampRegistrationInput!): JSONObject!
   removeCampRegistration(id: Int!): CampRegistration!
+  processCampRegistration(input: ProcessCampRegistration!): JSONObject!
   createCampVariantRegistration(createCampVariantRegistrationInput: CreateCampVariantRegistrationInput!): CampVariantRegistration!
   updateCampVariantRegistration(updateCampVariantRegistrationInput: UpdateCampVariantRegistrationInput!): CampVariantRegistration!
   removeCampVariantRegistration(id: Int!): CampVariantRegistration!
@@ -774,6 +775,11 @@ input UpdateCampRegistrationInput {
   campVariantRegistrations: [CreateCampVariantRegistrationInput!]
   id: Int!
   variantsToDelete: [Int!]
+}
+
+input ProcessCampRegistration {
+  campRegistrationId: Int!
+  paymentMethod: PaymentMethod
 }
 
 input UpdateCampVariantRegistrationInput {

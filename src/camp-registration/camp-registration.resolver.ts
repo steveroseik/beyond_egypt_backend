@@ -8,6 +8,7 @@ import { UserType } from 'support/enums';
 import { GraphQLJSONObject } from 'graphql-type-json';
 import { CampRegistrationPage } from './entities/camp-registration-page.entity';
 import { PaginateCampRegistrationsInput } from './dto/paginate-camp-registrations.input';
+import { ProcessCampRegistration } from './dto/process-camp-registration.input';
 
 @Resolver(() => CampRegistration)
 export class CampRegistrationResolver {
@@ -78,5 +79,18 @@ export class CampRegistrationResolver {
       input.parentIds = [id];
     }
     return this.campRegistrationService.paginateCampRegistrations(input);
+  }
+
+  @Mutation(() => GraphQLJSONObject)
+  processCampRegistration(
+    @Args('input') input: ProcessCampRegistration,
+    @CurrentUser('id') userId: string,
+    @CurrentUser('type') type: UserType,
+  ) {
+    return this.campRegistrationService.processCampRegistration(
+      input,
+      userId,
+      type,
+    );
   }
 }
