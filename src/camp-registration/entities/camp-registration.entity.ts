@@ -91,4 +91,8 @@ export class CampRegistration {
   )
   @Field(() => [CampVariantRegistration])
   campVariantRegistrations: CampVariantRegistration[];
+
+  @Column('int', { name: 'capacity', nullable: true })
+  @Field({ nullable: true })
+  capacity?: number;
 }
