@@ -21,6 +21,9 @@ import { GraphQLJSONObject } from 'graphql-type-json';
 import { CampVariant } from 'src/camp-variant/entities/camp-variant.entity';
 import { Location } from 'src/location/entities/location.entity';
 import { Public } from 'src/auth/decorators/publicDecorator';
+import { CampRegistration } from 'src/camp-registration/entities/camp-registration.entity';
+import { CurrentUser } from 'src/auth/decorators/currentUserDecorator';
+import { UserType } from 'support/enums';
 
 @Resolver(() => Camp)
 export class CampResolver {
@@ -97,5 +100,16 @@ export class CampResolver {
     @Context() { loaders }: { loaders: DataloaderRegistry },
   ) {
     return loaders.LocationsLoader.load(parent.locationId);
+  }
+
+  @ResolveField(() => CampRegistration, { nullable: true })
+  campRegistration(
+    @Parent() parent: Camp,
+    @CurrentUser('id') userId: string,
+    @CurrentUser('type') type: UserType,
+  ) {
+    return type == UserType.parent
+      ? this.campService.findLatestCampRegistration(userId, parent.id)
+      : null;
   }
 }

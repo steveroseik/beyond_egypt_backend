@@ -11,6 +11,8 @@ import { File } from 'src/file/entities/file.entity';
 import { AgeRange } from 'src/age-range/entities/age-range.entity';
 import { CampVariant } from 'src/camp-variant/entities/camp-variant.entity';
 import { CreateCampVariantInput } from 'src/camp-variant/dto/create-camp-variant.input';
+import { CampRegistration } from 'src/camp-registration/entities/camp-registration.entity';
+import { CampRegistrationStatus } from 'support/enums';
 
 @Injectable()
 export class CampService {
@@ -262,5 +264,12 @@ export class CampService {
     });
 
     return paginator.paginate(queryBuilder);
+  }
+
+  async findLatestCampRegistration(parentId: string, campId: number) {
+    return this.dataSource.manager.findOne(CampRegistration, {
+      where: { parentId, campId, status: CampRegistrationStatus.idle },
+      order: { createdAt: 'DESC' },
+    });
   }
 }
