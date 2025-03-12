@@ -774,14 +774,13 @@ input CreateCampVariantRegistrationInput {
 }
 
 input UpdateCampRegistrationInput {
+  id: Int!
   parentId: String
-  campId: Int
+  variantsToDelete: [Int!]
   oneDayPrice: Decimal
   totalPrice: Decimal
   paymentMethod: PaymentMethod
   campVariantRegistrations: [CreateCampVariantRegistrationInput!]
-  id: Int!
-  variantsToDelete: [Int!]
 }
 
 input ProcessCampRegistration {

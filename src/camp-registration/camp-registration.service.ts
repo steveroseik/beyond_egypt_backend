@@ -313,8 +313,6 @@ export class CampRegistrationService {
     if (!input.campVariantRegistrations?.length)
       throw new Error('Set at least one week for registration');
 
-    if (!input.paymentMethod) throw new Error('Payment method is required');
-
     const price = await this.handleCampVariantRegistrations(
       input.campVariantRegistrations,
       input.id,
