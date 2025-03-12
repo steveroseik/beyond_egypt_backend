@@ -41,3 +41,6 @@ firebase-config.ts
 # DOTENV
 .env
 
+# DATASOURCE
+db/data-source.ts
+
