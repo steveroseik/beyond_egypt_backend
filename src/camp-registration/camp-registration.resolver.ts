@@ -1,4 +1,13 @@
-import { Resolver, Query, Mutation, Args, Int } from '@nestjs/graphql';
+import {
+  Resolver,
+  Query,
+  Mutation,
+  Args,
+  Int,
+  ResolveField,
+  Parent,
+  Context,
+} from '@nestjs/graphql';
 import { CampRegistrationService } from './camp-registration.service';
 import { CampRegistration } from './entities/camp-registration.entity';
 import { CreateCampRegistrationInput } from './dto/create-camp-registration.input';
@@ -9,6 +18,8 @@ import { GraphQLJSONObject } from 'graphql-type-json';
 import { CampRegistrationPage } from './entities/camp-registration-page.entity';
 import { PaginateCampRegistrationsInput } from './dto/paginate-camp-registrations.input';
 import { ProcessCampRegistration } from './dto/process-camp-registration.input';
+import { CampVariantRegistration } from 'src/camp-variant-registration/entities/camp-variant-registration.entity';
+import { DataloaderRegistry } from 'src/dataloaders/dataloaderRegistry';
 
 @Resolver(() => CampRegistration)
 export class CampRegistrationResolver {
@@ -91,6 +102,17 @@ export class CampRegistrationResolver {
       input,
       userId,
       type,
+    );
+  }
+
+  @ResolveField(() => [CampVariantRegistration], { nullable: true })
+  campVariantRegistrations(
+    @Parent() campRegistration: CampRegistration,
+    @Context() { loaders }: { loaders: DataloaderRegistry },
+  ) {
+    return (
+      campRegistration.campVariantRegistrations ??
+      loaders.CampVariantRegistrationsDataLoader.load(campRegistration.campId)
     );
   }
 }

@@ -620,7 +620,7 @@ export class CampRegistrationService {
     }
 
     const tenMinutesFromNow = new Date(
-      moment.tz('Africa/Cairo').add(10, 'hours').format('YYYY-MM-DD HH:mm:ss'),
+      moment.tz('Africa/Cairo').add(1, 'minutes').format('YYYY-MM-DD HH:mm:ss'),
     );
 
     const payloadData: PaymentPayload = {

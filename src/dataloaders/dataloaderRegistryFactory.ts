@@ -6,6 +6,7 @@ import { CampVariantService } from 'src/camp-variant/camp-variant.service';
 import { LocationService } from 'src/location/location.service';
 import { ChildService } from 'src/child/child.service';
 import { ParentAdditionalService } from 'src/parent-additional/parent-additional.service';
+import { CampVariantRegistrationService } from 'src/camp-variant-registration/camp-variant-registration.service';
 
 @Injectable()
 export class DataloaderRegistryFactory {
@@ -16,6 +17,7 @@ export class DataloaderRegistryFactory {
     private locationService: LocationService,
     private childService: ChildService,
     private parentAdditionalService: ParentAdditionalService,
+    private campVariantRegistrationService: CampVariantRegistrationService,
   ) {}
 
   public create() {
@@ -26,6 +28,7 @@ export class DataloaderRegistryFactory {
       this.locationService,
       this.childService,
       this.parentAdditionalService,
+      this.campVariantRegistrationService,
     );
   }
 }
