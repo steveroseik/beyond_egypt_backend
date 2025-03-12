@@ -104,13 +104,12 @@ export class CampResolver {
   }
 
   @ResolveField(() => CampRegistration, { nullable: true })
-  campRegistration(
+  parentCampRegistration(
     @Parent() parent: Camp,
-    @CurrentUser('id') userId: string,
-    @CurrentUser('type') type: UserType,
+    @Args('parentId') parentId: string,
   ) {
-    return type == UserType.parent
-      ? this.campService.findLatestCampRegistration(userId, parent.id)
+    return parentId
+      ? this.campService.findLatestCampRegistration(parentId, parent.id)
       : null;
   }
 }
