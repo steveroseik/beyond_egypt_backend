@@ -334,6 +334,9 @@ export class CampRegistrationService {
     return {
       success: true,
       message: 'Camp registration completed successfully',
+      data: {
+        totalAmount: price,
+      },
     };
   }
 
