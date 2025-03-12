@@ -39,6 +39,7 @@ export class CampResolver {
     return this.campService.findAll();
   }
 
+  @Public()
   @Query(() => Camp)
   findOneCamp(@Args('id', { type: () => Int }) id: number) {
     return this.campService.findOne(id);
