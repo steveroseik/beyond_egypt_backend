@@ -1,4 +1,4 @@
-import DataLoader from 'dataloader';
+import * as DataLoader from 'dataloader';
 import { Meal } from 'src/meal/entities/meal.entity';
 import { MealService } from 'src/meal/meal.service';
 
