@@ -45,7 +45,7 @@ type CampRegistration {
   createdAt: DateTime!
   lastModified: DateTime!
   deletedAt: DateTime
-  campVariantRegistrations: [CampVariantRegistration!]!
+  campVariantRegistrations: [CampVariantRegistration!]
   payments: [RegistrationPayment!]!
 }
 

@@ -105,8 +105,9 @@ export class CampRegistration {
   @OneToMany(
     () => CampVariantRegistration,
     (campVariantRegistration) => campVariantRegistration.campRegistration,
+    { nullable: true },
   )
-  @Field(() => [CampVariantRegistration])
+  @Field(() => [CampVariantRegistration], { nullable: true })
   campVariantRegistrations: CampVariantRegistration[];
 
   @OneToMany(
