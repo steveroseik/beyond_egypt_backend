@@ -2,6 +2,7 @@ import { ObjectType, Field, Int } from '@nestjs/graphql';
 import Decimal from 'decimal.js';
 import { CampVariantRegistration } from 'src/camp-variant-registration/entities/camp-variant-registration.entity';
 import { Discount } from 'src/discount/entities/discount.entity';
+import { RegistrationPayment } from 'src/registration-payment/entities/registration-payment.entity';
 import { CampRegistrationStatus, PaymentMethod } from 'support/enums';
 import { GraphqlDecimal } from 'support/scalars';
 import {
@@ -52,9 +53,25 @@ export class CampRegistration {
   @Column('enum', {
     name: 'paymentMethod',
     enum: PaymentMethod,
+    nullable: true,
   })
-  @Field(() => PaymentMethod)
-  paymentMethod: PaymentMethod;
+  @Field(() => PaymentMethod, { nullable: true })
+  paymentMethod?: PaymentMethod;
+
+  @Column('int', { name: 'capacity', nullable: true })
+  @Field({ nullable: true })
+  capacity?: number;
+
+  @Column('bit', {
+    name: 'paid',
+    default: false,
+    transformer: {
+      to: (value: boolean) => value,
+      from: (value: Buffer) => value && value[0] === 1,
+    },
+  })
+  @Field()
+  paid: boolean;
 
   @Column('enum', {
     name: 'status',
@@ -92,7 +109,10 @@ export class CampRegistration {
   @Field(() => [CampVariantRegistration])
   campVariantRegistrations: CampVariantRegistration[];
 
-  @Column('int', { name: 'capacity', nullable: true })
-  @Field({ nullable: true })
-  capacity?: number;
+  @OneToMany(
+    () => RegistrationPayment,
+    (registrationPayment) => registrationPayment.campRegistration,
+  )
+  @Field(() => [RegistrationPayment])
+  payments: RegistrationPayment[];
 }

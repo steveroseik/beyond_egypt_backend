@@ -38,6 +38,7 @@ import { ApolloServerPluginLandingPageLocalDefault } from '@apollo/server/plugin
 import { SchoolModule } from './school/school.module';
 import { AwsBucketModule } from './aws-bucket/aws-bucket.module';
 import { RegistrationReserveModule } from './registration-reserve/registration-reserve.module';
+import { FawryModule } from './fawry/fawry.module';
 
 @Module({
   imports: [
@@ -122,6 +123,7 @@ import { RegistrationReserveModule } from './registration-reserve/registration-r
     SchoolModule,
     AwsBucketModule,
     RegistrationReserveModule,
+    FawryModule,
   ],
   controllers: [AppController],
   providers: [

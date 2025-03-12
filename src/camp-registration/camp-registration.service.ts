@@ -4,7 +4,7 @@ import { UpdateCampRegistrationInput } from './dto/update-camp-registration.inpu
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, In, QueryRunner, Repository } from 'typeorm';
 import { CampRegistration } from './entities/camp-registration.entity';
-import { CampRegistrationStatus, UserType } from 'support/enums';
+import { CampRegistrationStatus, PaymentMethod, UserType } from 'support/enums';
 import { CampVariantRegistration } from 'src/camp-variant-registration/entities/camp-variant-registration.entity';
 import { CreateCampVariantRegistrationInput } from 'src/camp-variant-registration/dto/create-camp-variant-registration.input';
 import { User } from 'src/user/entities/user.entity';
@@ -15,7 +15,12 @@ import { on } from 'events';
 import { PaginateCampRegistrationsInput } from './dto/paginate-camp-registrations.input';
 import { buildPaginator } from 'typeorm-cursor-pagination';
 import { ProcessCampRegistration } from './dto/process-camp-registration.input';
-
+import { PaymentPayload } from 'src/fawry/models/payment.payload';
+import { RegistrationPayment } from 'src/registration-payment/entities/registration-payment.entity';
+import * as moment from 'moment-timezone';
+import { generateFawryPaymentUrl } from 'src/fawry/generate/payment.generate';
+import { RegistrationReserve } from 'src/registration-reserve/entities/registration-reserve.entity';
+import { CreateRegistrationReserveInput } from 'src/registration-reserve/dto/create-registration-reserve.input';
 @Injectable()
 export class CampRegistrationService {
   constructor(
@@ -186,7 +191,7 @@ export class CampRegistrationService {
     }
 
     for (const cv of campVariantVacancies) {
-      if (cv.capacity < campVariants.get(cv.id)) {
+      if (cv.remainingCapacity < campVariants.get(cv.id)) {
         throw new Error(`Not enough vacancies for ${cv.name}`);
       }
     }
@@ -206,14 +211,12 @@ export class CampRegistrationService {
     }
 
     return this.calculateCampVariantRegistrationPrice(
-      campVariantRegistrations,
       campVariantVacancies,
       campVariants,
     );
   }
 
   calculateCampVariantRegistrationPrice(
-    campVariantRegistrations: CreateCampVariantRegistrationInput[],
     campVariants: CampVariant[],
     campVariantsCount: Map<number, number>,
   ): string {
@@ -482,21 +485,219 @@ export class CampRegistrationService {
     userId: string,
     userType: UserType,
   ) {
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
     try {
-      const campRegistration = this.repo.findOne({
+      const campRegistration = await this.repo.findOne({
         where: { id: input.campRegistrationId },
+        relations: ['campVariantRegistrations', 'payments'],
       });
 
       if (!campRegistration) {
-        throw new Error('Camp registration not found');
+        throw new Error('Camp registration not found or incomplete');
+      }
+
+      if (!campRegistration.campVariantRegistrations?.length) {
+        throw Error('Incomplete camp, add at least one week');
+      }
+
+      //TODO: handle two scenarios
+      // first: if payment is secondary and the difference is positive
+      // second: if the payment is secondary and the difference is negative
+
+      /// basic case
+      /// if this is the first payment
+      if (!campRegistration?.payments?.length) {
+        return await this.handlePayment(
+          campRegistration,
+          queryRunner,
+          userId,
+          input.paymentMethod,
+        );
       }
     } catch (e) {
+      await queryRunner.rollbackTransaction();
       console.log(e);
       return {
         success: false,
         message: e.message,
       };
+    } finally {
+      queryRunner.release();
     }
+  }
+
+  async handlePayment(
+    campRegistration: CampRegistration,
+    queryRunner: QueryRunner,
+    userId: string,
+    paymentMethod?: PaymentMethod,
+  ) {
+    paymentMethod ??= campRegistration.paymentMethod;
+
+    if (!paymentMethod) throw Error('Select a payment method first');
+
+    const campVariantVacancies = new Map<number, number>();
+
+    for (const variant of campRegistration.campVariantRegistrations) {
+      if (campVariantVacancies.has(variant.campVariantId)) {
+        campVariantVacancies.set(
+          variant.campVariantId,
+          campVariantVacancies.get(variant.campVariantId) + 1,
+        );
+      } else {
+        campVariantVacancies.set(variant.campVariantId, 1);
+      }
+    }
+
+    const campVariantIds = Array.from(campVariantVacancies.keys());
+
+    // validate if there are enough vacancies
+    const campVariants = await queryRunner.manager.find(CampVariant, {
+      where: { id: In(campVariantIds) },
+      lock: { mode: 'pessimistic_write' },
+    });
+
+    if (campVariants.length !== campVariantIds.length)
+      throw Error('Missing camp variants');
+
+    for (const cv of campVariants) {
+      if (campVariantVacancies.get(cv.id) > cv.remainingCapacity) {
+        throw new Error(`Not enough vacancies for ${cv.name} (${cv.campId})`);
+      }
+    }
+
+    switch (paymentMethod) {
+      case PaymentMethod.cash:
+        throw Error('Unimplemented, contact steven');
+      case PaymentMethod.instapay:
+        throw Error('Unimplemented, contact steven');
+      case PaymentMethod.fawry:
+        return await this.handleFawryPayment(
+          campRegistration,
+          campVariants,
+          campVariantVacancies,
+          queryRunner,
+          userId,
+        );
+    }
+  }
+
+  async handleFawryPayment(
+    campRegistration: CampRegistration,
+    campVariants: CampVariant[],
+    campVariantVacancies: Map<number, number>,
+    queryRunner: QueryRunner,
+    userId: string,
+  ) {
+    //const find parent
+    const parent = await queryRunner.manager.findOne(User, {
+      where: { id: campRegistration.parentId },
+    });
+
+    if (!parent) {
+      throw Error('Failed to find parent');
+    }
+
+    /// create payment
+    const totalAmount = this.calculateCampVariantRegistrationPrice(
+      campVariants,
+      campVariantVacancies,
+    );
+
+    const payment = await queryRunner.manager.save(RegistrationPayment, {
+      campRegistrationId: campRegistration.id,
+      amount: totalAmount,
+      paymentMethod: PaymentMethod.fawry,
+      userId,
+    });
+
+    if (!payment) {
+      throw Error('Failed to create payment record');
+    }
+
+    const tenMinutesFromNow = new Date(
+      moment.tz('Africa/Cairo').add(10, 'hours').format('YYYY-MM-DD HH:mm:ss'),
+    );
+
+    const payloadData: PaymentPayload = {
+      merchantRefNum: payment.id.toString(),
+      customerProfileId: parent.id,
+      customerEmail: parent.email,
+      customerMobile: parent.phone,
+      customerName: parent.name,
+      authCaptureModePayment: false,
+      paymentExpiry: tenMinutesFromNow.getTime().toString(),
+      language: 'en-gb',
+      chargeItems: [
+        {
+          itemId: campRegistration.id.toString(),
+          description: 'Camp Registration Payment',
+          price: totalAmount,
+          quantity: 1,
+        },
+      ],
+      returnUrl: 'http://localhost:8003/fawry/return',
+    };
+
+    const paymentUrl = await generateFawryPaymentUrl(payloadData);
+
+    if (!paymentUrl) throw Error('Payment url received empty');
+
+    payment.url = paymentUrl;
+    const updatePayment = await queryRunner.manager.update(
+      RegistrationPayment,
+      { id: payment.id },
+      { url: paymentUrl },
+    );
+    if (updatePayment.affected == 0) {
+      throw Error('Failed to update registration payment');
+    }
+
+    /// reserve registrations
+    const reservations: CreateRegistrationReserveInput[] = [];
+    campVariantVacancies.forEach((value, key) => {
+      reservations.push({
+        campRegistrationId: campRegistration.id,
+        campVariantId: key,
+        count: value,
+        paymentId: payment.id,
+        expirationDate: tenMinutesFromNow,
+        userId,
+      });
+    });
+
+    const reserve = await queryRunner.manager.insert(
+      RegistrationReserve,
+      reservations,
+    );
+
+    if (reserve.raw.affectedRows !== reservations.length)
+      throw Error('Failed to reserve registrations');
+
+    // deduct vacancies
+    for (const [key, value] of campVariantVacancies) {
+      const update = await queryRunner.manager.update(
+        CampVariant,
+        { id: key },
+        { remainingCapacity: () => `remainingCapacity - ${value}` },
+      );
+      if (update.affected !== 1) {
+        const campVariant = campVariants.find((e) => e.id == key);
+        throw Error(
+          `Failed to deduct capacity from ${campVariant.name} (${campRegistration.id})`,
+        );
+      }
+    }
+
+    await queryRunner.commitTransaction();
+    return {
+      success: true,
+      payment: payment,
+      expiration: tenMinutesFromNow,
+    };
   }
 
   remove(id: number) {

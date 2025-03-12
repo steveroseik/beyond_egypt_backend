@@ -14,6 +14,7 @@ import {
   ManyToOne,
   JoinColumn,
   OneToMany,
+  BeforeInsert,
 } from 'typeorm';
 
 @ObjectType()
@@ -34,6 +35,10 @@ export class CampVariant {
   @Column('decimal', { name: 'price', nullable: true, precision: 10, scale: 2 })
   @Field(() => GraphqlDecimal, { nullable: true })
   price?: Decimal;
+
+  @Column('int', { name: 'remainingCapacity' })
+  @Field()
+  remainingCapacity: number;
 
   @Column('int', { name: 'capacity' })
   @Field()
@@ -83,4 +88,11 @@ export class CampVariant {
   )
   @Field(() => [CampVariantRegistration])
   campVariantRegistrations: CampVariantRegistration[];
+
+  @BeforeInsert()
+  setDefaultCurCapacity() {
+    if (!this.remainingCapacity) {
+      this.remainingCapacity = this.capacity;
+    }
+  }
 }

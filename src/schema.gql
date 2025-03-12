@@ -2,23 +2,51 @@
 # THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
 # ------------------------------------------------------
 
-type CampRegistration {
-  parentId: String!
-  campId: Int!
-  oneDayPrice: Decimal
-  totalPrice: Decimal
+type RegistrationPayment {
+  id: Int!
+  campRegistrationId: Int!
   paymentMethod: PaymentMethod!
-  status: CampRegistrationStatus!
+  url: String!
+  status: PaymentStatus!
+  amount: Decimal!
+  receiptId: Int
+  userId: String!
   createdAt: DateTime!
-  lastModified: DateTime!
-  deletedAt: DateTime
-  campVariantRegistrations: [CampVariantRegistration!]!
+  campRegistration: CampRegistration!
 }
 
 enum PaymentMethod {
   fawry
   instapay
   cash
+}
+
+enum PaymentStatus {
+  pending
+  paid
+  failed
+  refunded
+}
+
+"""
+A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date-time format.
+"""
+scalar DateTime
+
+type CampRegistration {
+  parentId: String!
+  campId: Int!
+  oneDayPrice: Decimal
+  totalPrice: Decimal
+  paymentMethod: PaymentMethod
+  capacity: Int
+  paid: Boolean!
+  status: CampRegistrationStatus!
+  createdAt: DateTime!
+  lastModified: DateTime!
+  deletedAt: DateTime
+  campVariantRegistrations: [CampVariantRegistration!]!
+  payments: [RegistrationPayment!]!
 }
 
 enum CampRegistrationStatus {
@@ -28,11 +56,6 @@ enum CampRegistrationStatus {
   cancelled
   modified
 }
-
-"""
-A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date-time format.
-"""
-scalar DateTime
 
 type Allergy {
   id: Int!
@@ -102,6 +125,7 @@ type CampVariant {
   campId: Int!
   name: String
   price: Decimal
+  remainingCapacity: Int!
   capacity: Int!
   startDate: DateTime!
   endDate: DateTime!
@@ -206,6 +230,37 @@ type CampPage {
 
 """Cursor scalar type for pagination"""
 scalar GraphqlCursor
+
+type User {
+  id: String!
+  name: String!
+  type: UserType!
+  email: String!
+  phone: String
+  occupation: String
+  createdAt: DateTime!
+  lastModified: DateTime!
+  deletedAt: DateTime
+  parentAdditionals: [ParentAdditional!]!
+  children: [Child!]!
+}
+
+enum UserType {
+  admin
+  parent
+  customerService
+}
+
+type RegistrationReserve {
+  id: Int!
+  campRegistrationId: Int!
+  campVariantId: Int!
+  count: Int!
+  paymentId: Int!
+  userId: String!
+  expirationDate: DateTime!
+  createdAt: DateTime!
+}
 
 type CampRegistrationPage {
   cursor: GraphqlCursor!
@@ -320,48 +375,10 @@ type RegistrationAttendance {
   deletedAt: DateTime
 }
 
-type RegistrationPayment {
-  id: Int!
-  campRegistrationId: Int!
-  paymentMethod: PaymentMethod!
-  status: PaymentStatus!
-  total: Decimal!
-  receiptId: Int
-  userId: Int!
-  createdAt: DateTime!
-}
-
-enum PaymentStatus {
-  pending
-  paid
-  failed
-  refunded
-}
-
 type Settings {
   id: Int!
   sizeChartFileId: Int
   coachForm: String
-}
-
-type User {
-  id: String!
-  name: String!
-  type: UserType!
-  email: String!
-  phone: String
-  occupation: String
-  createdAt: DateTime!
-  lastModified: DateTime!
-  deletedAt: DateTime
-  parentAdditionals: [ParentAdditional!]!
-  children: [Child!]!
-}
-
-enum UserType {
-  admin
-  parent
-  customerService
 }
 
 type UserAuthResponse {
@@ -390,17 +407,6 @@ type School {
 type SchoolPage {
   cursor: GraphqlCursor!
   data: [School!]!
-}
-
-type RegistrationReserve {
-  id: Int!
-  campRegistrationId: Int!
-  campVariantId: Int!
-  count: Int!
-  paymentId: Int!
-  userId: String!
-  expirationDate: DateTime!
-  createdAt: DateTime!
 }
 
 """Decimal custom scalar type"""
@@ -901,12 +907,20 @@ input UpdateSchoolInput {
 }
 
 input CreateRegistrationReserveInput {
-  """Example field (placeholder)"""
-  exampleField: Int!
+  campRegistrationId: Int!
+  campVariantId: Int!
+  count: Int!
+  paymentId: Int!
+  userId: String!
+  expirationDate: DateTime!
 }
 
 input UpdateRegistrationReserveInput {
-  """Example field (placeholder)"""
-  exampleField: Int
+  campRegistrationId: Int
+  campVariantId: Int
+  count: Int
+  paymentId: Int
+  userId: String
+  expirationDate: DateTime
   id: Int!
 }

@@ -1,11 +1,14 @@
 import { ObjectType, Field, Int } from '@nestjs/graphql';
 import Decimal from 'decimal.js';
+import { CampRegistration } from 'src/camp-registration/entities/camp-registration.entity';
 import { PaymentMethod, PaymentStatus } from 'support/enums';
 import { GraphqlDecimal } from 'support/scalars';
 import {
   Column,
   CreateDateColumn,
   Entity,
+  JoinColumn,
+  ManyToOne,
   PrimaryGeneratedColumn,
 } from 'typeorm';
 
@@ -27,6 +30,10 @@ export class RegistrationPayment {
   @Field(() => PaymentMethod)
   paymentMethod: PaymentMethod;
 
+  @Column('varchar', { name: 'url', nullable: true })
+  @Field()
+  url: string;
+
   @Column('enum', {
     name: 'status',
     enum: PaymentStatus,
@@ -35,17 +42,17 @@ export class RegistrationPayment {
   @Field(() => PaymentStatus)
   status: PaymentStatus;
 
-  @Column('decimal', { name: 'total', precision: 10, scale: 2 })
+  @Column('decimal', { name: 'amount', precision: 10, scale: 2 })
   @Field(() => GraphqlDecimal)
-  total: Decimal;
+  amount: Decimal;
 
   @Column('int', { name: 'receiptId', nullable: true })
   @Field({ nullable: true })
   receiptId?: number;
 
-  @Column('int', { name: 'userId' })
+  @Column('varchar', { name: 'userId' })
   @Field()
-  userId: number;
+  userId: string;
 
   @CreateDateColumn({
     precision: 3,
@@ -54,4 +61,12 @@ export class RegistrationPayment {
   })
   @Field()
   createdAt: Date;
+
+  @ManyToOne(
+    () => CampRegistration,
+    (campRegistration) => campRegistration.payments,
+  )
+  @JoinColumn({ name: 'campRegistrationId', referencedColumnName: 'id' })
+  @Field(() => CampRegistration)
+  campRegistration: CampRegistration;
 }
