@@ -18,6 +18,7 @@ import CampVariantRegistrationsDataLoader from './loaders/CampVariantRegistratio
 import { CampVariantRegistrationService } from 'src/camp-variant-registration/camp-variant-registration.service';
 import { CampService } from 'src/camp/camp.service';
 import EventCampsDataLoader from './loaders/eventCampsDataLoader';
+import EventFilesDataLoader from './loaders/eventFiles.loader';
 
 export class DataloaderRegistry {
   private cache: Record<string, any> = {};
@@ -105,6 +106,12 @@ export class DataloaderRegistry {
   public get EventCampsDataLoader() {
     return this.get('EventCampsDataLoader', () =>
       EventCampsDataLoader.create(this.campService),
+    );
+  }
+
+  public get EventFilesDataLoader() {
+    return this.get('EventFilesDataLoader', () =>
+      EventFilesDataLoader.create(this.fileService),
     );
   }
 

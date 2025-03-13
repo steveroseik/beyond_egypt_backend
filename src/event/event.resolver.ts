@@ -17,6 +17,7 @@ import { PaginateEventsInput } from './dto/paginate-events.input';
 import { Public } from 'src/auth/decorators/publicDecorator';
 import { Camp } from 'src/camp/entities/camp.entity';
 import { DataloaderRegistry } from 'src/dataloaders/dataloaderRegistry';
+import { File } from 'src/file/entities/file.entity';
 
 @Resolver(() => Event)
 export class EventResolver {
@@ -60,5 +61,23 @@ export class EventResolver {
     @Context() { loaders }: { loaders: DataloaderRegistry },
   ) {
     return event.camps ?? loaders.EventCampsDataLoader.load(event.id);
+  }
+
+  @ResolveField(() => [File], { nullable: true })
+  thumbnail(
+    @Parent() event: Event,
+    @Context() { loaders }: { loaders: DataloaderRegistry },
+  ) {
+    return event.thumbnailId
+      ? loaders.FilesLoader.load(event.thumbnailId)
+      : null;
+  }
+
+  @ResolveField(() => [File], { nullable: true })
+  files(
+    @Parent() event: Event,
+    @Context() { loaders }: { loaders: DataloaderRegistry },
+  ) {
+    return loaders.EventFilesDataLoader.load(event.id);
   }
 }

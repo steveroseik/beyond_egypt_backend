@@ -169,6 +169,7 @@ type Event {
   earlyBirdId: Int
   files: [File!]!
   camps: [Camp!]
+  thumbnail: [File!]
 }
 
 type Location {

@@ -43,4 +43,12 @@ export class FileService {
       .where('camp.id IN (:...keys)', { keys })
       .getMany();
   }
+
+  findFilesByEventIds(keys: readonly number[]) {
+    return this.repo
+      .createQueryBuilder('file')
+      .leftJoin('file.events', 'event')
+      .where('event.id IN (:...keys)', { keys })
+      .getMany();
+  }
 }
