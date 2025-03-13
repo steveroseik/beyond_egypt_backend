@@ -49,9 +49,7 @@ export class FawryReturnDto {
   @Type(() => Number)
   taxes: number;
 
-  @IsNumber()
-  @Type(() => Number)
-  statusCode: number;
+  statusCode: string;
 
   @IsString()
   statusDescription: string;

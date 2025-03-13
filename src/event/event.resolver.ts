@@ -5,6 +5,7 @@ import { CreateEventInput } from './dto/create-event.input';
 import { UpdateEventInput } from './dto/update-event.input';
 import { EventPage } from './entities/event-page.entity';
 import { PaginateEventsInput } from './dto/paginate-events.input';
+import { Public } from 'src/auth/decorators/publicDecorator';
 
 @Resolver(() => Event)
 export class EventResolver {
@@ -35,6 +36,7 @@ export class EventResolver {
     return this.eventService.remove(id);
   }
 
+  @Public()
   @Query(() => EventPage)
   paginateEvents(@Args('input') input: PaginateEventsInput) {
     return this.eventService.paginate(input);

@@ -126,3 +126,15 @@ export async function generateFawryPaymentUrl(
     throw new Error(`Failure in url generation: ${error.message}`);
   }
 }
+
+export function generateStatusQuerySignature(merchantRefNum: string): string {
+  const dataToSign =
+    merchantRefNum +
+    process.env.FAWRY_MERCHANT_ID +
+    process.env.FAWRY_SECURE_KEY;
+  const signature = crypto
+    .createHash('sha256')
+    .update(dataToSign)
+    .digest('hex');
+  return signature;
+}
