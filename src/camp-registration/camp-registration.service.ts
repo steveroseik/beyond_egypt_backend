@@ -619,12 +619,7 @@ export class CampRegistrationService {
       throw Error('Failed to create payment record');
     }
 
-    const tenMinutesFromNow = moment
-      .tz('Africa/Cairo')
-      .add(1, 'minute')
-      .toDate();
-
-    const utc = moment.utc().add(1, 'minute');
+    const tenMinutesFromNow = moment.tz('Africa/Cairo').add(1, 'minute');
 
     const payloadData: PaymentPayload = {
       merchantRefNum: payment.id.toString(),
@@ -633,7 +628,7 @@ export class CampRegistrationService {
       customerMobile: parent.phone,
       customerName: parent.name,
       authCaptureModePayment: false,
-      paymentExpiry: '1741962439546',
+      paymentExpiry: `${tenMinutesFromNow.valueOf()}`,
       language: 'en-gb',
       chargeItems: [
         {
@@ -668,7 +663,7 @@ export class CampRegistrationService {
         campVariantId: key,
         count: value,
         paymentId: payment.id,
-        expirationDate: tenMinutesFromNow,
+        expirationDate: tenMinutesFromNow.toDate(),
         userId,
       });
     });

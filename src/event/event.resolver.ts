@@ -63,7 +63,7 @@ export class EventResolver {
     return event.camps ?? loaders.EventCampsDataLoader.load(event.id);
   }
 
-  @ResolveField(() => [File], { nullable: true })
+  @ResolveField(() => File, { nullable: true })
   thumbnail(
     @Parent() event: Event,
     @Context() { loaders }: { loaders: DataloaderRegistry },
