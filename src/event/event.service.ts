@@ -22,7 +22,7 @@ export class EventService {
   }
 
   findOne(id: number) {
-    return `This action returns a #${id} event`;
+    return this.eventRepository.findOne({ where: { id } });
   }
 
   update(id: number, updateEventInput: UpdateEventInput) {

@@ -1,4 +1,5 @@
 import { ObjectType, Field, Int } from '@nestjs/graphql';
+import { Camp } from 'src/camp/entities/camp.entity';
 import { File } from 'src/file/entities/file.entity';
 import {
   Column,
@@ -7,6 +8,7 @@ import {
   Entity,
   JoinTable,
   ManyToMany,
+  OneToMany,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
@@ -77,4 +79,8 @@ export class Event {
   })
   @Field(() => [File])
   files: File[];
+
+  @OneToMany(() => Camp, (camp) => camp.event, { nullable: true })
+  @Field(() => [Camp], { nullable: true })
+  camps?: Camp[];
 }

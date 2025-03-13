@@ -136,20 +136,6 @@ type CampVariant {
   campVariantRegistrations: [CampVariantRegistration!]!
 }
 
-type Event {
-  id: Int!
-  name: String!
-  description: String!
-  thumbnailId: Int!
-  startDate: DateTime!
-  endDate: DateTime!
-  createdAt: DateTime!
-  lastModified: DateTime!
-  deletedAt: DateTime
-  earlyBirdId: Int
-  files: [File!]!
-}
-
 type File {
   id: Int!
   name: String!
@@ -168,6 +154,21 @@ enum FileType {
   pdf
   doc
   other
+}
+
+type Event {
+  id: Int!
+  name: String!
+  description: String!
+  thumbnailId: Int!
+  startDate: DateTime!
+  endDate: DateTime!
+  createdAt: DateTime!
+  lastModified: DateTime!
+  deletedAt: DateTime
+  earlyBirdId: Int
+  files: [File!]!
+  camps: [Camp!]
 }
 
 type Location {
@@ -209,6 +210,7 @@ type Camp {
   meals: [Meal!]
   campVariants: [CampVariant!]
   location: Location!
+  event: Event
   thumbnail: File!
   parentCampRegistration(parentId: String!): CampRegistration
 }
@@ -426,19 +428,20 @@ type Query {
   child(id: Int!): Child!
   paginateChildren(input: PaginateChildrenInput!): ChildPage!
   campVariantRegistration(id: Int!): CampVariantRegistration!
+  camp: [Camp!]!
+  findOneCamp(id: Int!): Camp!
+  paginateCamps(input: PaginateCampsInput!): CampPage!
   user: [User!]!
   findOneUser(id: String!): User!
   ageRange(id: Int!): AgeRange!
   allergy(id: Int!): Allergy!
-  camp: [Camp!]!
-  findOneCamp(id: Int!): Camp!
-  paginateCamps(input: PaginateCampsInput!): CampPage!
   campRegistration(id: Int!): CampRegistration!
   paginateCampRegistrations(input: PaginateCampRegistrationsInput!): CampRegistrationPage!
   childReport(id: Int!): ChildReport!
   childReportHistory(id: Int!): ChildReportHistory!
   discount(id: Int!): Discount!
-  event(id: Int!): Event!
+  event: [Event!]!
+  findOneEvent(id: Int!): Event!
   paginateEvents(input: PaginateEventsInput!): EventPage!
   eventFile(id: Int!): EventFile!
   registrationAttendance(id: Int!): RegistrationAttendance!
@@ -522,6 +525,9 @@ type Mutation {
   createCampVariantRegistration(createCampVariantRegistrationInput: CreateCampVariantRegistrationInput!): CampVariantRegistration!
   updateCampVariantRegistration(updateCampVariantRegistrationInput: UpdateCampVariantRegistrationInput!): CampVariantRegistration!
   removeCampVariantRegistration(id: Int!): CampVariantRegistration!
+  createCamp(input: CreateCampInput!): JSONObject!
+  updateCamp(updateCampInput: UpdateCampInput!): Camp!
+  removeCamp(id: Int!): Camp!
   tempLogin(input: TempSignInInput!): JSONObject!
   signIn(input: TokenRequestInput!): UserAuthResponse!
   createUser(input: CreateUserInput!): CreateUserResponse!
@@ -533,9 +539,6 @@ type Mutation {
   createAllergy(createAllergyInput: CreateAllergyInput!): Allergy!
   updateAllergy(updateAllergyInput: UpdateAllergyInput!): Allergy!
   removeAllergy(id: Int!): Allergy!
-  createCamp(input: CreateCampInput!): JSONObject!
-  updateCamp(updateCampInput: UpdateCampInput!): Camp!
-  removeCamp(id: Int!): Camp!
   createCampRegistration(input: CreateCampRegistrationInput!): JSONObject!
   completeCampRegistration(input: UpdateCampRegistrationInput!): JSONObject!
   removeCampRegistration(id: Int!): CampRegistration!
@@ -678,6 +681,51 @@ input UpdateCampVariantRegistrationInput {
   id: Int!
 }
 
+input CreateCampInput {
+  name: String!
+  description: String
+  thumbnailId: Int!
+  defaultPrice: String
+  hasShirts: Boolean!
+  eventId: Int
+  isPrivate: Boolean!
+  defaultCapacity: Int
+  locationId: Int!
+  discountId: Int
+  variants: [CreateCampVariantInput!]!
+  ageRanges: [CreateAgeRangeInput!]
+  ageRangeIds: [Int!]
+  fileIds: [Int!]
+  mealIds: [Int!]
+  meals: [CreateMealInput!]
+}
+
+input CreateAgeRangeInput {
+  name: String
+  minAge: Int
+  maxAge: Int
+}
+
+input UpdateCampInput {
+  name: String
+  description: String
+  thumbnailId: Int
+  defaultPrice: String
+  hasShirts: Boolean
+  eventId: Int
+  isPrivate: Boolean
+  defaultCapacity: Int
+  locationId: Int
+  discountId: Int
+  variants: [CreateCampVariantInput!]
+  ageRanges: [CreateAgeRangeInput!]
+  ageRangeIds: [Int!]
+  fileIds: [Int!]
+  mealIds: [Int!]
+  meals: [CreateMealInput!]
+  id: Int!
+}
+
 input TempSignInInput {
   email: String!
   password: String!
@@ -709,12 +757,6 @@ input UpdateUserInput {
   occupation: String
 }
 
-input CreateAgeRangeInput {
-  name: String
-  minAge: Int
-  maxAge: Int
-}
-
 input UpdateAgeRangeInput {
   name: String
   minAge: Int
@@ -730,45 +772,6 @@ input CreateAllergyInput {
 input UpdateAllergyInput {
   """Example field (placeholder)"""
   exampleField: Int
-  id: Int!
-}
-
-input CreateCampInput {
-  name: String!
-  description: String
-  thumbnailId: Int!
-  defaultPrice: String
-  hasShirts: Boolean!
-  eventId: Int
-  isPrivate: Boolean!
-  defaultCapacity: Int
-  locationId: Int!
-  discountId: Int
-  variants: [CreateCampVariantInput!]!
-  ageRanges: [CreateAgeRangeInput!]
-  ageRangeIds: [Int!]
-  fileIds: [Int!]
-  mealIds: [Int!]
-  meals: [CreateMealInput!]
-}
-
-input UpdateCampInput {
-  name: String
-  description: String
-  thumbnailId: Int
-  defaultPrice: String
-  hasShirts: Boolean
-  eventId: Int
-  isPrivate: Boolean
-  defaultCapacity: Int
-  locationId: Int
-  discountId: Int
-  variants: [CreateCampVariantInput!]
-  ageRanges: [CreateAgeRangeInput!]
-  ageRangeIds: [Int!]
-  fileIds: [Int!]
-  mealIds: [Int!]
-  meals: [CreateMealInput!]
   id: Int!
 }
 

@@ -16,6 +16,8 @@ import { ParentAdditionalService } from 'src/parent-additional/parent-additional
 import { ChildByParentDataLoader } from './loaders/childByParent.loader';
 import CampVariantRegistrationsDataLoader from './loaders/CampVariantRegistrations.loader';
 import { CampVariantRegistrationService } from 'src/camp-variant-registration/camp-variant-registration.service';
+import { CampService } from 'src/camp/camp.service';
+import EventCampsDataLoader from './loaders/eventCampsDataLoader';
 
 export class DataloaderRegistry {
   private cache: Record<string, any> = {};
@@ -28,6 +30,7 @@ export class DataloaderRegistry {
     private childService: ChildService,
     private parentAdditionalService: ParentAdditionalService,
     private campVariantRegistrationService: CampVariantRegistrationService,
+    private campService: CampService,
   ) {}
 
   /**
@@ -96,6 +99,12 @@ export class DataloaderRegistry {
       CampVariantRegistrationsDataLoader.create(
         this.campVariantRegistrationService,
       ),
+    );
+  }
+
+  public get EventCampsDataLoader() {
+    return this.get('EventCampsDataLoader', () =>
+      EventCampsDataLoader.create(this.campService),
     );
   }
 

@@ -1,4 +1,13 @@
-import { Resolver, Query, Mutation, Args, Int } from '@nestjs/graphql';
+import {
+  Resolver,
+  Query,
+  Mutation,
+  Args,
+  Int,
+  ResolveField,
+  Parent,
+  Context,
+} from '@nestjs/graphql';
 import { EventService } from './event.service';
 import { Event } from './entities/event.entity';
 import { CreateEventInput } from './dto/create-event.input';
@@ -6,6 +15,8 @@ import { UpdateEventInput } from './dto/update-event.input';
 import { EventPage } from './entities/event-page.entity';
 import { PaginateEventsInput } from './dto/paginate-events.input';
 import { Public } from 'src/auth/decorators/publicDecorator';
+import { Camp } from 'src/camp/entities/camp.entity';
+import { DataloaderRegistry } from 'src/dataloaders/dataloaderRegistry';
 
 @Resolver(() => Event)
 export class EventResolver {
@@ -21,8 +32,9 @@ export class EventResolver {
     return this.eventService.findAll();
   }
 
-  @Query(() => Event, { name: 'event' })
-  findOne(@Args('id', { type: () => Int }) id: number) {
+  @Public()
+  @Query(() => Event)
+  findOneEvent(@Args('id', { type: () => Int }) id: number) {
     return this.eventService.findOne(id);
   }
 
@@ -40,5 +52,13 @@ export class EventResolver {
   @Query(() => EventPage)
   paginateEvents(@Args('input') input: PaginateEventsInput) {
     return this.eventService.paginate(input);
+  }
+
+  @ResolveField(() => [Camp])
+  camps(
+    @Parent() event: Event,
+    @Context() { loaders }: { loaders: DataloaderRegistry },
+  ) {
+    return event.camps ?? loaders.EventCampsDataLoader.load(event.id);
   }
 }

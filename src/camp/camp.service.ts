@@ -272,4 +272,8 @@ export class CampService {
       order: { createdAt: 'DESC' },
     });
   }
+
+  findCampsByEventId(keys: readonly number[]) {
+    return this.repo.find({ where: { eventId: In(keys) } });
+  }
 }
