@@ -6,6 +6,7 @@ import * as dotenv from 'dotenv';
 import { CorsOptions } from '@nestjs/common/interfaces/external/cors-options.interface';
 import { firebaseConfig } from 'firebase-config';
 import { initializeApp } from 'firebase/app';
+import { ValidationPipe } from '@nestjs/common';
 
 var cors = require('cors');
 dotenv.config();
@@ -34,6 +35,16 @@ async function bootstrap() {
 
   app.enableCors(corsOptions);
   app.use(bodyParser.json({ limit: '700kb' }));
+  app.useGlobalPipes(
+    new ValidationPipe({
+      // whitelist: true,
+      // forbidNonWhitelisted: false,
+      transform: true,
+      transformOptions: {
+        enableImplicitConversion: true,
+      },
+    }),
+  );
 
   await app.listen(8003);
 }

@@ -4,7 +4,12 @@ import { UpdateCampRegistrationInput } from './dto/update-camp-registration.inpu
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, In, QueryRunner, Repository } from 'typeorm';
 import { CampRegistration } from './entities/camp-registration.entity';
-import { CampRegistrationStatus, PaymentMethod, UserType } from 'support/enums';
+import {
+  CampRegistrationStatus,
+  PaymentMethod,
+  PaymentStatus,
+  UserType,
+} from 'support/enums';
 import { CampVariantRegistration } from 'src/camp-variant-registration/entities/camp-variant-registration.entity';
 import { CreateCampVariantRegistrationInput } from 'src/camp-variant-registration/dto/create-camp-variant-registration.input';
 import { User } from 'src/user/entities/user.entity';
@@ -649,8 +654,9 @@ export class CampRegistrationService {
     const updatePayment = await queryRunner.manager.update(
       RegistrationPayment,
       { id: payment.id },
-      { url: paymentUrl },
+      { url: paymentUrl, expirationDate: tenMinutesFromNow.toDate() },
     );
+
     if (updatePayment.affected == 0) {
       throw Error('Failed to update registration payment');
     }
@@ -692,6 +698,7 @@ export class CampRegistrationService {
     }
 
     await queryRunner.commitTransaction();
+    this.setPaymentTimoout(payment.id);
     return {
       success: true,
       payment: payment,
@@ -701,5 +708,77 @@ export class CampRegistrationService {
 
   remove(id: number) {
     return `This action removes a #${id} campRegistration`;
+  }
+
+  setPaymentTimoout(paymentId: number) {
+    const timeout = 1 * 60 * 1000; // 11 minutes
+    setTimeout(async () => {
+      const queryRunner = this.dataSource.createQueryRunner();
+      await queryRunner.connect();
+      await queryRunner.startTransaction();
+
+      try {
+        const payment = await queryRunner.manager.findOne(RegistrationPayment, {
+          where: { id: paymentId },
+        });
+
+        if (!payment) {
+          throw new Error('Payment not found');
+        }
+
+        if (payment.status !== PaymentStatus.pending) {
+          throw new Error('Payment already processed');
+        }
+
+        await queryRunner.manager.update(
+          RegistrationPayment,
+          { id: paymentId },
+          {
+            status: PaymentStatus.expired,
+          },
+        );
+
+        const reserves = await queryRunner.manager.find(RegistrationReserve, {
+          where: { paymentId },
+        });
+
+        if (reserves.length) {
+          const campVariantIds = reserves.map(
+            (reserve) => reserve.campVariantId,
+          );
+
+          // Lock the CampVariant records
+          await queryRunner.manager.find(CampVariant, {
+            where: { id: In(campVariantIds) },
+            lock: { mode: 'pessimistic_write' },
+          });
+
+          for (const reserve of reserves) {
+            const update = await queryRunner.manager.update(
+              CampVariant,
+              { id: reserve.campVariantId },
+              {
+                remainingCapacity: () => `remainingCapacity + ${reserve.count}`,
+              },
+            );
+            if (update.affected !== 1) {
+              throw new Error('Failed to update camp variant capacity');
+            }
+          }
+
+          await queryRunner.manager.delete(RegistrationReserve, {
+            paymentId,
+          });
+        }
+
+        await queryRunner.commitTransaction();
+        console.log('Payment expired and reserves released');
+      } catch (e) {
+        await queryRunner.rollbackTransaction();
+        console.log(e);
+      } finally {
+        queryRunner.release();
+      }
+    }, timeout);
   }
 }

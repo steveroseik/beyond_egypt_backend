@@ -19,9 +19,9 @@ export class RegistrationAttendance {
   @Field()
   campRegistrationId: number;
 
-  @Column('int', { name: 'campId' })
+  @Column('int', { name: 'campVariantId' })
   @Field()
-  campId: number;
+  campVariantId: number;
 
   @Column('int', { name: 'childId' })
   @Field()

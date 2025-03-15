@@ -31,8 +31,8 @@ export class RegistrationPayment {
   paymentMethod: PaymentMethod;
 
   @Column('varchar', { name: 'url', nullable: true })
-  @Field()
-  url: string;
+  @Field({ nullable: true })
+  url?: string;
 
   @Column('enum', {
     name: 'status',
@@ -53,6 +53,10 @@ export class RegistrationPayment {
   @Column('varchar', { name: 'userId' })
   @Field()
   userId: string;
+
+  @Column('timestamp', { name: 'expirationDate', precision: 3, nullable: true })
+  @Field({ nullable: true })
+  expirationDate?: Date;
 
   @CreateDateColumn({
     precision: 3,

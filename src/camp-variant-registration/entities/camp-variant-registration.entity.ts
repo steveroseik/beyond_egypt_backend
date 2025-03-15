@@ -13,11 +13,13 @@ import {
   JoinColumn,
   ManyToOne,
   PrimaryGeneratedColumn,
+  Unique,
   UpdateDateColumn,
 } from 'typeorm';
 
 @ObjectType()
 @Entity('camp-variant-registration', { schema: 'beyond_egypt' })
+@Unique(['childId', 'campVariantId'])
 export class CampVariantRegistration {
   @PrimaryGeneratedColumn()
   @Field()

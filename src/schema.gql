@@ -6,11 +6,12 @@ type RegistrationPayment {
   id: Int!
   campRegistrationId: Int!
   paymentMethod: PaymentMethod!
-  url: String!
+  url: String
   status: PaymentStatus!
   amount: Decimal!
   receiptId: Int
   userId: String!
+  expirationDate: DateTime
   createdAt: DateTime!
   campRegistration: CampRegistration!
 }
@@ -26,6 +27,7 @@ enum PaymentStatus {
   paid
   failed
   refunded
+  expired
 }
 
 """
@@ -368,7 +370,7 @@ type ParentAdditional {
 type RegistrationAttendance {
   id: Int!
   campRegistrationId: Int!
-  campId: Int!
+  campVariantId: Int!
   childId: Int!
   enterTime: DateTime!
   leaveTime: DateTime

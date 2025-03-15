@@ -8,8 +8,9 @@ export class FawryReturnDto {
   @IsString()
   referenceNumber: string;
 
-  @IsString()
-  merchantRefNumber: string;
+  @IsNumber()
+  @Type(() => Number)
+  merchantRefNumber: number;
 
   @IsNumber()
   @Type(() => Number)
@@ -49,7 +50,9 @@ export class FawryReturnDto {
   @Type(() => Number)
   taxes: number;
 
-  statusCode: string;
+  @IsNumber()
+  @Type(() => Number)
+  statusCode: number;
 
   @IsString()
   statusDescription: string;

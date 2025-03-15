@@ -127,7 +127,7 @@ export async function generateFawryPaymentUrl(
   }
 }
 
-export function generateStatusQuerySignature(merchantRefNum: string): string {
+export function generateStatusQuerySignature(merchantRefNum: number): string {
   const dataToSign =
     merchantRefNum +
     process.env.FAWRY_MERCHANT_ID +
