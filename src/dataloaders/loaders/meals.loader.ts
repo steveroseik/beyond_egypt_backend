@@ -7,7 +7,7 @@ export class MealsLoader {
     return new DataLoader<number, Meal[]>(async (keys: readonly number[]) => {
       const meals = await service.findMealsByCampIds(keys);
       return keys.map((key) =>
-        meals.filter((meal) => meal.camps.some((camp) => camp.id === key)),
+        meals.filter((meal) => meal.camps?.some((camp) => camp.id === key)),
       );
     });
   }

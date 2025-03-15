@@ -22,6 +22,7 @@ import {
 @Entity('camp-registration', { schema: 'beyond_egypt' })
 export class CampRegistration {
   @PrimaryGeneratedColumn()
+  @Field()
   id: number;
 
   @Column('varchar', { name: 'parentId' })
