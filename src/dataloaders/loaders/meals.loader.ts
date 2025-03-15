@@ -6,6 +6,7 @@ export class MealsLoader {
   public static create(service: MealService) {
     return new DataLoader<number, Meal[]>(async (keys: readonly number[]) => {
       const meals = await service.findMealsByCampIds(keys);
+      console.log('meals', meals);
       return keys.map((key) =>
         meals.filter((meal) => meal.camps?.some((camp) => camp.id === key)),
       );
