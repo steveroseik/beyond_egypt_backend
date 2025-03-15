@@ -38,8 +38,8 @@ export class RegistrationReserve {
     precision: 3,
     default: () => 'CURRENT_TIMESTAMP(3)',
   })
-  @Field()
-  expirationDate: Date;
+  @Field({ nullable: true })
+  expirationDate?: Date;
 
   @CreateDateColumn({
     precision: 3,

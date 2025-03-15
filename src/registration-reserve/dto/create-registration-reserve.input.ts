@@ -17,6 +17,6 @@ export class CreateRegistrationReserveInput {
   @Field(() => String)
   userId: string;
 
-  @Field()
-  expirationDate: Date;
+  @Field({ nullable: true })
+  expirationDate?: Date;
 }

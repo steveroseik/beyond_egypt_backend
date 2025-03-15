@@ -577,9 +577,15 @@ export class CampRegistrationService {
 
     switch (paymentMethod) {
       case PaymentMethod.cash:
-        throw Error('Unimplemented, contact steven');
       case PaymentMethod.instapay:
-        throw Error('Unimplemented, contact steven');
+        return await this.createTemporaryReservation(
+          queryRunner,
+          campRegistration,
+          campVariants,
+          campVariantVacancies,
+          userId,
+          paymentMethod,
+        );
       case PaymentMethod.fawry:
         return await this.handleFawryPayment(
           campRegistration,
@@ -706,7 +712,61 @@ export class CampRegistrationService {
     };
   }
 
-  createTemporary;
+  async createTemporaryReservation(
+    queryRunner: QueryRunner,
+    campRegistration: CampRegistration,
+    campVariants: CampVariant[],
+    campVariantVacancies: Map<number, number>,
+    userId: string,
+    paymentMethod: PaymentMethod,
+  ) {
+    /// create payment
+    const totalAmount = this.calculateCampVariantRegistrationPrice(
+      campVariants,
+      campVariantVacancies,
+    );
+
+    const payment = await queryRunner.manager.save(RegistrationPayment, {
+      campRegistrationId: campRegistration.id,
+      amount: totalAmount,
+      paymentMethod,
+      userId,
+    });
+
+    const reservations: CreateRegistrationReserveInput[] = [];
+    campVariantVacancies.forEach((value, key) => {
+      reservations.push({
+        campRegistrationId: campRegistration.id,
+        campVariantId: key,
+        count: value,
+        paymentId: payment.id,
+        userId,
+      });
+    });
+
+    const reserve = await queryRunner.manager.insert(
+      RegistrationReserve,
+      reservations,
+    );
+
+    if (reserve.raw.affectedRows !== reservations.length)
+      throw Error('Failed to reserve registrations');
+
+    // deduct vacancies
+    for (const [key, value] of campVariantVacancies) {
+      const update = await queryRunner.manager.update(
+        CampVariant,
+        { id: key },
+        { remainingCapacity: () => `remainingCapacity - ${value}` },
+      );
+      if (update.affected !== 1) {
+        const campVariant = campVariants.find((e) => e.id == key);
+        throw Error(
+          `Failed to deduct capacity from ${campVariant.name} (${campRegistration.id})`,
+        );
+      }
+    }
+  }
 
   remove(id: number) {
     return `This action removes a #${id} campRegistration`;

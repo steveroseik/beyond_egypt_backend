@@ -265,7 +265,7 @@ type RegistrationReserve {
   count: Int!
   paymentId: Int!
   userId: String!
-  expirationDate: DateTime!
+  expirationDate: DateTime
   createdAt: DateTime!
 }
 
@@ -919,7 +919,7 @@ input CreateRegistrationReserveInput {
   count: Int!
   paymentId: Int!
   userId: String!
-  expirationDate: DateTime!
+  expirationDate: DateTime
 }
 
 input UpdateRegistrationReserveInput {
