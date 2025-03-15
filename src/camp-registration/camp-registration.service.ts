@@ -766,6 +766,12 @@ export class CampRegistrationService {
         );
       }
     }
+
+    await queryRunner.commitTransaction();
+    return {
+      success: true,
+      payment: payment,
+    };
   }
 
   remove(id: number) {
