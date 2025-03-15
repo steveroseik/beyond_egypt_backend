@@ -8,6 +8,7 @@ class CampVariantRegistrationsDataLoader {
     return new DataLoader<number, CampVariantRegistration[]>(
       async (keys: readonly number[]) => {
         const data = await service.findCampVariantsRegistrationsByCampId(keys);
+        console.log('data', data);
         const grouped = _.groupBy(data, 'campRegistrationId');
         const result = keys.map((key) =>
           grouped.hasOwnProperty(key) ? grouped[key] : [],

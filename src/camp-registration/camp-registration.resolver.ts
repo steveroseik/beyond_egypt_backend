@@ -112,7 +112,7 @@ export class CampRegistrationResolver {
   ) {
     return (
       campRegistration.campVariantRegistrations ??
-      loaders.CampVariantRegistrationsDataLoader.load(campRegistration.campId)
+      loaders.CampVariantRegistrationsDataLoader.load(campRegistration.id)
     );
   }
 }
