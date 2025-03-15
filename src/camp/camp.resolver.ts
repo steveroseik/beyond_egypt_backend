@@ -106,7 +106,7 @@ export class CampResolver {
   @ResolveField(() => CampRegistration, { nullable: true })
   parentCampRegistration(
     @Parent() parent: Camp,
-    @Args('parentId') parentId: string,
+    @Args('parentId', { nullable: true }) parentId?: string,
   ) {
     return parentId
       ? this.campService.findLatestCampRegistration(parentId, parent.id)

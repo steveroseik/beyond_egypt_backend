@@ -215,7 +215,7 @@ type Camp {
   location: Location!
   event: Event
   thumbnail: File!
-  parentCampRegistration(parentId: String!): CampRegistration
+  parentCampRegistration(parentId: String): CampRegistration
 }
 
 type AgeRange {

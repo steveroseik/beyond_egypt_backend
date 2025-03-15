@@ -72,7 +72,7 @@ export class MealService {
   findMealsByCampIds(campIds: readonly number[]) {
     return this.mealRepository
       .createQueryBuilder('meal')
-      .innerJoin('meal.camp', 'camp')
+      .innerJoin('meal.camps', 'camp')
       .where('camp.id IN (:...campIds)', { campIds })
       .getMany();
   }
