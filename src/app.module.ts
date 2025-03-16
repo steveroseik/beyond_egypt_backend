@@ -79,6 +79,7 @@ import { FawryModule } from './fawry/fawry.module';
         // fieldResolverEnhancers: ['guards'],
         autoSchemaFile: join(process.cwd(), 'src/schema.gql'),
         playground: false,
+        path: 'web/graphql',
         plugins: [
           ApolloServerPluginLandingPageLocalDefault({
             // Additional configuration options if needed
