@@ -14,37 +14,27 @@ import { UserType } from 'support/enums';
 export class CreateUserInput {
   id: string;
 
-  @IsString()
   @Field()
   firebaseToken: string;
 
-  @IsString()
   @Field()
   name: string;
 
-  @IsString()
   @Field(() => UserType)
   type: UserType;
 
-  @IsEmail()
   @Field()
   email: string;
 
-  @IsPhoneNumber()
-  @IsOptional()
   @Field({ nullable: true })
   phone?: string;
 
-  @IsString()
-  @IsOptional()
   @Field({ nullable: true })
   occupation?: string;
 
-  @IsOptional()
   @Field(() => [CreateParentAdditionalInput], { nullable: true })
   parentAdditional?: CreateParentAdditionalInput[];
 
-  @IsOptional()
   @Field(() => [CreateChildInput], { nullable: true })
   children?: CreateChildInput[];
 }
