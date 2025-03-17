@@ -43,6 +43,11 @@ export class UserService {
       if (input.type == UserType.parent) {
         return await this.createParent(input, firebaseData, queryRunner);
       }
+
+      return {
+        success: false,
+        message: 'Invalid user type, admin implementation not done',
+      };
     } catch (e) {
       await queryRunner.rollbackTransaction();
       console.log(e);
