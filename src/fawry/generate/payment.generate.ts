@@ -92,6 +92,8 @@ export async function generateFawryPaymentUrl(
   const endpoint =
     'https://atfawry.fawrystaging.com/fawrypay-api/api/payments/init';
 
+  console.log('generated payload', payload);
+
   try {
     const response = await axios.post(endpoint, payload, {
       headers: {

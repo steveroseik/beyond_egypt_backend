@@ -523,6 +523,11 @@ export class CampRegistrationService {
           input.paymentMethod,
         );
       }
+
+      return {
+        success: false,
+        message: 'Invalid action',
+      };
     } catch (e) {
       await queryRunner.rollbackTransaction();
       console.log(e);
@@ -630,7 +635,10 @@ export class CampRegistrationService {
       throw Error('Failed to create payment record');
     }
 
-    const tenMinutesFromNow = moment.tz('Africa/Cairo').add(1, 'minute');
+    // const oneMinutesFromNow = moment.tz('Africa/Cairo').add(1, 'minute');
+    const oneMinutesFromNow = Date.now() + 1 * 60 * 1000;
+
+    const ss = new Date(tenMinutesFromNow);
 
     const payloadData: PaymentPayload = {
       merchantRefNum: payment.id.toString(),
@@ -639,7 +647,7 @@ export class CampRegistrationService {
       customerMobile: parent.phone,
       customerName: parent.name,
       authCaptureModePayment: false,
-      paymentExpiry: `${tenMinutesFromNow.valueOf()}`,
+      paymentExpiry: `${tenMinutesFromNow}`,
       language: 'en-gb',
       chargeItems: [
         {
@@ -660,7 +668,7 @@ export class CampRegistrationService {
     const updatePayment = await queryRunner.manager.update(
       RegistrationPayment,
       { id: payment.id },
-      { url: paymentUrl, expirationDate: tenMinutesFromNow.toDate() },
+      { url: paymentUrl, expirationDate: ss },
     );
 
     if (updatePayment.affected == 0) {
@@ -675,7 +683,7 @@ export class CampRegistrationService {
         campVariantId: key,
         count: value,
         paymentId: payment.id,
-        expirationDate: tenMinutesFromNow.toDate(),
+        expirationDate: ss,
         userId,
       });
     });

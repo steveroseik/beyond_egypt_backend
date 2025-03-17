@@ -1,0 +1,35 @@
+name: Deploy to DigitalOcean Production
+
+on:
+  push:
+    branches:
+      - live
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Install SSH and sshpass
+        run: sudo apt-get update && sudo apt-get install -y openssh-client sshpass
+
+      - name: Deploy to DigitalOcean
+        env:
+          DROPLET_HOST: ${{ secrets.DROPLET_HOST }}
+          DROPLET_USER: ${{ secrets.DEPLOYMENT_USER }}
+          DROPLET_PASSWORD: ${{ secrets.DROPLET_PASSWORD }}
+          TARGET_DIR: ${{ secrets.TARGET_DIR }}
+        run: |
+          sshpass -p "$DROPLET_PASSWORD" ssh -o StrictHostKeyChecking=no $DROPLET_USER@$DROPLET_HOST << EOF
+            export PATH="/root/.nvm/versions/node/v20.15.0/bin:\$PATH"
+            cd $TARGET_DIR
+            git stash
+            git stash clear
+            git pull
+            npm install # If dependencies need to be updated
+            nest build # Build the application
+            pm2 restart 0 # Restart the application
+          EOF
