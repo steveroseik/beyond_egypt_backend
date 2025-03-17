@@ -636,7 +636,7 @@ export class CampRegistrationService {
     }
 
     // const oneMinutesFromNow = moment.tz('Africa/Cairo').add(1, 'minute');
-    const oneMinutesFromNow = Date.now() + 1 * 60 * 1000;
+    const tenMinutesFromNow = Date.now() + 1 * 60 * 1000;
 
     const ss = new Date(tenMinutesFromNow);
 
@@ -647,7 +647,7 @@ export class CampRegistrationService {
       customerMobile: parent.phone,
       customerName: parent.name,
       authCaptureModePayment: false,
-      paymentExpiry: `${tenMinutesFromNow}`,
+      paymentExpiry: '1742221560000',
       language: 'en-gb',
       chargeItems: [
         {
