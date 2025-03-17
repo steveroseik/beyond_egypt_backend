@@ -5,6 +5,7 @@ import { CreateSchoolInput } from './dto/create-school.input';
 import { UpdateSchoolInput } from './dto/update-school.input';
 import { SchoolPage } from './entities/school-page.entity';
 import { PaginateSchoolsInput } from './dto/paginate-schools.input';
+import { Public } from 'src/auth/decorators/publicDecorator';
 
 @Resolver(() => School)
 export class SchoolResolver {
@@ -39,6 +40,7 @@ export class SchoolResolver {
     return this.schoolService.remove(id);
   }
 
+  @Public()
   @Query(() => SchoolPage)
   paginateSchools(@Args('input') input: PaginateSchoolsInput) {
     return this.schoolService.paginateSchools(input);

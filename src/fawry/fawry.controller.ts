@@ -1,7 +1,8 @@
-import { Controller, Get, Query } from '@nestjs/common';
+import { Controller, Get, Query, Res } from '@nestjs/common';
 import { FawryService } from './fawry.service';
 import { FawryReturnDto } from './models/fawry-return.dto';
 import { Public } from 'src/auth/decorators/publicDecorator';
+import { Response } from 'express';
 
 @Controller('fawry')
 export class FawryController {
@@ -9,7 +10,7 @@ export class FawryController {
 
   @Public()
   @Get('return')
-  handleReturn(@Query() query: FawryReturnDto) {
-    return this.fawryService.handleReturn(query);
+  handleReturn(@Query() query: FawryReturnDto, @Res() res: Response) {
+    return this.fawryService.handleReturn(query, res);
   }
 }

@@ -19,7 +19,11 @@ import * as fs from 'fs';
 import axios from 'axios';
 import { File } from '../file/entities/file.entity';
 import { error } from 'console';
-import { getFileType, isValidExtension } from 'support/file-type.support';
+import {
+  getFileType,
+  getMimeType,
+  isValidExtension,
+} from 'support/file-type.support';
 
 @Injectable()
 export class AwsBucketService {
@@ -112,6 +116,104 @@ export class AwsBucketService {
         {
           success: false,
           message,
+        },
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+  }
+
+  async uploadSingleFileFromBase64({
+    base64File,
+    fileName,
+    isPublic = true,
+    userId,
+  }: {
+    base64File: string; // This can be either plain base64 or a data URL (e.g. "data:image/png;base64,...")
+    fileName: string; // Original file name with extension, e.g. "example.png"
+    isPublic: boolean;
+    userId: string;
+  }) {
+    try {
+      // Extract the file extension from the provided file name.
+      const extension = fileName.split('.').pop();
+      if (!isValidExtension(extension))
+        throw new Error('Invalid file extension');
+
+      // Prepare variables for content type and base64 data.
+      let contentType = '';
+      let base64Data = base64File;
+
+      // Check if the base64 string is in Data URL format.
+      if (base64File.startsWith('data:')) {
+        // Expected format: "data:[<mediatype>][;base64],<data>"
+        const matches = base64File.match(/^data:(.*);base64,(.*)$/);
+        if (!matches || matches.length !== 3) {
+          throw new Error('Invalid base64 data format');
+        }
+        contentType = matches[1];
+        base64Data = matches[2];
+      }
+
+      // If contentType is still empty, deduce it from the extension.
+      if (!contentType) {
+        contentType = getMimeType(extension); // Assume a helper function that returns MIME type.
+      }
+
+      // Decode the base64 data to a Buffer.
+      const buffer = Buffer.from(base64Data, 'base64');
+      const fileSize = buffer.length;
+
+      // Generate a unique key for the file.
+      const key = `${uuidv4()}.${extension}`;
+
+      // Create the S3 PutObject command.
+      const command = new PutObjectCommand({
+        Bucket: this.bucketName,
+        Key: key,
+        Body: buffer,
+        ContentType: contentType,
+        ACL: isPublic ? 'public-read' : 'private',
+        Metadata: {
+          originalName: this.sanitizeFileName(fileName),
+        },
+      });
+
+      // Upload the file to S3.
+      const uploadResult = await this.client.send(command);
+      if (!uploadResult) {
+        throw new Error('Failed to upload file to S3 bucket');
+      }
+
+      // Save file details in the database.
+      const addFile = await this.dataSource.manager.save(File, {
+        key,
+        type: getFileType(extension.toLowerCase()),
+        name: fileName.split('.').shift(),
+        sizeInKb: Math.floor(fileSize / 1024),
+        userId,
+      });
+
+      if (!addFile) {
+        await this.deleteFile(key);
+        throw new Error('Failed to add file to database');
+      }
+
+      // Return a success response with the file URL.
+      return {
+        success: true,
+        url: isPublic
+          ? (await this.getFileUrl(key)).url
+          : (await this.getPresignedSignedUrl(key)).url,
+        file: addFile,
+        extension: extension,
+        isPublic,
+      };
+    } catch (error) {
+      console.error(error);
+      throw new HttpException(
+        {
+          success: false,
+          message: error.message || 'File upload failed',
         },
         HttpStatus.BAD_REQUEST,
       );

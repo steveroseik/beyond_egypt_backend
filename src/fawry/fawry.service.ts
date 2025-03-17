@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { DataSource, In, QueryRunner } from 'typeorm';
 import { FawryReturnDto } from './models/fawry-return.dto';
 import { generateStatusQuerySignature } from './generate/payment.generate';
@@ -7,13 +7,18 @@ import * as moment from 'moment-timezone';
 import { PaymentMethod, PaymentStatus } from 'support/enums';
 import { CampVariant } from 'src/camp-variant/entities/camp-variant.entity';
 import { RegistrationReserve } from 'src/registration-reserve/entities/registration-reserve.entity';
-import e from 'express';
+import e, { Response } from 'express';
+import { PaymentStatusResponse } from './models/payment-status.payload';
+import * as dotenv from 'dotenv';
+import { generateQueryParams } from 'support/query-params.generator';
+
+dotenv.config();
 
 @Injectable()
 export class FawryService {
   constructor(private dataSource: DataSource) {}
 
-  async handleReturn(query: FawryReturnDto) {
+  async handleReturn(query: FawryReturnDto, res: Response) {
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
@@ -27,7 +32,7 @@ export class FawryService {
       });
 
       if (!payment) {
-        throw new Error('Payment not found');
+        throw Error('Payment not found');
       }
 
       if (
@@ -42,16 +47,15 @@ export class FawryService {
           await this.expirePayment(payment, queryRunner);
           await queryRunner.commitTransaction();
 
-          return {
-            success: false,
-            message: 'Payment expired',
-          };
+          return res.redirect(
+            `${process.env.FRONTEND_URL}/payment-failed?paymentId=${payment.id}&message=Payment expired`,
+          );
         }
       }
 
       if (query.statusCode !== 200) {
         await queryRunner.commitTransaction();
-        return {
+        const parameters = {
           success: false,
           message: query.statusDescription,
           statusCode: query.statusCode,
@@ -60,21 +64,28 @@ export class FawryService {
           campRegistrationId: payment.campRegistrationId,
           campId: payment.campRegistration.campId,
         };
+        return res.redirect(
+          `${process.env.FRONTEND_URL}/payment-failed?${generateQueryParams(parameters)}`,
+        );
       }
 
       // validate the fawry response
       const signature = generateStatusQuerySignature(query.merchantRefNumber);
       console.log('SIGNATURE', signature);
       if (signature !== query.signature) {
-        throw new Error('Unimplemted yettttt');
+        return res.redirect(`${process.env.FRONTEND_URL}/payment-failed`);
       }
     } catch (e) {
       await queryRunner.rollbackTransaction();
       console.log(e);
-      return {
+      const parameters = {
         success: false,
-        message: e.message,
+        message: e.message ?? 'An error occurred',
       };
+
+      return res.redirect(
+        `${process.env.FRONTEND_URL}/payment-failed?${generateQueryParams(parameters)}`,
+      );
     } finally {
       await queryRunner.release();
     }
@@ -119,5 +130,57 @@ export class FawryService {
         paymentId: payment.id,
       });
     }
+  }
+
+  validatePaymentResponse(response: PaymentStatusResponse): boolean {
+    // Check that the order status indicates payment was successful.
+    if (response.orderStatus !== 'PAID') {
+      /// redirect to failed page
+    }
+
+    // Check that the payment amount matches the order amount.
+    if (response.paymentAmount !== response.orderAmount) {
+      throw new HttpException(
+        {
+          success: false,
+          message: `Payment amount (${response.paymentAmount}) does not match order amount (${response.orderAmount}).`,
+        },
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    // Optionally, verify that fees are within expected bounds.
+    if (response.fawryFees < 0) {
+      throw new HttpException(
+        {
+          success: false,
+          message: `Invalid fee amount: ${response.fawryFees}`,
+        },
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    // Ensure order items exist and contain valid data.
+    if (!response.orderItems || response.orderItems.length === 0) {
+      throw new HttpException(
+        {
+          success: false,
+          message: 'No order items provided in the payment response.',
+        },
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    // Additional checks (for example, validating the message signature) can be added here.
+    // For example:
+    // if (!this.validateMessageSignature(response)) {
+    //   throw new HttpException(
+    //     { success: false, message: 'Invalid message signature.' },
+    //     HttpStatus.BAD_REQUEST,
+    //   );
+    // }
+
+    // If all checks pass, consider the payment valid.
+    return true;
   }
 }

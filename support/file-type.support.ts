@@ -81,3 +81,29 @@ export function isValidExtension(extension: string): boolean {
   const pattern = new RegExp(`^(${allExtensions.join('|')})$`);
   return pattern.test(extension.toLowerCase());
 }
+
+export function getMimeType(extension: string): string {
+  const mimeTypes: { [key: string]: string } = {
+    jpg: 'image/jpeg',
+    jpeg: 'image/jpeg',
+    png: 'image/png',
+    gif: 'image/gif',
+    webp: 'image/webp',
+    svg: 'image/svg+xml',
+    pdf: 'application/pdf',
+    txt: 'text/plain',
+    html: 'text/html',
+    htm: 'text/html',
+    csv: 'text/csv',
+    json: 'application/json',
+    xml: 'application/xml',
+    mp3: 'audio/mpeg',
+    wav: 'audio/wav',
+    mp4: 'video/mp4',
+    mov: 'video/quicktime',
+    avi: 'video/x-msvideo',
+    // Add more mappings as needed
+  };
+
+  return mimeTypes[extension.toLowerCase()] || 'application/octet-stream';
+}
