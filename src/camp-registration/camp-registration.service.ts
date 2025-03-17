@@ -509,25 +509,23 @@ export class CampRegistrationService {
         throw Error('Incomplete camp, add at least one week');
       }
 
+      if (campRegistration.status !== CampRegistrationStatus.idle) {
+        throw new Error('Camp registration already processed');
+      }
+
       //TODO: handle two scenarios
       // first: if payment is secondary and the difference is positive
       // second: if the payment is secondary and the difference is negative
 
       /// basic case
       /// if this is the first payment
-      if (!campRegistration?.payments?.length) {
-        return await this.handlePayment(
-          campRegistration,
-          queryRunner,
-          userId,
-          input.paymentMethod,
-        );
-      }
 
-      return {
-        success: false,
-        message: 'Invalid action',
-      };
+      return await this.handlePayment(
+        campRegistration,
+        queryRunner,
+        userId,
+        input.paymentMethod,
+      );
     } catch (e) {
       await queryRunner.rollbackTransaction();
       console.log(e);
@@ -549,6 +547,45 @@ export class CampRegistrationService {
     paymentMethod ??= campRegistration.paymentMethod;
 
     if (!paymentMethod) throw Error('Select a payment method first');
+
+    let successfulPayments: RegistrationPayment[] = [];
+    let pendingPayments: RegistrationPayment[] = [];
+
+    if (campRegistration.payments?.length) {
+      for (const payment of campRegistration.payments) {
+        if (payment.paymentMethod === paymentMethod) {
+          if (payment.status === PaymentStatus.paid) {
+            successfulPayments.push(payment);
+          } else {
+            if (payment.status == PaymentStatus.pending) {
+              pendingPayments.push(payment);
+            }
+          }
+        }
+      }
+    }
+
+    if (successfulPayments.length) {
+      throw new Error('Camp registration already paid');
+    }
+
+    if (pendingPayments.length) {
+      if (paymentMethod == PaymentMethod.fawry) {
+        const validPayment = pendingPayments.find(
+          (e) =>
+            moment().tz('Africa/Cairo').diff(e.expirationDate, 'minutes') < 0,
+        );
+        if (validPayment) {
+          return {
+            success: true,
+            payment: validPayment,
+            expiration: validPayment.expirationDate,
+          };
+        }
+      } else {
+        throw new Error('Payment already pending');
+      }
+    }
 
     const campVariantVacancies = new Map<number, number>();
 
@@ -635,10 +672,8 @@ export class CampRegistrationService {
       throw Error('Failed to create payment record');
     }
 
-    // const oneMinutesFromNow = moment.tz('Africa/Cairo').add(1, 'minute');
-    const tenMinutesFromNow = Date.now() + 1 * 60 * 1000;
-
-    const ss = new Date(tenMinutesFromNow);
+    const tenMinutesFromNow = moment.tz('Africa/Cairo').add(10, 'minute');
+    // const tenMinutesFromNow = Date.now() + 10 * 60 * 1000;
 
     const payloadData: PaymentPayload = {
       merchantRefNum: payment.id.toString(),
@@ -647,7 +682,7 @@ export class CampRegistrationService {
       customerMobile: parent.phone,
       customerName: parent.name,
       authCaptureModePayment: false,
-      paymentExpiry: '1742221560000',
+      paymentExpiry: `${tenMinutesFromNow.valueOf()}`,
       language: 'en-gb',
       chargeItems: [
         {
@@ -668,7 +703,7 @@ export class CampRegistrationService {
     const updatePayment = await queryRunner.manager.update(
       RegistrationPayment,
       { id: payment.id },
-      { url: paymentUrl, expirationDate: ss },
+      { url: paymentUrl, expirationDate: tenMinutesFromNow.toDate() },
     );
 
     if (updatePayment.affected == 0) {
@@ -683,7 +718,7 @@ export class CampRegistrationService {
         campVariantId: key,
         count: value,
         paymentId: payment.id,
-        expirationDate: ss,
+        expirationDate: tenMinutesFromNow.toDate(),
         userId,
       });
     });
@@ -761,19 +796,20 @@ export class CampRegistrationService {
       throw Error('Failed to reserve registrations');
 
     // deduct vacancies
-    for (const [key, value] of campVariantVacancies) {
-      const update = await queryRunner.manager.update(
-        CampVariant,
-        { id: key },
-        { remainingCapacity: () => `remainingCapacity - ${value}` },
-      );
-      if (update.affected !== 1) {
-        const campVariant = campVariants.find((e) => e.id == key);
-        throw Error(
-          `Failed to deduct capacity from ${campVariant.name} (${campRegistration.id})`,
-        );
-      }
-    }
+    // for (const [key, value] of campVariantVacancies) {
+    //   const update = await queryRunner.manager.update(
+    //     CampVariant,
+    //     { id: key },
+    //     { remainingCapacity: () => `remainingCapacity - ${value}` },
+    //   );
+
+    //   if (update.affected !== 1) {
+    //     const campVariant = campVariants.find((e) => e.id == key);
+    //     throw Error(
+    //       `Failed to deduct capacity from ${campVariant.name} (${campRegistration.id})`,
+    //     );
+    //   }
+    // }
 
     await queryRunner.commitTransaction();
     return {

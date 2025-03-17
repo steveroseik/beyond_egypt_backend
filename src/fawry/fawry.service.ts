@@ -7,6 +7,7 @@ import * as moment from 'moment-timezone';
 import { PaymentMethod, PaymentStatus } from 'support/enums';
 import { CampVariant } from 'src/camp-variant/entities/camp-variant.entity';
 import { RegistrationReserve } from 'src/registration-reserve/entities/registration-reserve.entity';
+import e from 'express';
 
 @Injectable()
 export class FawryService {
@@ -22,6 +23,7 @@ export class FawryService {
         where: {
           id: query.merchantRefNumber,
         },
+        relations: ['campRegistration'],
       });
 
       if (!payment) {
@@ -54,12 +56,18 @@ export class FawryService {
           message: query.statusDescription,
           statusCode: query.statusCode,
           paymentUrl: payment.url,
+          expirationDate: payment.expirationDate,
+          campRegistrationId: payment.campRegistrationId,
+          campId: payment.campRegistration.campId,
         };
       }
 
       // validate the fawry response
       const signature = generateStatusQuerySignature(query.merchantRefNumber);
       console.log('SIGNATURE', signature);
+      if (signature !== query.signature) {
+        throw new Error('Unimplemted yettttt');
+      }
     } catch (e) {
       await queryRunner.rollbackTransaction();
       console.log(e);
