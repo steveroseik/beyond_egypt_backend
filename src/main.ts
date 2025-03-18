@@ -40,7 +40,7 @@ async function bootstrap() {
   );
 
   const corsOptions: CorsOptions = {
-    origin: '*',
+    origin: ['http://localhost:3000', 'https://beyond-egypt.com'],
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
     credentials: true,
     allowedHeaders: '*',
