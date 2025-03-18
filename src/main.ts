@@ -35,6 +35,7 @@ async function bootstrap() {
 
   app.enableCors(corsOptions);
   app.use(bodyParser.json({ limit: '700kb' }));
+  app.setGlobalPrefix('web');
   app.useGlobalPipes(
     new ValidationPipe({
       // whitelist: true,

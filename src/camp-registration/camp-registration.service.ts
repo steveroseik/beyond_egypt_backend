@@ -26,6 +26,10 @@ import * as moment from 'moment-timezone';
 import { generateFawryPaymentUrl } from 'src/fawry/generate/payment.generate';
 import { RegistrationReserve } from 'src/registration-reserve/entities/registration-reserve.entity';
 import { CreateRegistrationReserveInput } from 'src/registration-reserve/dto/create-registration-reserve.input';
+
+import * as dotenv from 'dotenv';
+dotenv.config();
+
 @Injectable()
 export class CampRegistrationService {
   constructor(
@@ -692,7 +696,7 @@ export class CampRegistrationService {
           quantity: 1,
         },
       ],
-      returnUrl: 'http://localhost:8003/fawry/return',
+      returnUrl: `${process.env.BASE_URL}/web/fawry/return`,
     };
 
     const paymentUrl = await generateFawryPaymentUrl(payloadData);
