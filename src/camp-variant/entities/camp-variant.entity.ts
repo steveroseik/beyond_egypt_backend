@@ -14,7 +14,6 @@ import {
   ManyToOne,
   JoinColumn,
   OneToMany,
-  BeforeInsert,
 } from 'typeorm';
 
 @ObjectType()
@@ -89,10 +88,10 @@ export class CampVariant {
   @Field(() => [CampVariantRegistration])
   campVariantRegistrations: CampVariantRegistration[];
 
-  @BeforeInsert()
-  setDefaultCurCapacity() {
-    if (!this.remainingCapacity) {
-      this.remainingCapacity = this.capacity;
-    }
-  }
+  // @AfterInsert()s
+  // setDefaultCurCapacity() {
+  //   if (!this.remainingCapacity) {
+  //     this.remainingCapacity = this.capacity;
+  //   }
+  // }
 }
