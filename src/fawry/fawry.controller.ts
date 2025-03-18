@@ -4,7 +4,7 @@ import { FawryReturnDto } from './models/fawry-return.dto';
 import { Public } from 'src/auth/decorators/publicDecorator';
 import { Response } from 'express';
 
-@Controller('fawry')
+@Controller()
 export class FawryController {
   constructor(private readonly fawryService: FawryService) {}
 
