@@ -13,6 +13,7 @@ import { CampVariant } from 'src/camp-variant/entities/camp-variant.entity';
 import { CreateCampVariantInput } from 'src/camp-variant/dto/create-camp-variant.input';
 import { CampRegistration } from 'src/camp-registration/entities/camp-registration.entity';
 import { CampRegistrationStatus } from 'support/enums';
+import { moneyFixation } from 'support/constants';
 
 @Injectable()
 export class CampService {
@@ -62,7 +63,10 @@ export class CampService {
       const fileIds = await this.handleFiles(input, queryRunner);
       const ageRangeIds = await this.handleAgeRanges(input, queryRunner);
 
-      const camp = await queryRunner.manager.insert(Camp, input);
+      const camp = await queryRunner.manager.insert(Camp, {
+        ...input,
+        defaultPrice: input.defaultPrice.toFixed(2),
+      });
       if (camp.raw.affectedRows !== 1) {
         throw new Error('Failed to insert camp');
       }
@@ -123,7 +127,9 @@ export class CampService {
       return {
         ...variant,
         capacity: variant.capacity ?? input.defaultCapacity,
-        price: variant.price?.toFixed(2) ?? input.defaultPrice,
+        price:
+          variant.price?.toFixed(2) ??
+          input.defaultPrice.toFixed(moneyFixation),
         campId,
         remainingCapacity: variant.capacity,
       };
@@ -163,10 +169,7 @@ export class CampService {
 
     const newMeals = await queryRunner.manager.insert(
       Meal,
-      input.meals.map((meal) => ({
-        ...meal,
-        price: meal.price.toFixed(2),
-      })),
+      input.meals.map((e) => ({ ...e, price: e.price.toFixed(moneyFixation) })),
     );
     if (newMeals.identifiers.length !== input.meals.length) {
       throw new Error('Failed to insert meals');

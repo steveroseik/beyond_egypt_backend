@@ -199,7 +199,7 @@ type Camp {
   name: String!
   description: String
   thumbnailId: Int!
-  defaultPrice: String
+  defaultPrice: Decimal
   hasShirts: Boolean!
   eventId: Int
   isPrivate: Boolean!
@@ -675,7 +675,7 @@ input CreateCampInput {
   name: String!
   description: String
   thumbnailId: Int!
-  defaultPrice: String
+  defaultPrice: Decimal
   hasShirts: Boolean!
   eventId: Int
   isPrivate: Boolean!
@@ -700,7 +700,7 @@ input UpdateCampInput {
   name: String
   description: String
   thumbnailId: Int
-  defaultPrice: String
+  defaultPrice: Decimal
   hasShirts: Boolean
   eventId: Int
   isPrivate: Boolean

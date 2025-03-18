@@ -28,6 +28,7 @@ import { CreateRegistrationReserveInput } from 'src/registration-reserve/dto/cre
 
 import * as dotenv from 'dotenv';
 import { Decimal } from 'support/scalars';
+import { moneyFixation } from 'support/constants';
 dotenv.config();
 
 @Injectable()
@@ -138,7 +139,11 @@ export class CampRegistrationService {
 
     const campRegistration = await queryRunner.manager.insert(
       CampRegistration,
-      input,
+      {
+        ...input,
+        oneDayPrice: input.oneDayPrice?.toFixed(moneyFixation),
+        totalPrice: input.totalPrice?.toFixed(moneyFixation),
+      },
     );
 
     if (campRegistration.raw.affectedRows !== 1) {
@@ -233,8 +238,6 @@ export class CampRegistrationService {
 
     for (const [key, count] of campVariantsCount.entries()) {
       const cvr = campVariants.find((e) => e.id === key);
-      console.log(cvr);
-      console.log(count);
       totalPrice = totalPrice.plus(cvr.price.times(count));
     }
 

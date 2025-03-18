@@ -7,7 +7,7 @@ import { File } from 'src/file/entities/file.entity';
 import { Location } from 'src/location/entities/location.entity';
 import { Meal } from 'src/meal/entities/meal.entity';
 import { moneyFixation } from 'support/constants';
-import { Decimal } from 'support/scalars';
+import { Decimal, GraphqlDecimal } from 'support/scalars';
 import {
   Entity,
   Column,
@@ -48,12 +48,12 @@ export class Camp {
     precision: 10,
     scale: 0,
     transformer: {
-      to: (value?: BigNumber) => value && value.toFixed(moneyFixation),
+      to: (value) => value,
       from: (value?: string) => value && new Decimal(value),
     },
   })
-  @Field({ nullable: true })
-  defaultPrice?: string;
+  @Field(() => GraphqlDecimal, { nullable: true })
+  defaultPrice?: Decimal;
 
   @Column('bit', {
     name: 'hasShirts',

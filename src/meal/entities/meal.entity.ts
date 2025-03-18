@@ -30,7 +30,7 @@ export class Meal {
     precision: 10,
     scale: 2,
     transformer: {
-      to: (value?: BigNumber) => value && value.toFixed(moneyFixation),
+      to: (value) => value,
       from: (value?: string) => value && new Decimal(value),
     },
   })
