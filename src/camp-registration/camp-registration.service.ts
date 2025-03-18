@@ -233,7 +233,9 @@ export class CampRegistrationService {
 
     for (const [key, count] of campVariantsCount.entries()) {
       const cvr = campVariants.find((e) => e.id === key);
-      totalPrice = totalPrice.plus(cvr.price.multipliedBy(count));
+      console.log(cvr);
+      console.log(count);
+      totalPrice = totalPrice.plus(cvr.price.times(count));
     }
 
     return totalPrice.toFixed(2);
