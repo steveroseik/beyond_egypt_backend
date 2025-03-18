@@ -1,8 +1,7 @@
 import { ObjectType, Field, Int } from '@nestjs/graphql';
-import Decimal from 'decimal.js';
 import { CampVariantRegistration } from 'src/camp-variant-registration/entities/camp-variant-registration.entity';
 import { Camp } from 'src/camp/entities/camp.entity';
-import { GraphqlDecimal } from 'support/scalars';
+import { Decimal, GraphqlDecimal } from 'support/scalars';
 import {
   Entity,
   Column,

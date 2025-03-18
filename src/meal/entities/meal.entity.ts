@@ -1,7 +1,6 @@
 import { Field, ObjectType } from '@nestjs/graphql';
-import Decimal from 'decimal.js';
 import { Camp } from 'src/camp/entities/camp.entity';
-import { GraphqlDecimal } from 'support/scalars';
+import { Decimal, GraphqlDecimal } from 'support/scalars';
 import {
   Column,
   CreateDateColumn,

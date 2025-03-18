@@ -1,7 +1,7 @@
 import { InputType, Int, Field } from '@nestjs/graphql';
-import Decimal from 'decimal.js';
+
 import { ShirtSize } from 'support/enums';
-import { GraphqlDecimal } from 'support/scalars';
+import { Decimal, GraphqlDecimal } from 'support/scalars';
 
 @InputType()
 export class CreateCampVariantRegistrationInput {

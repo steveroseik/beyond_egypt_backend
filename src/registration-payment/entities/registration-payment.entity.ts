@@ -1,8 +1,7 @@
 import { ObjectType, Field, Int } from '@nestjs/graphql';
-import Decimal from 'decimal.js';
 import { CampRegistration } from 'src/camp-registration/entities/camp-registration.entity';
 import { PaymentMethod, PaymentStatus } from 'support/enums';
-import { GraphqlDecimal } from 'support/scalars';
+import { Decimal, GraphqlDecimal } from 'support/scalars';
 import {
   Column,
   CreateDateColumn,

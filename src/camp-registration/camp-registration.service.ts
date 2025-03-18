@@ -14,7 +14,6 @@ import { CampVariantRegistration } from 'src/camp-variant-registration/entities/
 import { CreateCampVariantRegistrationInput } from 'src/camp-variant-registration/dto/create-camp-variant-registration.input';
 import { User } from 'src/user/entities/user.entity';
 import { CampVariant } from 'src/camp-variant/entities/camp-variant.entity';
-import Decimal from 'decimal.js';
 import e from 'express';
 import { on } from 'events';
 import { PaginateCampRegistrationsInput } from './dto/paginate-camp-registrations.input';
@@ -28,6 +27,7 @@ import { RegistrationReserve } from 'src/registration-reserve/entities/registrat
 import { CreateRegistrationReserveInput } from 'src/registration-reserve/dto/create-registration-reserve.input';
 
 import * as dotenv from 'dotenv';
+import { Decimal } from 'support/scalars';
 dotenv.config();
 
 @Injectable()
@@ -229,11 +229,11 @@ export class CampRegistrationService {
     campVariants: CampVariant[],
     campVariantsCount: Map<number, number>,
   ): string {
-    let totalPrice = new Decimal(0);
+    let totalPrice = new Decimal('0');
 
     for (const [key, count] of campVariantsCount.entries()) {
       const cvr = campVariants.find((e) => e.id === key);
-      totalPrice = totalPrice.plus(new Decimal(cvr.price).times(count));
+      totalPrice = totalPrice.plus(cvr.price.times(count));
     }
 
     return totalPrice.toFixed(2);

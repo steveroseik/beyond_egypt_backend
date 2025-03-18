@@ -1,7 +1,6 @@
-import Decimal from 'decimal.js';
 import { CreateCampVariantRegistrationInput } from 'src/camp-variant-registration/dto/create-camp-variant-registration.input';
 import { PaymentMethod } from 'support/enums';
-import { GraphqlDecimal } from 'support/scalars';
+import { Decimal, GraphqlDecimal } from 'support/scalars';
 import { CreateCampRegistrationInput } from './create-camp-registration.input';
 import { InputType, Field, Int, PartialType } from '@nestjs/graphql';
 

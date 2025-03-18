@@ -1,10 +1,10 @@
 import { ObjectType, Field, Int } from '@nestjs/graphql';
-import Decimal from 'decimal.js';
+
 import { CampVariantRegistration } from 'src/camp-variant-registration/entities/camp-variant-registration.entity';
 import { Discount } from 'src/discount/entities/discount.entity';
 import { RegistrationPayment } from 'src/registration-payment/entities/registration-payment.entity';
 import { CampRegistrationStatus, PaymentMethod } from 'support/enums';
-import { GraphqlDecimal } from 'support/scalars';
+import { Decimal, GraphqlDecimal } from 'support/scalars';
 import {
   Entity,
   Column,

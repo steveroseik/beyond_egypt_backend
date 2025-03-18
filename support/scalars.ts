@@ -1,5 +1,5 @@
 import { UserInputError } from '@nestjs/apollo';
-import Decimal from 'decimal.js';
+import BigNumber from 'bignumber.js';
 import { GraphQLScalarType } from 'graphql';
 import { ValueNode, Kind } from 'graphql';
 
@@ -37,14 +37,20 @@ export const GraphqlPoint = new GraphQLScalarType({
   },
 });
 
-export const GraphqlDecimal = new GraphQLScalarType<Decimal, String>({
+export class Decimal extends BigNumber {
+  constructor(value: string) {
+    super(value);
+  }
+}
+
+export const GraphqlDecimal = new GraphQLScalarType<BigNumber, string>({
   name: 'Decimal',
   description: 'Decimal custom scalar type',
   parseValue(value: string) {
-    return new Decimal(value); // value from the client
+    return new BigNumber(value); // Convert from client value
   },
   serialize(value: Decimal) {
-    return value.toString(); // value sent to the client
+    return value.toString(); // Convert to string for client
   },
   parseLiteral(ast: ValueNode) {
     if (
@@ -52,7 +58,9 @@ export const GraphqlDecimal = new GraphQLScalarType<Decimal, String>({
       ast.kind === Kind.INT ||
       ast.kind === Kind.FLOAT
     ) {
-      return new Decimal(ast.value); // ast value is always in string format
+      const newVal = new Decimal(ast.value); // Convert AST value to Decimal
+
+      return newVal;
     }
     return null;
   },
