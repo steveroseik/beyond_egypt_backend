@@ -1,4 +1,12 @@
-import { Resolver, Query, Mutation, Args, Int } from '@nestjs/graphql';
+import {
+  Resolver,
+  Query,
+  Mutation,
+  Args,
+  Int,
+  ResolveField,
+  Parent,
+} from '@nestjs/graphql';
 import { SchoolService } from './school.service';
 import { School } from './entities/school.entity';
 import { CreateSchoolInput } from './dto/create-school.input';
@@ -6,6 +14,8 @@ import { UpdateSchoolInput } from './dto/update-school.input';
 import { SchoolPage } from './entities/school-page.entity';
 import { PaginateSchoolsInput } from './dto/paginate-schools.input';
 import { Public } from 'src/auth/decorators/publicDecorator';
+import * as dotenv from 'dotenv';
+dotenv.config();
 
 @Resolver(() => School)
 export class SchoolResolver {
@@ -44,5 +54,12 @@ export class SchoolResolver {
   @Query(() => SchoolPage)
   paginateSchools(@Args('input') input: PaginateSchoolsInput) {
     return this.schoolService.paginateSchools(input);
+  }
+
+  @ResolveField(() => String, { nullable: true })
+  url(@Parent() school: School) {
+    return school.key
+      ? `https://s3.amazonaws.com/${process.env.AWS_BUCKET_NAME}/${school.key}`
+      : null;
   }
 }

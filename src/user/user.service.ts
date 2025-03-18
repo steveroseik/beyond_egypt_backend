@@ -12,6 +12,7 @@ import { UserAuthResponse } from 'src/auth/entities/user-auth-response.entity';
 import { DecodedIdToken } from 'firebase-admin/auth';
 import { CreateUserResponse } from './entities/create-user-response.wrapper';
 import { ParentAdditional } from 'src/parent-additional/entities/parent-additional.entity';
+import { CreateParentAdditionalInput } from 'src/parent-additional/dto/create-parent-additional.input';
 
 @Injectable()
 export class UserService {
@@ -42,8 +43,9 @@ export class UserService {
 
       if (input.type == UserType.parent) {
         return await this.createParent(input, firebaseData, queryRunner);
+      } else {
+        await queryRunner.commitTransaction();
       }
-
       return {
         success: false,
         message: 'Invalid user type, admin implementation not done',
@@ -120,11 +122,15 @@ export class UserService {
     }
 
     if (input.parentAdditional?.length) {
-      const parentAdditional = input.parentAdditional.map((additional) => {
-        return { ...additional, id: firebaseData.uid };
-      });
+      const parentAdditional: CreateParentAdditionalInput[] =
+        input.parentAdditional.map((additional) => {
+          return { ...additional, userId: firebaseData.uid };
+        });
 
-      const parentAdditionalResult = await this.repo.insert(parentAdditional);
+      const parentAdditionalResult = await queryRunner.manager.insert(
+        ParentAdditional,
+        parentAdditional,
+      );
 
       if (
         parentAdditionalResult.raw.affectedRows !==

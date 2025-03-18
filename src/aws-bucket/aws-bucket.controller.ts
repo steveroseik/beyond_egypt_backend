@@ -47,15 +47,26 @@ export class AwsBucketController {
     @CurrentUser('id') userId: string,
   ) {
     const isPublicBool = publicBool === 'true';
-    const uploadResults = await Promise.all(
-      files.map((file) =>
-        this.bucketService.uploadSingleFile({
+    let uploadResults = [];
+
+    files.forEach(async (file) => {
+      uploadResults.push(
+        await this.bucketService.uploadSingleFile({
           file,
           isPublic: isPublicBool,
           userId,
         }),
-      ),
-    );
+      );
+    });
+    // const uploadResults = await Promise.all(
+    //   files.map((file) =>
+    //     this.bucketService.uploadSingleFile({
+    //       file,
+    //       isPublic: isPublicBool,
+    //       userId,
+    //     }),
+    //   ),
+    // );
 
     return uploadResults.map(({ file, url, isPublic }, index) => ({
       file,

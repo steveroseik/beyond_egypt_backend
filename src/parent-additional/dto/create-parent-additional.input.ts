@@ -3,7 +3,7 @@ import { IsEmail, IsOptional, IsPhoneNumber, IsString } from 'class-validator';
 
 @InputType()
 export class CreateParentAdditionalInput {
-  id: string;
+  userId: string;
 
   @IsString()
   @Field()

@@ -1,5 +1,6 @@
 import { ObjectType, Field, Int } from '@nestjs/graphql';
 import {
+  AfterRemove,
   Column,
   CreateDateColumn,
   Entity,
@@ -22,6 +23,10 @@ export class School {
   @Column('varchar', { name: 'nameAr', length: 150 })
   nameAr: string;
 
+  @Column('varchar', { name: 'key', nullable: true })
+  @Field({ nullable: true })
+  key?: string;
+
   @CreateDateColumn({
     precision: 3,
     default: () => 'CURRENT_TIMESTAMP(3)',
@@ -38,4 +43,10 @@ export class School {
   })
   @Field()
   lastModified: Date;
+
+  // @AfterRemove()
+  // async afterRemove() {
+  //   if (this.key != null)
+
+  // }
 }

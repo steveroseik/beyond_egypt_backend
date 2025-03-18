@@ -2,6 +2,8 @@ import * as crypto from 'crypto';
 import { PaymentPayload } from '../models/payment.payload';
 import * as dotenv from 'dotenv';
 import axios from 'axios';
+import { PaymentStatusResponse } from '../models/payment-status.payload';
+import { generateQueryParams } from 'support/query-params.generator';
 dotenv.config();
 
 /**
@@ -131,12 +133,45 @@ export async function generateFawryPaymentUrl(
 
 export function generateStatusQuerySignature(merchantRefNum: number): string {
   const dataToSign =
-    merchantRefNum +
     process.env.FAWRY_MERCHANT_ID +
+    merchantRefNum +
     process.env.FAWRY_SECURE_KEY;
   const signature = crypto
     .createHash('sha256')
     .update(dataToSign)
     .digest('hex');
   return signature;
+}
+
+export async function requestPaymentStatus(
+  merchantRefNum: number,
+): Promise<PaymentStatusResponse | null> {
+  try {
+    const signature = generateStatusQuerySignature(merchantRefNum);
+
+    const params = {
+      merchantCode: process.env.FAWRY_MERCHANT_ID,
+      merchantRefNumber: merchantRefNum,
+      signature,
+    };
+    const endpoint = `https://atfawry.fawrystaging.com/ECommerceWeb/Fawry/payments/status/v2?${generateQueryParams(params)}`;
+
+    const response = await axios.get(endpoint);
+
+    const data = response.data;
+
+    return data;
+  } catch (error: any) {
+    if (axios.isAxiosError(error) && error.response) {
+      console.error('Fawry API error details:', error.response.data);
+      throw new Error(
+        `Failure in requesting payment status: ${
+          error.response.data.description ||
+          error.response.statusText ||
+          error.message
+        }`,
+      );
+    }
+    throw new Error(`Failure in requesting payment status: ${error.message}`);
+  }
 }

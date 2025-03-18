@@ -407,8 +407,10 @@ type School {
   id: Int!
   nameEn: String!
   nameAr: String!
+  key: String
   createdAt: DateTime!
   lastModified: DateTime!
+  url: String
 }
 
 type SchoolPage {

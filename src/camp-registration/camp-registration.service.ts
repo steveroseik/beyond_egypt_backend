@@ -823,7 +823,7 @@ export class CampRegistrationService {
   }
 
   setPaymentTimoout(paymentId: number) {
-    const timeout = 1 * 60 * 1000; // 11 minutes
+    const timeout = 11 * 60 * 1000; // 11 minutes
     setTimeout(async () => {
       const queryRunner = this.dataSource.createQueryRunner();
       await queryRunner.connect();
