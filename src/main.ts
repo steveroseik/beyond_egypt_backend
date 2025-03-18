@@ -25,7 +25,7 @@ async function bootstrap() {
   /// client initialization
   initializeApp(firebaseConfig);
 
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, { cors: true });
   app.use(bodyParser.json({ limit: '700kb' }));
   app.setGlobalPrefix('web');
   app.useGlobalPipes(
