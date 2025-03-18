@@ -7,7 +7,6 @@ export class CreateMealInput {
   @Field()
   name: string;
 
-  @Exclude()
   @Field(() => GraphqlDecimal)
   price: Decimal;
 }

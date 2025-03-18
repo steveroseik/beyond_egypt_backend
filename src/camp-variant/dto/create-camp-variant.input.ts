@@ -9,7 +9,6 @@ export class CreateCampVariantInput {
   @Field({ nullable: true })
   name?: string;
 
-  @Exclude()
   @Field(() => GraphqlDecimal, { nullable: true })
   price?: Decimal;
 
