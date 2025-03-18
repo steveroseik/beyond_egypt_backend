@@ -26,15 +26,6 @@ async function bootstrap() {
   initializeApp(firebaseConfig);
 
   const app = await NestFactory.create(AppModule);
-
-  const corsOptions: CorsOptions = {
-    origin: true,
-    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
-    credentials: true,
-    allowedHeaders: 'Content-Type, Accept, Authorization',
-  };
-
-  app.enableCors(corsOptions);
   app.use(bodyParser.json({ limit: '700kb' }));
   app.setGlobalPrefix('web');
   app.useGlobalPipes(
@@ -48,6 +39,14 @@ async function bootstrap() {
     }),
   );
 
+  const corsOptions: CorsOptions = {
+    origin: true,
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+    credentials: true,
+    allowedHeaders: 'Content-Type, Accept, Authorization',
+  };
+
+  app.enableCors(corsOptions);
   await app.listen(8003);
 }
 export default admin;
