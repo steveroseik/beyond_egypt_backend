@@ -626,7 +626,6 @@ input CreateParentAdditionalInput {
 
 input UpdateParentAdditionalInput {
   id: Int!
-  userId: String
   name: String
   email: String
   phone: String

@@ -6,7 +6,6 @@ export class UpdateParentAdditionalInput {
   @Field(() => Int)
   id: number;
 
-  @Field({ nullable: true })
   userId?: string;
 
   @Field({ nullable: true })
