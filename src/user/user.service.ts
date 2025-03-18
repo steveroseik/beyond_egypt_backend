@@ -283,12 +283,14 @@ export class UserService {
         if (input.parentAdditionalToAdd?.length) {
           const parentAdditional = input.parentAdditionalToAdd.map(
             (additional) => {
-              return { ...additional, id: input.id };
+              return { ...additional, userId: input.id };
             },
           );
 
-          const parentAdditionalResult =
-            await this.repo.insert(parentAdditional);
+          const parentAdditionalResult = await queryRunner.manager.insert(
+            ParentAdditional,
+            parentAdditional,
+          );
 
           if (
             parentAdditionalResult.raw.affectedRows !==
