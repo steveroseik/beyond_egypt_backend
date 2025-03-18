@@ -368,20 +368,6 @@ type ParentAdditional {
   deletedAt: DateTime
 }
 
-type RegistrationAttendance {
-  id: Int!
-  campRegistrationId: Int!
-  campVariantId: Int!
-  childId: Int!
-  enterTime: DateTime!
-  leaveTime: DateTime
-  enterAuditorId: Int!
-  leaveAuditorId: Int
-  createdAt: DateTime!
-  lastModified: DateTime!
-  deletedAt: DateTime
-}
-
 type Settings {
   id: Int!
   sizeChartFileId: Int
@@ -450,7 +436,6 @@ type Query {
   findOneEvent(id: Int!): Event!
   paginateEvents(input: PaginateEventsInput!): EventPage!
   eventFile(id: Int!): EventFile!
-  registrationAttendance(id: Int!): RegistrationAttendance!
   registrationHistory(id: Int!): RegistrationHistory!
   registrationPaymentHistory(id: Int!): RegistrationPayment!
   settings: [Settings!]!
@@ -564,9 +549,8 @@ type Mutation {
   createEventFile(createEventFileInput: CreateEventFileInput!): EventFile!
   updateEventFile(updateEventFileInput: UpdateEventFileInput!): EventFile!
   removeEventFile(id: Int!): EventFile!
-  createRegistrationAttendance(createRegistrationAttendanceInput: CreateRegistrationAttendanceInput!): RegistrationAttendance!
-  updateRegistrationAttendance(updateRegistrationAttendanceInput: UpdateRegistrationAttendanceInput!): RegistrationAttendance!
-  removeRegistrationAttendance(id: Int!): RegistrationAttendance!
+  enterAttendance(input: CreateRegistrationAttendanceInput!): JSONObject!
+  leaveAttendance(id: Int!): JSONObject!
   createRegistrationHistory(createRegistrationHistoryInput: CreateRegistrationHistoryInput!): RegistrationHistory!
   updateRegistrationHistory(updateRegistrationHistoryInput: UpdateRegistrationHistoryInput!): RegistrationHistory!
   removeRegistrationHistory(id: Int!): RegistrationHistory!
@@ -609,7 +593,7 @@ input UpdateFileInput {
 input CreateCampVariantInput {
   name: String
   price: Decimal
-  capacity: Int
+  capacity: Int!
   startDate: DateTime!
   endDate: DateTime!
 }
@@ -861,14 +845,9 @@ input UpdateEventFileInput {
 }
 
 input CreateRegistrationAttendanceInput {
-  """Example field (placeholder)"""
-  exampleField: Int!
-}
-
-input UpdateRegistrationAttendanceInput {
-  """Example field (placeholder)"""
-  exampleField: Int
-  id: Int!
+  campRegistrationId: Int!
+  campVariantId: Int!
+  childId: Int!
 }
 
 input CreateRegistrationHistoryInput {
