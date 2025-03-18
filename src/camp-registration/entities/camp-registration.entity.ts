@@ -54,7 +54,7 @@ export class CampRegistration {
     nullable: true,
     scale: 0,
     transformer: {
-      to: (value?: BigNumber) => value && value.toFixed(moneyFixation),
+      to: (value?: Decimal) => value && value.toFixed(moneyFixation),
       from: (value?: string) => value && new Decimal(value),
     },
   })
