@@ -215,8 +215,9 @@ export class CampRegistrationService {
       campVariantRegistrations.map((e) => ({
         ...e,
         campRegistrationId,
-        price: campVariantVacancies.find((cv) => cv.id === e.campVariantId)
-          .price,
+        price: campVariantVacancies
+          .find((cv) => cv.id === e.campVariantId)
+          .price?.toFixed(moneyFixation),
       })),
     );
 
