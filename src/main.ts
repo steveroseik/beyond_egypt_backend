@@ -25,7 +25,8 @@ async function bootstrap() {
   /// client initialization
   initializeApp(firebaseConfig);
 
-  const app = await NestFactory.create(AppModule, { cors: true });
+  const app = await NestFactory.create(AppModule);
+
   app.use(bodyParser.json({ limit: '700kb' }));
   app.setGlobalPrefix('web');
   app.useGlobalPipes(
@@ -40,13 +41,13 @@ async function bootstrap() {
   );
 
   const corsOptions: CorsOptions = {
-    origin: ['http://localhost:3000', 'https://beyond-egypt.com'],
+    origin: true,
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
     credentials: true,
-    allowedHeaders: '*',
   };
 
   app.enableCors(corsOptions);
+
   await app.listen(8003);
 }
 export default admin;
