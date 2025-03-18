@@ -23,9 +23,9 @@ export class School {
   @Column('varchar', { name: 'nameAr', length: 150 })
   nameAr: string;
 
-  @Column('varchar', { name: 'key', nullable: true })
+  @Column('varchar', { name: 'imageKey', nullable: true })
   @Field({ nullable: true })
-  key?: string;
+  imageKey?: string;
 
   @CreateDateColumn({
     precision: 3,

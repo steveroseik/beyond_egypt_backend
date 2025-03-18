@@ -407,7 +407,7 @@ type School {
   id: Int!
   nameEn: String!
   nameAr: String!
-  key: String
+  imageKey: String
   createdAt: DateTime!
   lastModified: DateTime!
   url: String

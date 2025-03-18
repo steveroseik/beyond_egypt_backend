@@ -5,7 +5,7 @@ export class InsertSchools1742294768970 implements MigrationInterface {
 
   public async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(`
-      INSERT INTO \`school\` (id, nameEn, nameAr, \`key\`) VALUES
+      INSERT INTO \`school\` (id, nameEn, nameAr, imageKey) VALUES
       (1, 'Al-Alson International School (ALS)', 'مدارس الالسن للغات', 'd8d97c-b130-42d6-950a-91942b2ab81e.jpg'),
       (2, 'The American school of Egypt (ASE)', 'المدرسة الامريكية في مصر', '02e9280e-758d-4d6f-823e-0491a0721876.png'),
       (3, 'Belvedere School Cairo', 'مدرسة البلفدير بالقاهرة', '143919ed-e883-4601-8618-fb00742d46d5.jpg'),
