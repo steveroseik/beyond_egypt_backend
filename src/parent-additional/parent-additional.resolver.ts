@@ -3,6 +3,9 @@ import { ParentAdditionalService } from './parent-additional.service';
 import { ParentAdditional } from './entities/parent-additional.entity';
 import { CreateParentAdditionalInput } from './dto/create-parent-additional.input';
 import { UpdateParentAdditionalInput } from './dto/update-parent-additional.input';
+import { CurrentUser } from 'src/auth/decorators/currentUserDecorator';
+import { UserType } from 'support/enums';
+import { GraphQLJSONObject } from 'graphql-type-json';
 
 @Resolver(() => ParentAdditional)
 export class ParentAdditionalResolver {
@@ -23,15 +26,17 @@ export class ParentAdditionalResolver {
     return this.parentAdditionalService.findOne(id);
   }
 
-  @Mutation(() => ParentAdditional)
+  @Mutation(() => GraphQLJSONObject)
   updateParentAdditional(
-    @Args('updateParentAdditionalInput')
-    updateParentAdditionalInput: UpdateParentAdditionalInput,
+    @Args('input')
+    input: UpdateParentAdditionalInput,
+    @CurrentUser('id') userId: string,
+    @CurrentUser('type') userType: string,
   ) {
-    return this.parentAdditionalService.update(
-      updateParentAdditionalInput.id,
-      updateParentAdditionalInput,
-    );
+    if (userType == UserType.parent) {
+      input.userId = userId;
+    }
+    return this.parentAdditionalService.update(input);
   }
 
   @Mutation(() => ParentAdditional)

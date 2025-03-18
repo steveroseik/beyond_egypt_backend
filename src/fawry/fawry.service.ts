@@ -7,13 +7,18 @@ import {
 } from './generate/payment.generate';
 import { RegistrationPayment } from 'src/registration-payment/entities/registration-payment.entity';
 import * as moment from 'moment-timezone';
-import { PaymentMethod, PaymentStatus } from 'support/enums';
+import {
+  CampRegistrationStatus,
+  PaymentMethod,
+  PaymentStatus,
+} from 'support/enums';
 import { CampVariant } from 'src/camp-variant/entities/camp-variant.entity';
 import { RegistrationReserve } from 'src/registration-reserve/entities/registration-reserve.entity';
 import e, { Response } from 'express';
 import { PaymentStatusResponse } from './models/payment-status.payload';
 import * as dotenv from 'dotenv';
 import { generateQueryParams } from 'support/query-params.generator';
+import { CampRegistration } from 'src/camp-registration/entities/camp-registration.entity';
 
 dotenv.config();
 
@@ -177,6 +182,16 @@ export class FawryService {
 
     if (update.affected !== 1) {
       throw new Error('Failed to update payment status');
+    }
+
+    const updateCampRegistration = await queryRunner.manager.update(
+      CampRegistration,
+      { id: payment.campRegistrationId },
+      { status: CampRegistrationStatus.accepted, paid: true },
+    );
+
+    if (updateCampRegistration.affected !== 1) {
+      throw new Error('Failed to update camp registration status');
     }
 
     const releaseReserves = await queryRunner.manager.delete(

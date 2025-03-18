@@ -61,6 +61,10 @@ export class ChildService {
         extraNotes: input.extraNotes,
       });
 
+      if (updated.affected !== 1) {
+        throw new Error('Failed to update child');
+      }
+
       if (input.allergiesToAdd.length > 0) {
         await queryRunner.manager
           .createQueryBuilder()

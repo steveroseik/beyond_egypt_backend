@@ -24,8 +24,30 @@ export class ParentAdditionalService {
     return `This action returns a #${id} parentAdditional`;
   }
 
-  update(id: number, updateParentAdditionalInput: UpdateParentAdditionalInput) {
-    return `This action updates a #${id} parentAdditional`;
+  async update(input: UpdateParentAdditionalInput) {
+    try {
+      const updateParentAdditional = await this.repo.update(
+        {
+          id: input.id,
+          ...(input.userId && { userId: input.userId }),
+        },
+        input,
+      );
+
+      if (updateParentAdditional.affected === 0) {
+        throw new Error('Parent Additional not found');
+      }
+
+      return {
+        success: true,
+        message: 'Parent Additional updated successfully',
+      };
+    } catch (e) {
+      return {
+        success: false,
+        message: e.message,
+      };
+    }
   }
 
   remove(id: number) {

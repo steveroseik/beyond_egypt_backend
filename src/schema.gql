@@ -508,7 +508,7 @@ type Mutation {
   updateLocation(updateLocationInput: UpdateLocationInput!): Location!
   removeLocation(id: Int!): Location!
   createParentAdditional(createParentAdditionalInput: CreateParentAdditionalInput!): ParentAdditional!
-  updateParentAdditional(updateParentAdditionalInput: UpdateParentAdditionalInput!): ParentAdditional!
+  updateParentAdditional(input: UpdateParentAdditionalInput!): JSONObject!
   removeParentAdditional(id: Int!): ParentAdditional!
   createChild(createChildInput: CreateChildInput!): Child!
   updateChild(input: UpdateChildInput!): JSONObject!
@@ -626,6 +626,10 @@ input CreateParentAdditionalInput {
 
 input UpdateParentAdditionalInput {
   id: Int!
+  userId: String
+  name: String
+  email: String
+  phone: String
 }
 
 input CreateChildInput {
