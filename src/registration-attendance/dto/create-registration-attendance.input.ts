@@ -2,6 +2,13 @@ import { InputType, Int, Field } from '@nestjs/graphql';
 
 @InputType()
 export class CreateRegistrationAttendanceInput {
-  @Field(() => Int, { description: 'Example field (placeholder)' })
-  exampleField: number;
+  @Field(() => Int)
+  campRegistrationId: number;
+
+  @Field(() => Int)
+  campVariantId: number;
+
+  @Field(() => Int)
+  childId: number;
+  //auditor kaman?
 }

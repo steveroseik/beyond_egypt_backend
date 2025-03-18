@@ -123,8 +123,9 @@ export class CampService {
       return {
         ...variant,
         capacity: variant.capacity ?? input.defaultCapacity,
-        price: variant.price.toFixed(2) ?? input.defaultPrice,
+        price: variant.price?.toFixed(2) ?? input.defaultPrice,
         campId,
+        remainingCapacity: variant.capacity,
       };
     });
 

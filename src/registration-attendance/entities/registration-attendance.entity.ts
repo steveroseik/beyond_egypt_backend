@@ -1,4 +1,4 @@
-import { ObjectType, Field, Int } from '@nestjs/graphql';
+import { ObjectType, Field } from '@nestjs/graphql';
 import {
   Column,
   CreateDateColumn,
@@ -35,13 +35,13 @@ export class RegistrationAttendance {
   @Field({ nullable: true })
   leaveTime?: Date;
 
-  @Column('int', { name: 'enterAuditorId' })
+  @Column('varchar', { name: 'enterAuditorId' })
   @Field()
-  enterAuditorId: number;
+  enterAuditorId: string;
 
-  @Column('int', { name: 'leaveAuditorId', nullable: true })
+  @Column('varchar', { name: 'leaveAuditorId', nullable: true })
   @Field({ nullable: true })
-  leaveAuditorId?: number;
+  leaveAuditorId?: string;
 
   @CreateDateColumn({
     name: 'createdAt',
