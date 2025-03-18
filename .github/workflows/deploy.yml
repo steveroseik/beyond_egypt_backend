@@ -31,5 +31,5 @@ jobs:
             git pull
             npm install # If dependencies need to be updated
             nest build # Build the application
-            pm2 restart 0 # Restart the application
+            pm2 restart 1 # Restart the application
           EOF
