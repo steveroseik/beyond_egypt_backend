@@ -1,5 +1,7 @@
 import { ObjectType, Field, Int } from '@nestjs/graphql';
+import BigNumber from 'bignumber.js';
 import { CampRegistration } from 'src/camp-registration/entities/camp-registration.entity';
+import { moneyFixation } from 'support/constants';
 import { PaymentMethod, PaymentStatus } from 'support/enums';
 import { Decimal, GraphqlDecimal } from 'support/scalars';
 import {
@@ -41,7 +43,15 @@ export class RegistrationPayment {
   @Field(() => PaymentStatus)
   status: PaymentStatus;
 
-  @Column('decimal', { name: 'amount', precision: 10, scale: 2 })
+  @Column('decimal', {
+    name: 'amount',
+    precision: 10,
+    scale: 2,
+    transformer: {
+      to: (value?: BigNumber) => value && value.toFixed(moneyFixation),
+      from: (value?: string) => value && new Decimal(value),
+    },
+  })
   @Field(() => GraphqlDecimal)
   amount: Decimal;
 

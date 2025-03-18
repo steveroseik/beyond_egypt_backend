@@ -1,5 +1,7 @@
 import { Field, ObjectType } from '@nestjs/graphql';
+import BigNumber from 'bignumber.js';
 import { Camp } from 'src/camp/entities/camp.entity';
+import { moneyFixation } from 'support/constants';
 import { Decimal, GraphqlDecimal } from 'support/scalars';
 import {
   Column,
@@ -23,7 +25,15 @@ export class Meal {
   @Field()
   name: string;
 
-  @Column('decimal', { name: 'price', precision: 10, scale: 2 })
+  @Column('decimal', {
+    name: 'price',
+    precision: 10,
+    scale: 2,
+    transformer: {
+      to: (value?: BigNumber) => value && value.toFixed(moneyFixation),
+      from: (value?: string) => value && new Decimal(value),
+    },
+  })
   @Field(() => GraphqlDecimal)
   price: Decimal;
 

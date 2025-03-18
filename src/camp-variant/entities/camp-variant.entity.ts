@@ -1,6 +1,8 @@
 import { ObjectType, Field, Int } from '@nestjs/graphql';
+import BigNumber from 'bignumber.js';
 import { CampVariantRegistration } from 'src/camp-variant-registration/entities/camp-variant-registration.entity';
 import { Camp } from 'src/camp/entities/camp.entity';
+import { moneyFixation } from 'support/constants';
 import { Decimal, GraphqlDecimal } from 'support/scalars';
 import {
   Entity,
@@ -30,7 +32,16 @@ export class CampVariant {
   @Field({ nullable: true })
   name?: string;
 
-  @Column('decimal', { name: 'price', nullable: true, precision: 10, scale: 2 })
+  @Column('decimal', {
+    name: 'price',
+    nullable: true,
+    precision: 10,
+    scale: 2,
+    transformer: {
+      to: (value?: BigNumber) => value && value.toFixed(moneyFixation),
+      from: (value?: string) => value && new Decimal(value),
+    },
+  })
   @Field(() => GraphqlDecimal, { nullable: true })
   price?: Decimal;
 

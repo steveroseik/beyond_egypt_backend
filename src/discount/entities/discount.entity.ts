@@ -1,5 +1,7 @@
 import { ObjectType, Field, Int } from '@nestjs/graphql';
+import BigNumber from 'bignumber.js';
 import { RegistrationHistory } from 'src/registration-history/entities/registration-history.entity';
+import { moneyFixation } from 'support/constants';
 import { Decimal, GraphqlDecimal } from 'support/scalars';
 import {
   Column,
@@ -29,6 +31,10 @@ export class Discount {
     nullable: true,
     precision: 10,
     scale: 2,
+    transformer: {
+      to: (value?: BigNumber) => value && value.toFixed(moneyFixation),
+      from: (value?: string) => value && new Decimal(value),
+    },
   })
   @Field(() => GraphqlDecimal, { nullable: true })
   percentage?: Decimal;
@@ -38,6 +44,10 @@ export class Discount {
     nullable: true,
     precision: 10,
     scale: 2,
+    transformer: {
+      to: (value?: BigNumber) => value && value.toFixed(moneyFixation),
+      from: (value?: string) => value && new Decimal(value),
+    },
   })
   @Field(() => GraphqlDecimal, { nullable: true })
   amount?: string;

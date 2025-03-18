@@ -1,10 +1,13 @@
 import { ObjectType, Field, Int } from '@nestjs/graphql';
+import BigNumber from 'bignumber.js';
 import { AgeRange } from 'src/age-range/entities/age-range.entity';
 import { CampVariant } from 'src/camp-variant/entities/camp-variant.entity';
 import { Event } from 'src/event/entities/event.entity';
 import { File } from 'src/file/entities/file.entity';
 import { Location } from 'src/location/entities/location.entity';
 import { Meal } from 'src/meal/entities/meal.entity';
+import { moneyFixation } from 'support/constants';
+import { Decimal } from 'support/scalars';
 import {
   Entity,
   Column,
@@ -44,6 +47,10 @@ export class Camp {
     nullable: true,
     precision: 10,
     scale: 0,
+    transformer: {
+      to: (value?: BigNumber) => value && value.toFixed(moneyFixation),
+      from: (value?: string) => value && new Decimal(value),
+    },
   })
   @Field({ nullable: true })
   defaultPrice?: string;

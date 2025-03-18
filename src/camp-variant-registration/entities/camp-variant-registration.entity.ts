@@ -1,8 +1,10 @@
 import { ObjectType, Field, Int } from '@nestjs/graphql';
+import BigNumber from 'bignumber.js';
 
 import { CampRegistration } from 'src/camp-registration/entities/camp-registration.entity';
 import { CampVariant } from 'src/camp-variant/entities/camp-variant.entity';
 import { Child } from 'src/child/entities/child.entity';
+import { moneyFixation } from 'support/constants';
 import { ShirtSize } from 'support/enums';
 import { Decimal, GraphqlDecimal } from 'support/scalars';
 import {
@@ -37,7 +39,15 @@ export class CampVariantRegistration {
   @Field()
   campVariantId: number;
 
-  @Column('decimal', { name: 'price', precision: 10, scale: 2 })
+  @Column('decimal', {
+    name: 'price',
+    precision: 10,
+    scale: 2,
+    transformer: {
+      to: (value?: BigNumber) => value && value.toFixed(moneyFixation),
+      from: (value?: string) => value && new Decimal(value),
+    },
+  })
   @Field(() => GraphqlDecimal)
   price: Decimal;
 
