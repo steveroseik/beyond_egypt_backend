@@ -329,7 +329,6 @@ export class CampService {
     const queryBuilder = this.repo
       .createQueryBuilder('camp')
       .leftJoinAndSelect('camp.ageRanges', 'ageRanges')
-      .leftJoinAndSelect('camp.meals', 'meals')
       .leftJoinAndSelect('camp.files', 'files');
 
     const paginator = buildPaginator({
