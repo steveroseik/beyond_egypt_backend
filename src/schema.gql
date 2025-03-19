@@ -725,6 +725,7 @@ input TempSignInInput {
 
 input TokenRequestInput {
   firebaseToken: String!
+  isAdmin: Boolean = false
 }
 
 input CreateUserInput {

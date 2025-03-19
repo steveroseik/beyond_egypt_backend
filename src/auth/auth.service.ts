@@ -87,7 +87,7 @@ export class AuthService {
         tokenPayload.firebaseToken,
       );
       if (decoded.email == null || decoded.email.length <= 0)
-        throw Error('no_email_found');
+        throw Error('Invalid token, email not found');
 
       email = decoded.email;
 
@@ -96,7 +96,10 @@ export class AuthService {
         decoded.uid,
       );
 
-      if (!user) throw Error('user_not_registered');
+      if (!user) throw Error('User not found');
+
+      if (tokenPayload.isAdmin && user.type === UserType.parent)
+        throw Error('Unauthorized, only admins can sign in');
 
       const accessToken = this.generateAccessToken(user.id, user.type);
 
