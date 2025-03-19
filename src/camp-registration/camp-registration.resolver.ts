@@ -51,11 +51,6 @@ export class CampRegistrationResolver {
     return this.campRegistrationService.create(input, type, id);
   }
 
-  @Query(() => [CampRegistration], { name: 'campRegistration' })
-  findAll() {
-    return this.campRegistrationService.findAll();
-  }
-
   @Query(() => CampRegistration, { name: 'campRegistration' })
   findOne(@Args('id', { type: () => Int }) id: number) {
     return this.campRegistrationService.findOne(id);

@@ -45,9 +45,18 @@ export class CampResolver {
     return this.campService.findOne(id);
   }
 
-  @Mutation(() => Camp)
-  updateCamp(@Args('updateCampInput') updateCampInput: UpdateCampInput) {
-    return this.campService.update(updateCampInput.id, updateCampInput);
+  @Mutation(() => GraphQLJSONObject)
+  updateCamp(
+    @Args('input') input: UpdateCampInput,
+    @CurrentUser('type') type: UserType,
+  ) {
+    if (type !== UserType.admin) {
+      return {
+        success: false,
+        message: 'You are not authorized to perform this action',
+      };
+    }
+    return this.campService.update(input);
   }
 
   @Mutation(() => Camp)

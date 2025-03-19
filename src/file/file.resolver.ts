@@ -11,6 +11,7 @@ import { FileService } from './file.service';
 import { File } from './entities/file.entity';
 import { CreateFileInput } from './dto/create-file.input';
 import { UpdateFileInput } from './dto/update-file.input';
+import GraphQLJSON, { GraphQLJSONObject } from 'graphql-type-json';
 
 @Resolver(() => File)
 export class FileResolver {
@@ -36,7 +37,7 @@ export class FileResolver {
     return this.fileService.update(updateFileInput.id, updateFileInput);
   }
 
-  @Mutation(() => File)
+  @Mutation(() => GraphQLJSONObject)
   removeFile(@Args('id', { type: () => Int }) id: number) {
     return this.fileService.remove(id);
   }

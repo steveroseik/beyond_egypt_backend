@@ -66,6 +66,7 @@ export class CampService {
       const camp = await queryRunner.manager.insert(Camp, {
         ...input,
         defaultPrice: input.defaultPrice.toFixed(2),
+        mealPrice: input.mealPrice?.toFixed(2),
       });
       if (camp.raw.affectedRows !== 1) {
         throw new Error('Failed to insert camp');
@@ -115,7 +116,7 @@ export class CampService {
   }
 
   async handleCampVariants(
-    input: CreateCampInput,
+    input: CreateCampInput | UpdateCampInput,
     queryRunner: QueryRunner,
     campId: number,
   ) {
@@ -181,7 +182,10 @@ export class CampService {
   //   ];
   // }
 
-  async handleFiles(input: CreateCampInput, queryRunner: QueryRunner) {
+  async handleFiles(
+    input: CreateCampInput | UpdateCampInput,
+    queryRunner: QueryRunner,
+  ) {
     if (!input.fileIds?.length) {
       return;
     }
@@ -201,7 +205,10 @@ export class CampService {
     return input.fileIds;
   }
 
-  async handleAgeRanges(input: CreateCampInput, queryRunner: QueryRunner) {
+  async handleAgeRanges(
+    input: CreateCampInput | UpdateCampInput,
+    queryRunner: QueryRunner,
+  ) {
     if (!input.ageRangeIds?.length && !input.ageRanges?.length) {
       return;
     }
@@ -242,8 +249,76 @@ export class CampService {
     return this.repo.findOne({ where: { id } });
   }
 
-  update(id: number, updateCampInput: UpdateCampInput) {
-    return `This action updates a #${id} camp`;
+  async update(input: UpdateCampInput) {
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+    try {
+      const fileIds = await this.handleFiles(input, queryRunner);
+      const ageRangeIds = await this.handleAgeRanges(input, queryRunner);
+
+      const camp = await queryRunner.manager.update(Camp, input.id, {
+        ...input,
+        defaultPrice: input.defaultPrice.toFixed(2),
+        mealPrice: input.mealPrice?.toFixed(2),
+      });
+
+      if (fileIds?.length) {
+        await this.repo
+          .createQueryBuilder('camp')
+          .relation(Camp, 'files')
+          .of(input.id)
+          .add(fileIds);
+      }
+
+      if (ageRangeIds?.length) {
+        await this.repo
+          .createQueryBuilder('camp')
+          .relation(Camp, 'ageRanges')
+          .of(input.id)
+          .add(ageRangeIds);
+      }
+
+      if (input.ageRangeIdsToDelete?.length) {
+        await this.repo
+          .createQueryBuilder('camp')
+          .relation(Camp, 'ageRanges')
+          .of(input.id)
+          .remove(input.ageRangeIdsToDelete);
+      }
+
+      if (input.variantIdsToDelete?.length) {
+        const deleteVariants = await this.dataSource.manager.delete(
+          CampVariant,
+          {
+            id: In(input.variantIdsToDelete),
+          },
+        );
+        if (deleteVariants.affected !== input.variantIdsToDelete.length) {
+          throw new Error('Failed to delete camp variants');
+        }
+      }
+
+      if (input.variants?.length) {
+        await this.handleCampVariants(input, queryRunner, input.id);
+      }
+
+      await queryRunner.commitTransaction();
+
+      return {
+        success: true,
+        message: 'Camp updated successfully',
+      };
+    } catch (e) {
+      await queryRunner.rollbackTransaction();
+      console.log(e);
+      return {
+        success: false,
+        message: e.message,
+      };
+    } finally {
+      await queryRunner.release();
+    }
   }
 
   remove(id: number) {

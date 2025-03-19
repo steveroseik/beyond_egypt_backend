@@ -499,7 +499,7 @@ type Mutation {
   removeMeal(id: Int!): Meal!
   createFile(createFileInput: CreateFileInput!): File!
   updateFile(updateFileInput: UpdateFileInput!): File!
-  removeFile(id: Int!): File!
+  removeFile(id: Int!): JSONObject!
   createCampVariant(createCampVariantInput: CreateCampVariantInput!): CampVariant!
   updateCampVariant(updateCampVariantInput: UpdateCampVariantInput!): CampVariant!
   removeCampVariant(id: Int!): CampVariant!
@@ -516,7 +516,7 @@ type Mutation {
   updateCampVariantRegistration(updateCampVariantRegistrationInput: UpdateCampVariantRegistrationInput!): CampVariantRegistration!
   removeCampVariantRegistration(id: Int!): CampVariantRegistration!
   createCamp(input: CreateCampInput!): JSONObject!
-  updateCamp(updateCampInput: UpdateCampInput!): Camp!
+  updateCamp(input: UpdateCampInput!): JSONObject!
   removeCamp(id: Int!): Camp!
   tempLogin(input: TempSignInInput!): JSONObject!
   signIn(input: TokenRequestInput!): UserAuthResponse!
@@ -689,8 +689,6 @@ input CreateCampInput {
   ageRanges: [CreateAgeRangeInput!]
   ageRangeIds: [Int!]
   fileIds: [Int!]
-  mealIds: [Int!]
-  meals: [CreateMealInput!]
 }
 
 input CreateAgeRangeInput {
@@ -715,9 +713,9 @@ input UpdateCampInput {
   ageRanges: [CreateAgeRangeInput!]
   ageRangeIds: [Int!]
   fileIds: [Int!]
-  mealIds: [Int!]
-  meals: [CreateMealInput!]
   id: Int!
+  ageRangeIdsToDelete: [Int!]
+  variantIdsToDelete: [Int!]
 }
 
 input TempSignInInput {

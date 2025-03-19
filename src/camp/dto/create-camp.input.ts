@@ -50,10 +50,4 @@ export class CreateCampInput {
 
   @Field(() => [Int], { nullable: true })
   fileIds?: number[];
-
-  @Field(() => [Int], { nullable: true })
-  mealIds?: number[];
-
-  @Field(() => [CreateMealInput], { nullable: true })
-  meals?: CreateMealInput[];
 }

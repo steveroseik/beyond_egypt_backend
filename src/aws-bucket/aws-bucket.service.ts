@@ -252,7 +252,10 @@ export class AwsBucketService {
 
       return { success: true, message: 'File deleted successfully' };
     } catch (error) {
-      throw new InternalServerErrorException(error);
+      return {
+        success: false,
+        message: error.message || 'Failed to delete file',
+      };
     }
   }
 

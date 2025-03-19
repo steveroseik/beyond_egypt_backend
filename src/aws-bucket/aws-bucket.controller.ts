@@ -116,7 +116,6 @@ export class AwsBucketController {
 
   @Delete(':key')
   async deleteFile(@Param('key') key: string) {
-    return new Error('Not implemented');
     return this.bucketService.deleteFile(key);
   }
 }
