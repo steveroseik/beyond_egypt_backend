@@ -1,6 +1,7 @@
 import { ObjectType, Field, Int } from '@nestjs/graphql';
 import BigNumber from 'bignumber.js';
 import { AgeRange } from 'src/age-range/entities/age-range.entity';
+import { CampRegistration } from 'src/camp-registration/entities/camp-registration.entity';
 import { CampVariant } from 'src/camp-variant/entities/camp-variant.entity';
 import { Event } from 'src/event/entities/event.entity';
 import { File } from 'src/file/entities/file.entity';
@@ -54,6 +55,19 @@ export class Camp {
   })
   @Field(() => GraphqlDecimal, { nullable: true })
   defaultPrice?: Decimal;
+
+  @Column('decimal', {
+    name: 'mealPrice',
+    nullable: true,
+    precision: 10,
+    scale: 0,
+    transformer: {
+      to: (value) => value,
+      from: (value?: string) => value && new Decimal(value),
+    },
+  })
+  @Field(() => GraphqlDecimal, { nullable: true })
+  mealPrice?: Decimal;
 
   @Column('bit', {
     name: 'hasShirts',
@@ -144,20 +158,20 @@ export class Camp {
   @Field(() => [File], { nullable: true })
   files?: File[];
 
-  @ManyToMany(() => Meal, (meal) => meal.camps)
-  @JoinTable({
-    name: 'camp-meal',
-    inverseJoinColumn: {
-      name: 'meal',
-      referencedColumnName: 'id',
-    },
-    joinColumn: {
-      name: 'camp',
-      referencedColumnName: 'id',
-    },
-  })
-  @Field(() => [Meal], { nullable: true })
-  meals?: Meal[];
+  // @ManyToMany(() => Meal, (meal) => meal.camps)
+  // @JoinTable({
+  //   name: 'camp-meal',
+  //   inverseJoinColumn: {
+  //     name: 'meal',
+  //     referencedColumnName: 'id',
+  //   },
+  //   joinColumn: {
+  //     name: 'camp',
+  //     referencedColumnName: 'id',
+  //   },
+  // })
+  // @Field(() => [Meal], { nullable: true })
+  // meals?: Meal[];
 
   @OneToMany(() => CampVariant, (campVariant) => campVariant.camp)
   @Field(() => [CampVariant], { nullable: true })
@@ -181,4 +195,11 @@ export class Camp {
   @JoinColumn({ name: 'eventId', referencedColumnName: 'id' })
   @Field(() => Event, { nullable: true })
   event?: Event;
+
+  @OneToMany(
+    () => CampRegistration,
+    (campRegistration) => campRegistration.camp,
+  )
+  @Field(() => [CampRegistration], { nullable: true })
+  campRegistrations: CampRegistration[];
 }

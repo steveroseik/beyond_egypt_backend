@@ -18,6 +18,9 @@ export class CreateCampInput {
   @Field(() => GraphqlDecimal, { nullable: true })
   defaultPrice?: Decimal;
 
+  @Field(() => GraphqlDecimal, { nullable: true })
+  mealPrice?: Decimal;
+
   @Field()
   hasShirts: boolean;
 

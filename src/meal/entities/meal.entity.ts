@@ -58,6 +58,6 @@ export class Meal {
   @Field({ nullable: true })
   deletedAt?: Date;
 
-  @ManyToMany(() => Camp, (camp) => camp.meals, { nullable: true })
-  camps?: Camp[];
+  // @ManyToMany(() => Camp, (camp) => camp.meals, { nullable: true })
+  // camps?: Camp[];
 }

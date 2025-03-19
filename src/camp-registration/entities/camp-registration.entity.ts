@@ -2,6 +2,7 @@ import { ObjectType, Field, Int } from '@nestjs/graphql';
 import BigNumber from 'bignumber.js';
 
 import { CampVariantRegistration } from 'src/camp-variant-registration/entities/camp-variant-registration.entity';
+import { Camp } from 'src/camp/entities/camp.entity';
 import { Discount } from 'src/discount/entities/discount.entity';
 import { RegistrationPayment } from 'src/registration-payment/entities/registration-payment.entity';
 import { moneyFixation } from 'support/constants';
@@ -18,6 +19,8 @@ import {
   ManyToMany,
   JoinTable,
   OneToMany,
+  ManyToOne,
+  JoinColumn,
 } from 'typeorm';
 
 @ObjectType()
@@ -127,4 +130,12 @@ export class CampRegistration {
   )
   @Field(() => [RegistrationPayment])
   payments: RegistrationPayment[];
+
+  @ManyToOne(() => Camp, (camp) => camp.campRegistrations, {
+    onDelete: 'RESTRICT',
+    onUpdate: 'CASCADE',
+  })
+  @JoinColumn({ name: 'campId', referencedColumnName: 'id' })
+  @Field(() => Camp)
+  camp: Camp;
 }

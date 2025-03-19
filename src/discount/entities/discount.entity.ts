@@ -81,10 +81,10 @@ export class Discount {
   @Field({ nullable: true })
   deletedAt?: Date;
 
-  @ManyToMany(
-    () => RegistrationHistory,
-    (registrationHistory) => registrationHistory.discountsApplied,
-    { nullable: true },
-  )
-  registrationUsage?: RegistrationHistory[];
+  // @ManyToMany(
+  //   () => RegistrationHistory,
+  //   (registrationHistory) => registrationHistory.discountsApplied,
+  //   { nullable: true },
+  // )
+  // registrationUsage?: RegistrationHistory[];
 }

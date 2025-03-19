@@ -1,5 +1,5 @@
 import { MealService } from 'src/meal/meal.service';
-import { MealsLoader } from './loaders/meals.loader';
+// import { MealsLoader } from './loaders/meals.loader';
 import { FilesLoader } from './loaders/files.loader';
 import { FileService } from 'src/file/file.service';
 import CampVariantsByCampDataLoader from './loaders/campVariantsByCamp.loader';
@@ -44,9 +44,9 @@ export class DataloaderRegistry {
     return this.cache[key];
   }
 
-  public get MealsLoader() {
-    return this.get('MealsLoader', () => MealsLoader.create(this.mealService));
-  }
+  // public get MealsLoader() {
+  //   return this.get('MealsLoader', () => MealsLoader.create(this.mealService));
+  // }
 
   public get FilesLoader() {
     console.log('HEREE');

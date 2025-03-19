@@ -61,13 +61,13 @@ export class CampResolver {
     return this.campService.paginate(input);
   }
 
-  @ResolveField(() => [Meal], { nullable: true })
-  meals(
-    @Parent() parent: Camp,
-    @Context() { loaders }: { loaders: DataloaderRegistry },
-  ) {
-    return parent.meals ?? loaders.MealsLoader.load(parent.id);
-  }
+  // @ResolveField(() => [Meal], { nullable: true })
+  // meals(
+  //   @Parent() parent: Camp,
+  //   @Context() { loaders }: { loaders: DataloaderRegistry },
+  // ) {
+  //   return parent.meals ?? loaders.MealsLoader.load(parent.id);
+  // }
 
   @ResolveField(() => File)
   thumbnail(

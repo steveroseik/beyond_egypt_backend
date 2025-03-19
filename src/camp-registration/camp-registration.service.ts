@@ -161,7 +161,7 @@ export class CampRegistrationService {
 
   async handleCampVariantRegistrations(
     campVariantRegistrations: CreateCampVariantRegistrationInput[],
-    campRegistrationId: number,
+    campRegistration: CampRegistration,
     queryRunner: QueryRunner,
   ): Promise<string | null> {
     if (!campVariantRegistrations?.length) {
@@ -169,7 +169,7 @@ export class CampRegistrationService {
     }
 
     // store camp variant vacancies needed to be reserved
-    let campVariants = new Map<number, number>();
+    let campVariantVacancies = new Map<number, number>();
 
     for (const cvr of campVariantRegistrations) {
       // validate if there are no duplicate registrations
@@ -182,30 +182,30 @@ export class CampRegistrationService {
       }
 
       // update camp variant count
-      if (!campVariants.has(cvr.campVariantId)) {
-        campVariants.set(cvr.campVariantId, 1);
+      if (!campVariantVacancies.has(cvr.campVariantId)) {
+        campVariantVacancies.set(cvr.campVariantId, 1);
       } else {
-        campVariants.set(
+        campVariantVacancies.set(
           cvr.campVariantId,
-          campVariants.get(cvr.campVariantId) + 1,
+          campVariantVacancies.get(cvr.campVariantId) + 1,
         );
       }
     }
 
-    const campVariantIds = Array.from(campVariants.keys());
+    const campVariantIds = Array.from(campVariantVacancies.keys());
 
     // validate if there are enough vacancies
-    const campVariantVacancies = await queryRunner.manager.find(CampVariant, {
+    const campVariants = await queryRunner.manager.find(CampVariant, {
       where: { id: In(campVariantIds) },
       lock: { mode: 'pessimistic_write' },
     });
 
-    if (campVariantVacancies.length !== campVariantIds.length) {
+    if (campVariants.length !== campVariantIds.length) {
       throw new Error('Invalid camp variant reference');
     }
 
-    for (const cv of campVariantVacancies) {
-      if (cv.remainingCapacity < campVariants.get(cv.id)) {
+    for (const cv of campVariants) {
+      if (cv.remainingCapacity < campVariantVacancies.get(cv.id)) {
         throw new Error(`Not enough vacancies for ${cv.name}`);
       }
     }
@@ -214,8 +214,11 @@ export class CampRegistrationService {
       CampVariantRegistration,
       campVariantRegistrations.map((e) => ({
         ...e,
-        campRegistrationId,
-        price: campVariantVacancies
+        campRegistrationId: campRegistration.id,
+        mealPrice: e.withMeal
+          ? campRegistration.camp.mealPrice.toFixed(moneyFixation)
+          : undefined,
+        price: campVariants
           .find((cv) => cv.id === e.campVariantId)
           .price?.toFixed(moneyFixation),
       })),
@@ -226,20 +229,37 @@ export class CampRegistrationService {
     }
 
     return this.calculateCampVariantRegistrationPrice(
-      campVariantVacancies,
       campVariants,
+      campVariantRegistrations,
+      campRegistration.camp.mealPrice,
     );
   }
 
   calculateCampVariantRegistrationPrice(
     campVariants: CampVariant[],
-    campVariantsCount: Map<number, number>,
+    campVariantRegistrations:
+      | CreateCampVariantRegistrationInput[]
+      | CampVariantRegistration[],
+    mealPrice?: Decimal,
   ): string {
     let totalPrice = new Decimal('0');
 
-    for (const [key, count] of campVariantsCount.entries()) {
-      const cvr = campVariants.find((e) => e.id === key);
-      totalPrice = totalPrice.plus(cvr.price.times(count));
+    if (campVariantRegistrations.some((item) => 'withMeal' in item)) {
+      for (const registration of campVariantRegistrations as CreateCampVariantRegistrationInput[]) {
+        const cvr = campVariants.find(
+          (e) => e.id === registration.campVariantId,
+        );
+        totalPrice = totalPrice.plus(
+          cvr.price.plus(registration.withMeal ? mealPrice : 0),
+        );
+      }
+    } else {
+      for (const registration of campVariantRegistrations as CampVariantRegistration[]) {
+        const cvr = campVariants.find(
+          (e) => e.id === registration.campVariantId,
+        );
+        totalPrice = totalPrice.plus(cvr.price.plus(registration.mealPrice));
+      }
     }
 
     return totalPrice.toFixed(2);
@@ -273,7 +293,7 @@ export class CampRegistrationService {
         id: input.id,
         ...(input.parentId && { parentId: input.parentId }),
       },
-      relations: ['campVariantRegistrations'],
+      relations: ['campVariantRegistrations', 'camp'],
     });
 
     if (!campRegistration) {
@@ -298,6 +318,7 @@ export class CampRegistrationService {
       if (type == UserType.parent) {
         return await this.handleParentCampCompletion(
           input,
+          campRegistration,
           queryRunner,
           userId,
         );
@@ -322,6 +343,7 @@ export class CampRegistrationService {
 
   async handleParentCampCompletion(
     input: UpdateCampRegistrationInput,
+    campRegistration: CampRegistration,
     queryRunner: QueryRunner,
     userId: string,
   ) {
@@ -330,7 +352,7 @@ export class CampRegistrationService {
 
     const price = await this.handleCampVariantRegistrations(
       input.campVariantRegistrations,
-      input.id,
+      campRegistration,
       queryRunner,
     );
 
@@ -384,7 +406,7 @@ export class CampRegistrationService {
         // create new camp variant
         await this.handleCampVariantRegistrations(
           input.campVariantRegistrations,
-          campRegistration.id,
+          campRegistration,
           queryRunner,
         );
       } else {
@@ -440,7 +462,7 @@ export class CampRegistrationService {
       if (input.campVariantRegistrations?.length) {
         const price = await this.handleCampVariantRegistrations(
           input.campVariantRegistrations,
-          campRegistration.id,
+          campRegistration,
           queryRunner,
         );
 
@@ -508,7 +530,7 @@ export class CampRegistrationService {
     try {
       const campRegistration = await this.repo.findOne({
         where: { id: input.campRegistrationId },
-        relations: ['campVariantRegistrations', 'payments'],
+        relations: ['campVariantRegistrations', 'payments', 'camp'],
       });
 
       if (!campRegistration) {
@@ -668,7 +690,7 @@ export class CampRegistrationService {
     /// create payment
     const totalAmount = this.calculateCampVariantRegistrationPrice(
       campVariants,
-      campVariantVacancies,
+      campRegistration.campVariantRegistrations,
     );
 
     const payment = await queryRunner.manager.save(RegistrationPayment, {
@@ -776,7 +798,7 @@ export class CampRegistrationService {
     /// create payment
     const totalAmount = this.calculateCampVariantRegistrationPrice(
       campVariants,
-      campVariantVacancies,
+      campRegistration.campVariantRegistrations,
     );
 
     const payment = await queryRunner.manager.save(RegistrationPayment, {
@@ -842,6 +864,7 @@ export class CampRegistrationService {
       try {
         const payment = await queryRunner.manager.findOne(RegistrationPayment, {
           where: { id: paymentId },
+          lock: { mode: 'pessimistic_write' },
         });
 
         if (!payment) {
@@ -862,6 +885,7 @@ export class CampRegistrationService {
 
         const reserves = await queryRunner.manager.find(RegistrationReserve, {
           where: { paymentId },
+          lock: { mode: 'pessimistic_write' },
         });
 
         if (reserves.length) {

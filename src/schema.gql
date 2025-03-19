@@ -2,63 +2,26 @@
 # THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
 # ------------------------------------------------------
 
-type RegistrationPayment {
+type CampVariant {
   id: Int!
-  campRegistrationId: Int!
-  paymentMethod: PaymentMethod!
-  url: String
-  status: PaymentStatus!
-  amount: Decimal!
-  receiptId: Int
-  userId: String!
-  expirationDate: DateTime
+  campId: Int!
+  name: String
+  price: Decimal
+  remainingCapacity: Int!
+  capacity: Int!
+  startDate: DateTime!
+  endDate: DateTime!
   createdAt: DateTime!
-  campRegistration: CampRegistration!
-}
-
-enum PaymentMethod {
-  fawry
-  instapay
-  cash
-}
-
-enum PaymentStatus {
-  pending
-  paid
-  failed
-  refunded
-  expired
+  lastModified: DateTime!
+  deletedAt: DateTime
+  camp: Camp!
+  campVariantRegistrations: [CampVariantRegistration!]!
 }
 
 """
 A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date-time format.
 """
 scalar DateTime
-
-type CampRegistration {
-  id: Int!
-  parentId: String!
-  campId: Int!
-  oneDayPrice: Decimal
-  totalPrice: Decimal
-  paymentMethod: PaymentMethod
-  capacity: Int
-  paid: Boolean!
-  status: CampRegistrationStatus!
-  createdAt: DateTime!
-  lastModified: DateTime!
-  deletedAt: DateTime
-  campVariantRegistrations: [CampVariantRegistration!]
-  payments: [RegistrationPayment!]!
-}
-
-enum CampRegistrationStatus {
-  idle
-  accepted
-  rejected
-  cancelled
-  modified
-}
 
 type Allergy {
   id: Int!
@@ -103,7 +66,7 @@ type CampVariantRegistration {
   campRegistrationId: Int!
   campVariantId: Int!
   price: Decimal!
-  mealId: Int
+  mealPrice: Decimal!
   shirtSize: ShirtSize
   createdAt: DateTime!
   lastModified: DateTime!
@@ -123,20 +86,58 @@ enum ShirtSize {
   xxl
 }
 
-type CampVariant {
+type RegistrationPayment {
   id: Int!
+  campRegistrationId: Int!
+  paymentMethod: PaymentMethod!
+  url: String
+  status: PaymentStatus!
+  amount: Decimal!
+  receiptId: Int
+  userId: String!
+  expirationDate: DateTime
+  createdAt: DateTime!
+  campRegistration: CampRegistration!
+}
+
+enum PaymentMethod {
+  fawry
+  instapay
+  cash
+}
+
+enum PaymentStatus {
+  pending
+  paid
+  failed
+  refunded
+  expired
+}
+
+type CampRegistration {
+  id: Int!
+  parentId: String!
   campId: Int!
-  name: String
-  price: Decimal
-  remainingCapacity: Int!
-  capacity: Int!
-  startDate: DateTime!
-  endDate: DateTime!
+  oneDayPrice: Decimal
+  totalPrice: Decimal
+  paymentMethod: PaymentMethod
+  capacity: Int
+  paid: Boolean!
+  status: CampRegistrationStatus!
   createdAt: DateTime!
   lastModified: DateTime!
   deletedAt: DateTime
+  campVariantRegistrations: [CampVariantRegistration!]
+  payments: [RegistrationPayment!]!
   camp: Camp!
-  campVariantRegistrations: [CampVariantRegistration!]!
+}
+
+enum CampRegistrationStatus {
+  idle
+  accepted
+  rejected
+  cancelled
+  modified
 }
 
 type File {
@@ -185,21 +186,13 @@ type Location {
   camps: [Camp!]
 }
 
-type Meal {
-  id: Int!
-  name: String!
-  price: Decimal!
-  createdAt: DateTime!
-  lastModified: DateTime!
-  deletedAt: DateTime
-}
-
 type Camp {
   id: Int!
   name: String!
   description: String
   thumbnailId: Int!
   defaultPrice: Decimal
+  mealPrice: Decimal
   hasShirts: Boolean!
   eventId: Int
   isPrivate: Boolean!
@@ -211,10 +204,10 @@ type Camp {
   deletedAt: DateTime
   ageRanges: [AgeRange!]
   files: [File!]
-  meals: [Meal!]
   campVariants: [CampVariant!]
   location: Location!
   event: Event
+  campRegistrations: [CampRegistration!]
   thumbnail: File!
   parentCampRegistration(parentId: String): CampRegistration
 }
@@ -310,16 +303,6 @@ type ChildReportHistory {
   userId: Int!
 }
 
-type RegistrationHistory {
-  campRegistrationId: Int!
-  status: CampRegistrationStatus!
-  userOnEnterId: String!
-  userOnLeaveId: String
-  createdAt: DateTime!
-  lastModified: DateTime!
-  discountsApplied: [Discount!]
-}
-
 type Discount {
   code: String
   percentage: Decimal
@@ -339,6 +322,15 @@ type EventPage {
 type EventFile {
   """Example field (placeholder)"""
   exampleField: Int!
+}
+
+type Meal {
+  id: Int!
+  name: String!
+  price: Decimal!
+  createdAt: DateTime!
+  lastModified: DateTime!
+  deletedAt: DateTime
 }
 
 type MealPage {
@@ -366,6 +358,13 @@ type ParentAdditional {
   createdAt: DateTime!
   lastModified: DateTime!
   deletedAt: DateTime
+}
+
+type RegistrationHistory {
+  campRegistrationId: Int!
+  status: CampRegistrationStatus!
+  createdAt: DateTime!
+  lastModified: DateTime!
 }
 
 type Settings {
@@ -662,14 +661,14 @@ input UpdateChildInput {
 input CreateCampVariantRegistrationInput {
   childId: Int!
   campVariantId: Int!
-  mealId: Int
+  withMeal: Boolean
   shirtSize: ShirtSize
 }
 
 input UpdateCampVariantRegistrationInput {
   childId: Int
   campVariantId: Int
-  mealId: Int
+  withMeal: Boolean
   shirtSize: ShirtSize
   id: Int!
 }
@@ -679,6 +678,7 @@ input CreateCampInput {
   description: String
   thumbnailId: Int!
   defaultPrice: Decimal
+  mealPrice: Decimal
   hasShirts: Boolean!
   eventId: Int
   isPrivate: Boolean!
@@ -704,6 +704,7 @@ input UpdateCampInput {
   description: String
   thumbnailId: Int
   defaultPrice: Decimal
+  mealPrice: Decimal
   hasShirts: Boolean
   eventId: Int
   isPrivate: Boolean

@@ -59,7 +59,7 @@ export class CampService {
     await queryRunner.startTransaction();
 
     try {
-      const mealIds = await this.handleMeals(input, queryRunner);
+      // const mealIds = await this.handleMeals(input, queryRunner);
       const fileIds = await this.handleFiles(input, queryRunner);
       const ageRangeIds = await this.handleAgeRanges(input, queryRunner);
 
@@ -73,13 +73,13 @@ export class CampService {
 
       await this.handleCampVariants(input, queryRunner, camp.raw.insertId);
 
-      if (mealIds?.length) {
-        await queryRunner.manager
-          .createQueryBuilder(Camp, 'camp')
-          .relation(Camp, 'meals')
-          .of(camp.raw.insertId)
-          .add(mealIds);
-      }
+      // if (mealIds?.length) {
+      //   await queryRunner.manager
+      //     .createQueryBuilder(Camp, 'camp')
+      //     .relation(Camp, 'meals')
+      //     .of(camp.raw.insertId)
+      //     .add(mealIds);
+      // }
 
       if (fileIds?.length) {
         await queryRunner.manager
@@ -145,41 +145,41 @@ export class CampService {
     return;
   }
 
-  async handleMeals(input: CreateCampInput, queryRunner: QueryRunner) {
-    if (!input.meals?.length && !input.mealIds?.length) {
-      return;
-    }
+  // async handleMeals(input: CreateCampInput, queryRunner: QueryRunner) {
+  //   if (!input.meals?.length && !input.mealIds?.length) {
+  //     return;
+  //   }
 
-    if (input.mealIds?.length) {
-      const existingMeals = await queryRunner.manager.find(Meal, {
-        where: { id: In(input.mealIds) },
-      });
+  //   if (input.mealIds?.length) {
+  //     const existingMeals = await queryRunner.manager.find(Meal, {
+  //       where: { id: In(input.mealIds) },
+  //     });
 
-      if (existingMeals.length !== input.mealIds.length) {
-        const missingIds = input.mealIds.filter(
-          (id) => !existingMeals.find((meal) => meal.id === id),
-        );
-        throw new Error(
-          `Meals with the following ids do not exist: ${missingIds.join(', ')}`,
-        );
-      }
-    }
+  //     if (existingMeals.length !== input.mealIds.length) {
+  //       const missingIds = input.mealIds.filter(
+  //         (id) => !existingMeals.find((meal) => meal.id === id),
+  //       );
+  //       throw new Error(
+  //         `Meals with the following ids do not exist: ${missingIds.join(', ')}`,
+  //       );
+  //     }
+  //   }
 
-    if (!input.meals?.length) return input.mealIds;
+  //   if (!input.meals?.length) return input.mealIds;
 
-    const newMeals = await queryRunner.manager.insert(
-      Meal,
-      input.meals.map((e) => ({ ...e, price: e.price.toFixed(moneyFixation) })),
-    );
-    if (newMeals.identifiers.length !== input.meals.length) {
-      throw new Error('Failed to insert meals');
-    }
+  //   const newMeals = await queryRunner.manager.insert(
+  //     Meal,
+  //     input.meals.map((e) => ({ ...e, price: e.price.toFixed(moneyFixation) })),
+  //   );
+  //   if (newMeals.identifiers.length !== input.meals.length) {
+  //     throw new Error('Failed to insert meals');
+  //   }
 
-    return [
-      ...newMeals.identifiers.map((meal: any) => meal.id),
-      ...(input.mealIds ?? []),
-    ];
-  }
+  //   return [
+  //     ...newMeals.identifiers.map((meal: any) => meal.id),
+  //     ...(input.mealIds ?? []),
+  //   ];
+  // }
 
   async handleFiles(input: CreateCampInput, queryRunner: QueryRunner) {
     if (!input.fileIds?.length) {

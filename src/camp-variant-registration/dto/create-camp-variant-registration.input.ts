@@ -1,4 +1,5 @@
 import { InputType, Int, Field } from '@nestjs/graphql';
+import { Transform } from 'class-transformer';
 
 import { ShirtSize } from 'support/enums';
 import { Decimal, GraphqlDecimal } from 'support/scalars';
@@ -16,7 +17,7 @@ export class CreateCampVariantRegistrationInput {
   price: Decimal;
 
   @Field({ nullable: true })
-  mealId?: number;
+  withMeal?: boolean;
 
   @Field(() => ShirtSize, { nullable: true })
   shirtSize?: ShirtSize;

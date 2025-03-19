@@ -51,9 +51,17 @@ export class CampVariantRegistration {
   @Field(() => GraphqlDecimal)
   price: Decimal;
 
-  @Column('int', { name: 'mealId', nullable: true })
-  @Field({ nullable: true })
-  mealId?: number;
+  @Column('decimal', {
+    name: 'mealPrice',
+    precision: 10,
+    scale: 2,
+    transformer: {
+      to: (value) => value,
+      from: (value?: string) => value && new Decimal(value),
+    },
+  })
+  @Field(() => GraphqlDecimal)
+  mealPrice: Decimal;
 
   @Column('enum', {
     name: 'shirtSize',
