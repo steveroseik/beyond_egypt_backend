@@ -20,6 +20,7 @@ import { PaginateCampRegistrationsInput } from './dto/paginate-camp-registration
 import { ProcessCampRegistration } from './dto/process-camp-registration.input';
 import { CampVariantRegistration } from 'src/camp-variant-registration/entities/camp-variant-registration.entity';
 import { DataloaderRegistry } from 'src/dataloaders/dataloaderRegistry';
+import { Camp } from 'src/camp/entities/camp.entity';
 
 @Resolver(() => CampRegistration)
 export class CampRegistrationResolver {
@@ -109,5 +110,13 @@ export class CampRegistrationResolver {
       campRegistration.campVariantRegistrations ??
       loaders.CampVariantRegistrationsDataLoader.load(campRegistration.id)
     );
+  }
+
+  @ResolveField(() => Camp, { nullable: true })
+  camp(
+    @Parent() campRegistration: CampRegistration,
+    @Context() { loaders }: { loaders: DataloaderRegistry },
+  ) {
+    return loaders.CampsDataLoader.load(campRegistration.campId);
   }
 }

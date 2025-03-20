@@ -1,16 +1,35 @@
-import { Resolver, Query, Mutation, Args, Int } from '@nestjs/graphql';
+import {
+  Resolver,
+  Query,
+  Mutation,
+  Args,
+  Int,
+  ResolveField,
+  Context,
+  Parent,
+} from '@nestjs/graphql';
 import { CampVariantRegistrationService } from './camp-variant-registration.service';
 import { CampVariantRegistration } from './entities/camp-variant-registration.entity';
 import { CreateCampVariantRegistrationInput } from './dto/create-camp-variant-registration.input';
 import { UpdateCampVariantRegistrationInput } from './dto/update-camp-variant-registration.input';
+import { Child } from 'src/child/entities/child.entity';
+import { DataloaderRegistry } from 'src/dataloaders/dataloaderRegistry';
+import { CampVariant } from 'src/camp-variant/entities/camp-variant.entity';
 
 @Resolver(() => CampVariantRegistration)
 export class CampVariantRegistrationResolver {
-  constructor(private readonly campVariantRegistrationService: CampVariantRegistrationService) {}
+  constructor(
+    private readonly campVariantRegistrationService: CampVariantRegistrationService,
+  ) {}
 
   @Mutation(() => CampVariantRegistration)
-  createCampVariantRegistration(@Args('createCampVariantRegistrationInput') createCampVariantRegistrationInput: CreateCampVariantRegistrationInput) {
-    return this.campVariantRegistrationService.create(createCampVariantRegistrationInput);
+  createCampVariantRegistration(
+    @Args('createCampVariantRegistrationInput')
+    createCampVariantRegistrationInput: CreateCampVariantRegistrationInput,
+  ) {
+    return this.campVariantRegistrationService.create(
+      createCampVariantRegistrationInput,
+    );
   }
 
   @Query(() => [CampVariantRegistration], { name: 'campVariantRegistration' })
@@ -24,12 +43,36 @@ export class CampVariantRegistrationResolver {
   }
 
   @Mutation(() => CampVariantRegistration)
-  updateCampVariantRegistration(@Args('updateCampVariantRegistrationInput') updateCampVariantRegistrationInput: UpdateCampVariantRegistrationInput) {
-    return this.campVariantRegistrationService.update(updateCampVariantRegistrationInput.id, updateCampVariantRegistrationInput);
+  updateCampVariantRegistration(
+    @Args('updateCampVariantRegistrationInput')
+    updateCampVariantRegistrationInput: UpdateCampVariantRegistrationInput,
+  ) {
+    return this.campVariantRegistrationService.update(
+      updateCampVariantRegistrationInput.id,
+      updateCampVariantRegistrationInput,
+    );
   }
 
   @Mutation(() => CampVariantRegistration)
   removeCampVariantRegistration(@Args('id', { type: () => Int }) id: number) {
     return this.campVariantRegistrationService.remove(id);
+  }
+
+  @ResolveField(() => Child)
+  child(
+    @Parent() campVariantRegistration: CampVariantRegistration,
+    @Context() { loaders }: { loaders: DataloaderRegistry },
+  ) {
+    return loaders.ChildDataLoader.load(campVariantRegistration.childId);
+  }
+
+  @ResolveField(() => CampVariant)
+  campVariant(
+    @Parent() campVariantRegistration: CampVariantRegistration,
+    @Context() { loaders }: { loaders: DataloaderRegistry },
+  ) {
+    return loaders.CampVariantsDataLoader.load(
+      campVariantRegistration.campVariantId,
+    );
   }
 }

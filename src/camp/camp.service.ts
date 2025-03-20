@@ -241,8 +241,8 @@ export class CampService {
     ];
   }
 
-  findAll() {
-    return `This action returns all camp`;
+  findAllByKeys(keys: readonly number[]) {
+    return this.repo.find({ where: { id: In(keys) } });
   }
 
   findOne(id: number) {

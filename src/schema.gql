@@ -419,7 +419,6 @@ type Query {
   child(id: Int!): Child!
   paginateChildren(input: PaginateChildrenInput!): ChildPage!
   campVariantRegistration(id: Int!): CampVariantRegistration!
-  camp: [Camp!]!
   findOneCamp(id: Int!): Camp!
   paginateCamps(input: PaginateCampsInput!): CampPage!
   user: [User!]!
