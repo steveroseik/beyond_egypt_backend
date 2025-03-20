@@ -59,7 +59,7 @@ export class SchoolResolver {
   @ResolveField(() => String, { nullable: true })
   url(@Parent() school: School) {
     return school.imageKey
-      ? `https://s3.amazonaws.com/${process.env.AWS_BUCKET_NAME}/${school.imageKey}`
+      ? `https://s3.amazonaws.com/${process.env.S3_BUCKET_NAME}/${school.imageKey}`
       : null;
   }
 }
