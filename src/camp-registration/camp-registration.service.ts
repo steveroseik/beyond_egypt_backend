@@ -913,6 +913,20 @@ export class CampRegistrationService {
     if (reserve.raw.affectedRows !== reservations.length)
       throw Error('Failed to reserve registrations');
 
+    const updateCampRegistration = await queryRunner.manager.update(
+      CampRegistration,
+      {
+        id: campRegistration.id,
+      },
+      {
+        status: CampRegistrationStatus.pending,
+      },
+    );
+
+    if (updateCampRegistration.affected !== 1) {
+      throw Error('Failed to update camp registration status');
+    }
+
     // deduct vacancies
     // for (const [key, value] of campVariantVacancies) {
     //   const update = await queryRunner.manager.update(

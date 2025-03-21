@@ -39,6 +39,7 @@ registerEnumType(PaymentMethod, {
 
 export enum CampRegistrationStatus {
   idle = 'idle',
+  pending = 'pending',
   accepted = 'accepted',
   rejected = 'rejected',
   cancelled = 'cancelled',
