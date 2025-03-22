@@ -28,7 +28,6 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   app.use(bodyParser.json({ limit: '700kb' }));
-  app.setGlobalPrefix('web');
   app.useGlobalPipes(
     new ValidationPipe({
       // whitelist: true,

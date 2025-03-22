@@ -22,7 +22,7 @@ import { memoryStorage } from 'multer';
 
 const MAX_FILE_SIZE = 15 * 1024 * 1024; // 10MB
 
-@Controller('aws')
+@Controller()
 export class AwsBucketController {
   constructor(private readonly bucketService: AwsBucketService) {}
 
