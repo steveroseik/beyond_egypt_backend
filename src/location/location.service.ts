@@ -4,6 +4,9 @@ import { UpdateLocationInput } from './dto/update-location.input';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Location } from './entities/location.entity';
 import { DataSource, In, Repository } from 'typeorm';
+import { PaginateLocationsInput } from './dto/paginate-locations.input';
+import { buildPaginator } from 'typeorm-cursor-pagination';
+import { UpdateLocationsInput } from './dto/update-locations.input';
 
 @Injectable()
 export class LocationService {
@@ -12,24 +15,105 @@ export class LocationService {
     private dataSource: DataSource,
   ) {}
 
-  create(createLocationInput: CreateLocationInput) {
-    return 'This action adds a new location';
-  }
+  async create(input: CreateLocationInput) {
+    try {
+      const response = await this.repo.insert(input);
 
-  findAll() {
-    return `This action returns all location`;
+      if (response.raw.affectedRows !== 1) {
+        throw new Error('Location was not created');
+      }
+
+      return {
+        success: true,
+        message: 'Location created successfully',
+        data: {
+          locationId: response.raw.insertId,
+        },
+      };
+    } catch (e) {
+      console.log(e);
+      return {
+        success: false,
+        message: 'Error while creating location',
+      };
+    }
   }
 
   findOne(id: number) {
     return `This action returns a #${id} location`;
   }
 
-  update(id: number, updateLocationInput: UpdateLocationInput) {
-    return `This action updates a #${id} location`;
+  async update(input: UpdateLocationsInput) {
+    try {
+      let failedToUpdateIds: number[] = [];
+
+      for (let location of input.locations) {
+        const response = await this.repo.update(location.id, location);
+
+        if (response.affected !== 1) {
+          failedToUpdateIds.push(location.id);
+        }
+      }
+
+      if (failedToUpdateIds.length > 0) {
+        throw new Error(
+          `Some locations were not updated: ${failedToUpdateIds.join(',')}`,
+        );
+      }
+
+      return {
+        success: true,
+        message: 'Locations updated successfully',
+      };
+    } catch (e) {
+      console.log(e);
+      return {
+        success: false,
+        message: 'Error while updating location',
+      };
+    }
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} location`;
+  async remove(ids: number[]) {
+    try {
+      const response = await this.repo.delete(ids);
+
+      if (response.affected !== ids.length) {
+        throw new Error('Some locations were not deleted');
+      }
+
+      return {
+        success: true,
+        message: 'Locations deleted successfully',
+      };
+    } catch (e) {
+      console.log(e);
+      return {
+        success: false,
+        message: 'Error while deleting location',
+      };
+    }
+  }
+
+  paginate(input: PaginateLocationsInput) {
+    const queryBuilder = this.repo.createQueryBuilder('location');
+
+    if (input.name) {
+      queryBuilder.where('location.name LIKE :search', {
+        search: `%${input.name}%`,
+      });
+    }
+
+    const paginator = buildPaginator({
+      entity: Location,
+      paginationKeys: ['name', 'id'],
+      query: {
+        ...input,
+        order: input.isAsc ? 'ASC' : 'DESC',
+      },
+    });
+
+    return paginator.paginate(queryBuilder);
   }
 
   findAllByKeys(keys: readonly number[]) {

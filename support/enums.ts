@@ -157,3 +157,16 @@ export enum FileExtensions {
 registerEnumType(FileExtensions, {
   name: 'FileExtensions',
 });
+
+export enum UsersOrderField {
+  name = 'name',
+  email = 'email',
+  phone = 'phone',
+  district = 'district',
+  createdAt = 'createdAt',
+  lastModified = 'lastModified',
+}
+
+registerEnumType(UsersOrderField, {
+  name: 'UsersOrderField',
+});

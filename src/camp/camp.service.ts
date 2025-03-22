@@ -303,6 +303,36 @@ export class CampService {
         await this.handleCampVariants(input, queryRunner, input.id);
       }
 
+      if (input.variantsToUpdate?.length) {
+        let variantsFailedToUpdate: number[] = [];
+        for (const variant of input.variantsToUpdate) {
+          const update = await queryRunner.manager.update(
+            CampVariant,
+            { id: variant.id, campId: input.id },
+            {
+              price: variant.price.toFixed(2),
+              capacity: variant.capacity,
+              remainingCapacity: variant.capacity,
+              startDate: variant.startDate,
+              endDate: variant.endDate,
+            },
+          );
+
+          if (update.affected !== 1) {
+            variantsFailedToUpdate.push(variant.id);
+          }
+        }
+        if (variantsFailedToUpdate.length) {
+          await queryRunner.commitTransaction();
+          return {
+            success: false,
+            message: `Failed to update weeks with ids: ${variantsFailedToUpdate.join(
+              ', ',
+            )}`,
+          };
+        }
+      }
+
       await queryRunner.commitTransaction();
 
       return {

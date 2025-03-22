@@ -238,7 +238,7 @@ type User {
   type: UserType!
   email: String!
   phone: String
-  occupation: String
+  district: String
   createdAt: DateTime!
   lastModified: DateTime!
   deletedAt: DateTime
@@ -325,6 +325,11 @@ type EventFile {
   exampleField: Int!
 }
 
+type LocationsPage {
+  cursor: GraphqlCursor!
+  data: [Location!]!
+}
+
 type Meal {
   id: Int!
   name: String!
@@ -389,6 +394,11 @@ type CreateUserResponse {
   data: UserAuthResponse
 }
 
+type UsersPage {
+  cursor: GraphqlCursor!
+  data: [User!]!
+}
+
 type School {
   id: Int!
   nameEn: String!
@@ -416,6 +426,7 @@ type Query {
   file(id: Int!): File!
   campVariant(id: Int!): CampVariant!
   location(id: Int!): Location!
+  paginateLocations(input: PaginateLocationsInput!): LocationsPage!
   parentAdditional(id: Int!): ParentAdditional!
   child(id: Int!): Child!
   paginateChildren(input: PaginateChildrenInput!): ChildPage!
@@ -424,6 +435,7 @@ type Query {
   paginateCamps(input: PaginateCampsInput!): CampPage!
   user: [User!]!
   findOneUser(id: String!): User!
+  paginateUsers(input: PaginateUsersInput!): UsersPage!
   ageRange(id: Int!): AgeRange!
   allergy(id: Int!): Allergy!
   campRegistration(id: Int!): CampRegistration!
@@ -451,6 +463,14 @@ input PaginateMealsInput {
   beforeCursor: String
 }
 
+input PaginateLocationsInput {
+  isAsc: Boolean! = false
+  limit: Int = 20
+  afterCursor: String
+  beforeCursor: String
+  name: String
+}
+
 input PaginateChildrenInput {
   isAsc: Boolean! = false
   limit: Int = 20
@@ -466,6 +486,26 @@ input PaginateCampsInput {
   limit: Int = 20
   afterCursor: String
   beforeCursor: String
+}
+
+input PaginateUsersInput {
+  isAsc: Boolean! = false
+  limit: Int = 20
+  afterCursor: String
+  beforeCursor: String
+  name: String
+  types: [UserType!]
+  notTypes: [UserType!]
+  orderBy: UsersOrderField
+}
+
+enum UsersOrderField {
+  name
+  email
+  phone
+  district
+  createdAt
+  lastModified
 }
 
 input PaginateCampRegistrationsInput {
@@ -503,9 +543,9 @@ type Mutation {
   createCampVariant(createCampVariantInput: CreateCampVariantInput!): CampVariant!
   updateCampVariant(updateCampVariantInput: UpdateCampVariantInput!): CampVariant!
   removeCampVariant(id: Int!): CampVariant!
-  createLocation(createLocationInput: CreateLocationInput!): Location!
-  updateLocation(updateLocationInput: UpdateLocationInput!): Location!
-  removeLocation(id: Int!): Location!
+  createLocation(input: CreateLocationInput!): Location!
+  updateLocation(input: UpdateLocationsInput!): Location!
+  removeLocation(ids: [Int!]!): Location!
   createParentAdditional(createParentAdditionalInput: CreateParentAdditionalInput!): ParentAdditional!
   updateParentAdditional(input: UpdateParentAdditionalInput!): JSONObject!
   removeParentAdditional(id: Int!): ParentAdditional!
@@ -607,13 +647,17 @@ input UpdateCampVariantInput {
 }
 
 input CreateLocationInput {
-  """Example field (placeholder)"""
-  exampleField: Int!
+  name: String!
+  location: GraphqlPoint
+}
+
+input UpdateLocationsInput {
+  locations: [UpdateLocationInput!]!
 }
 
 input UpdateLocationInput {
-  """Example field (placeholder)"""
-  exampleField: Int
+  name: String
+  location: GraphqlPoint
   id: Int!
 }
 
@@ -716,6 +760,7 @@ input UpdateCampInput {
   id: Int!
   ageRangeIdsToDelete: [Int!]
   variantIdsToDelete: [Int!]
+  variantsToUpdate: [UpdateCampVariantInput!]
 }
 
 input TempSignInInput {
@@ -734,7 +779,7 @@ input CreateUserInput {
   type: UserType!
   email: String!
   phone: String
-  occupation: String
+  district: String
   parentAdditional: [CreateParentAdditionalInput!]
   children: [CreateChildInput!]
 }
@@ -747,7 +792,7 @@ input UpdateUserInput {
   parentAdditionalToAdd: [CreateParentAdditionalInput!] = []
   name: String
   phone: String
-  occupation: String
+  district: String
 }
 
 input UpdateAgeRangeInput {

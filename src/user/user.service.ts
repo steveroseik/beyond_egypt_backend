@@ -13,6 +13,8 @@ import { DecodedIdToken } from 'firebase-admin/auth';
 import { CreateUserResponse } from './entities/create-user-response.wrapper';
 import { ParentAdditional } from 'src/parent-additional/entities/parent-additional.entity';
 import { CreateParentAdditionalInput } from 'src/parent-additional/dto/create-parent-additional.input';
+import { PaginateUsersInput } from './dto/paginate-users.input';
+import { buildPaginator } from 'typeorm-cursor-pagination';
 
 @Injectable()
 export class UserService {
@@ -188,10 +190,10 @@ export class UserService {
         throw new Error('User not found');
       }
 
-      if (input.phone || input.occupation || input.name) {
+      if (input.phone || input.district || input.name) {
         const updated = await this.repo.update(input.id, {
           phone: input.phone,
-          occupation: input.occupation,
+          district: input.district,
           name: input.name,
         });
 
@@ -316,6 +318,48 @@ export class UserService {
     } finally {
       await queryRunner.release();
     }
+  }
+
+  paginate(input: PaginateUsersInput) {
+    const queryBuilder = this.repo.createQueryBuilder('user');
+
+    if (input.types?.length) {
+      queryBuilder.andWhere('user.type IN (:...types)', { types: input.types });
+
+      if (input.notTypes?.length) {
+        const notTypesSet = input.notTypes.filter(
+          (type) => !input.types.includes(type),
+        );
+        queryBuilder.andWhere('user.type NOT IN (:...notTypes)', {
+          notTypes: notTypesSet,
+        });
+      }
+    } else {
+      if (input.notTypes?.length) {
+        queryBuilder.andWhere('user.type NOT IN (:...notTypes)', {
+          notTypes: input.notTypes,
+        });
+      }
+    }
+
+    if (input.name) {
+      queryBuilder.andWhere(
+        'user.name LIKE :name OR user.email LIKE :name OR user.phone LIKE :name',
+        { name: `%${input.name}%` },
+      );
+    }
+
+    const paginator = buildPaginator({
+      entity: User,
+      alias: 'user',
+      paginationKeys: [input.orderBy ?? 'createdAt', 'id'],
+      query: {
+        ...input,
+        order: input.isAsc ? 'ASC' : 'DESC',
+      },
+    });
+
+    return paginator.paginate(queryBuilder);
   }
 
   remove(id: string) {

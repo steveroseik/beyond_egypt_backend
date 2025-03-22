@@ -30,7 +30,7 @@ export class CreateUserInput {
   phone?: string;
 
   @Field({ nullable: true })
-  occupation?: string;
+  district?: string;
 
   @Field(() => [CreateParentAdditionalInput], { nullable: true })
   parentAdditional?: CreateParentAdditionalInput[];

@@ -35,9 +35,9 @@ export class User {
   @Field({ nullable: true })
   phone?: string;
 
-  @Column('varchar', { name: 'occupation', nullable: true, length: 255 })
+  @Column('varchar', { name: 'district', nullable: true, length: 255 })
   @Field({ nullable: true })
-  occupation?: string;
+  district?: string;
 
   @CreateDateColumn({
     name: 'createdAt',

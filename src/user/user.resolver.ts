@@ -22,6 +22,8 @@ import { DataloaderRegistry } from 'src/dataloaders/dataloaderRegistry';
 import { Child } from 'src/child/entities/child.entity';
 import { CurrentUser } from 'src/auth/decorators/currentUserDecorator';
 import { UserType } from 'support/enums';
+import { UsersPage } from './entities/users-page.entity';
+import { PaginateUsersInput } from './dto/paginate-users.input';
 
 @Resolver(() => User)
 export class UserResolver {
@@ -66,6 +68,11 @@ export class UserResolver {
     @Context() { loaders }: { loaders: DataloaderRegistry },
   ) {
     return loaders.ParentAdditionalDataLoader.load(parent.id);
+  }
+
+  @Query(() => UsersPage)
+  paginateUsers(@Args('input') input: PaginateUsersInput) {
+    return this.userService.paginate(input);
   }
 
   @ResolveField(() => [Child])

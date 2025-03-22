@@ -30,5 +30,5 @@ export class UpdateUserInput {
   phone?: string;
 
   @Field({ nullable: true })
-  occupation?: string;
+  district?: string;
 }

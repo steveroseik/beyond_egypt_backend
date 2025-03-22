@@ -1,3 +1,4 @@
+import { UpdateCampVariantInput } from 'src/camp-variant/dto/update-camp-variant.input';
 import { CreateCampInput } from './create-camp.input';
 import { InputType, Field, Int, PartialType } from '@nestjs/graphql';
 
@@ -7,8 +8,11 @@ export class UpdateCampInput extends PartialType(CreateCampInput) {
   id: number;
 
   @Field(() => [Int], { nullable: true })
-  ageRangeIdsToDelete: number[];
+  ageRangeIdsToDelete?: number[];
 
   @Field(() => [Int], { nullable: true })
-  variantIdsToDelete: number[];
+  variantIdsToDelete?: number[];
+
+  @Field(() => [UpdateCampVariantInput], { nullable: true })
+  variantsToUpdate?: UpdateCampVariantInput[];
 }
