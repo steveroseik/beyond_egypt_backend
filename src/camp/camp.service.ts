@@ -263,6 +263,10 @@ export class CampService {
         mealPrice: input.mealPrice?.toFixed(2),
       });
 
+      if (camp.affected !== 1) {
+        throw new Error('Failed to update camp');
+      }
+
       if (fileIds?.length) {
         await this.repo
           .createQueryBuilder('camp')
