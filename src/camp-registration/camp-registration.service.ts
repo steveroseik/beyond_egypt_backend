@@ -297,7 +297,15 @@ export class CampRegistrationService {
           (e) => e.id === registration.campVariantId,
         );
         console.log('CVR', cvr);
-        console.log('CVR price', registration.withMeal ? mealPrice : 0);
+        console.log(`CVR without meal (${registration.withMeal})`, cvr.price);
+        console.log(
+          'CVR TOTAL: ',
+          cvr.price.plus(registration.withMeal ? mealPrice : 0),
+        );
+        console.log(
+          'CVR TOTAL: ',
+          cvr.price.plus(registration.withMeal ? mealPrice.toFixed(2) : 0),
+        );
         totalPrice = totalPrice.plus(
           cvr.price.plus(registration.withMeal ? mealPrice : 0),
         );
