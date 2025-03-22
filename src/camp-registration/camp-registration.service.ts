@@ -287,41 +287,24 @@ export class CampRegistrationService {
   ): string {
     let totalPrice = new Decimal('0');
 
-    console.log('Calculating price, meal price', mealPrice);
-    console.log('Type of CVR', typeof campVariantRegistrations);
-
     if (campVariantRegistrations.some((item) => 'withMeal' in item)) {
-      console.log('Decided it is CreateCampVariantRegistrationInput[]');
       for (const registration of campVariantRegistrations as CreateCampVariantRegistrationInput[]) {
         const cvr = campVariants.find(
           (e) => e.id === registration.campVariantId,
         );
-        console.log('CVR', cvr);
-        console.log(`CVR without meal (${registration.withMeal})`, cvr.price);
-        console.log(
-          'CVR TOTAL: ',
-          cvr.price.plus(registration.withMeal ? mealPrice : 0),
-        );
-        console.log(
-          'CVR TOTAL: ',
-          cvr.price.plus(registration.withMeal ? mealPrice.toFixed(2) : 0),
-        );
+
         totalPrice = totalPrice.plus(
           cvr.price.plus(registration.withMeal ? mealPrice : 0),
         );
-        console.log('Total price after: ', totalPrice);
       }
     } else {
-      console.log('Decided it is CampVariantRegistration[]');
       for (const registration of campVariantRegistrations as CampVariantRegistration[]) {
         const cvr = campVariants.find(
           (e) => e.id === registration.campVariantId,
         );
-        console.log('CVR', cvr);
-        console.log('CVR price', registration.mealPrice);
-
-        totalPrice = totalPrice.plus(cvr.price.plus(registration.mealPrice));
-        console.log('Total price after: ', totalPrice);
+        totalPrice = totalPrice.plus(
+          cvr.price.plus(registration.mealPrice ?? 0),
+        );
       }
     }
 
@@ -831,7 +814,7 @@ export class CampRegistrationService {
           quantity: 1,
         },
       ],
-      returnUrl: `${process.env.BASE_URL}/web/fawry/return`,
+      returnUrl: `${process.env.BASE_URL}/fawry/return`,
     };
 
     const paymentUrl = await generateFawryPaymentUrl(payloadData);
