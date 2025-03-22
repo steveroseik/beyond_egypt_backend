@@ -287,21 +287,33 @@ export class CampRegistrationService {
   ): string {
     let totalPrice = new Decimal('0');
 
+    console.log('Calculating price, meal price', mealPrice);
+    console.log('Type of CVR', typeof campVariantRegistrations);
+
     if (campVariantRegistrations.some((item) => 'withMeal' in item)) {
+      console.log('Decided it is CreateCampVariantRegistrationInput[]');
       for (const registration of campVariantRegistrations as CreateCampVariantRegistrationInput[]) {
         const cvr = campVariants.find(
           (e) => e.id === registration.campVariantId,
         );
+        console.log('CVR', cvr);
+        console.log('CVR price', registration.withMeal ? mealPrice : 0);
         totalPrice = totalPrice.plus(
           cvr.price.plus(registration.withMeal ? mealPrice : 0),
         );
+        console.log('Total price after: ', totalPrice);
       }
     } else {
+      console.log('Decided it is CampVariantRegistration[]');
       for (const registration of campVariantRegistrations as CampVariantRegistration[]) {
         const cvr = campVariants.find(
           (e) => e.id === registration.campVariantId,
         );
+        console.log('CVR', cvr);
+        console.log('CVR price', registration.mealPrice);
+
         totalPrice = totalPrice.plus(cvr.price.plus(registration.mealPrice));
+        console.log('Total price after: ', totalPrice);
       }
     }
 
