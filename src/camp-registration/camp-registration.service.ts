@@ -789,6 +789,7 @@ export class CampRegistrationService {
     const totalAmount = this.calculateCampVariantRegistrationPrice(
       campVariants,
       campRegistration.campVariantRegistrations,
+      campRegistration.camp.mealPrice,
     );
 
     const payment = await queryRunner.manager.save(RegistrationPayment, {
@@ -897,6 +898,7 @@ export class CampRegistrationService {
     const totalAmount = this.calculateCampVariantRegistrationPrice(
       campVariants,
       campRegistration.campVariantRegistrations,
+      campRegistration.camp.mealPrice,
     );
 
     const payment = await queryRunner.manager.save(RegistrationPayment, {
