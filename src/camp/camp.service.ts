@@ -257,21 +257,41 @@ export class CampService {
       const fileIds = await this.handleFiles(input, queryRunner);
       const ageRangeIds = await this.handleAgeRanges(input, queryRunner);
 
-      const camp = await queryRunner.manager.update(Camp, input.id, {
-        name: input.name,
-        description: input.description,
-        thumbnailId: input.thumbnailId,
-        isPrivate: input.isPrivate,
-        hasShirts: input.hasShirts,
-        eventId: input.eventId,
-        locationId: input.locationId,
-        discountId: input.discountId,
-        defaultPrice: input.defaultPrice?.toFixed(2),
-        mealPrice: input.mealPrice?.toFixed(2),
-      });
+      if (
+        input.defaultPrice ||
+        input.mealPrice ||
+        input.defaultCapacity ||
+        input.name ||
+        input.description ||
+        input.thumbnailId ||
+        input.isPrivate ||
+        input.hasShirts ||
+        input.eventId ||
+        input.locationId ||
+        input.discountId
+      ) {
+        const camp = await queryRunner.manager.update(
+          Camp,
+          {
+            id: input.id,
+          },
+          {
+            name: input.name,
+            description: input.description,
+            thumbnailId: input.thumbnailId,
+            isPrivate: input.isPrivate,
+            hasShirts: input.hasShirts,
+            eventId: input.eventId,
+            locationId: input.locationId,
+            discountId: input.discountId,
+            defaultPrice: input.defaultPrice?.toFixed(2),
+            mealPrice: input.mealPrice?.toFixed(2),
+          },
+        );
 
-      if (camp.affected !== 1) {
-        throw new Error('Failed to update camp');
+        if (camp.affected !== 1) {
+          throw new Error('Failed to update camp');
+        }
       }
 
       if (fileIds?.length) {
@@ -317,20 +337,27 @@ export class CampService {
       if (input.variantsToUpdate?.length) {
         let variantsFailedToUpdate: number[] = [];
         for (const variant of input.variantsToUpdate) {
-          const update = await queryRunner.manager.update(
-            CampVariant,
-            { id: variant.id, campId: input.id },
-            {
-              price: variant.price.toFixed(2),
-              capacity: variant.capacity,
-              remainingCapacity: variant.capacity,
-              startDate: variant.startDate,
-              endDate: variant.endDate,
-            },
-          );
+          if (
+            variant.price ||
+            variant.capacity ||
+            variant.startDate ||
+            variant.endDate
+          ) {
+            const update = await queryRunner.manager.update(
+              CampVariant,
+              { id: variant.id, campId: input.id },
+              {
+                price: variant.price?.toFixed(2),
+                capacity: variant.capacity,
+                remainingCapacity: variant.capacity,
+                startDate: variant.startDate,
+                endDate: variant.endDate,
+              },
+            );
 
-          if (update.affected !== 1) {
-            variantsFailedToUpdate.push(variant.id);
+            if (update.affected !== 1) {
+              variantsFailedToUpdate.push(variant.id);
+            }
           }
         }
         if (variantsFailedToUpdate.length) {
