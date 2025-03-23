@@ -433,6 +433,8 @@ type Query {
   campVariantRegistration(id: Int!): CampVariantRegistration!
   findOneCamp(id: Int!): Camp!
   paginateCamps(input: PaginateCampsInput!): CampPage!
+  findOneEvent(id: Int!): Event!
+  paginateEvents(input: PaginateEventsInput!): EventPage!
   user: [User!]!
   findOneUser(id: String!): User!
   paginateUsers(input: PaginateUsersInput!): UsersPage!
@@ -443,9 +445,6 @@ type Query {
   childReport(id: Int!): ChildReport!
   childReportHistory(id: Int!): ChildReportHistory!
   discount(id: Int!): Discount!
-  event: [Event!]!
-  findOneEvent(id: Int!): Event!
-  paginateEvents(input: PaginateEventsInput!): EventPage!
   eventFile(id: Int!): EventFile!
   registrationHistory(id: Int!): RegistrationHistory!
   registrationPaymentHistory(id: Int!): RegistrationPayment!
@@ -488,6 +487,13 @@ input PaginateCampsInput {
   beforeCursor: String
 }
 
+input PaginateEventsInput {
+  isAsc: Boolean! = false
+  limit: Int = 20
+  afterCursor: String
+  beforeCursor: String
+}
+
 input PaginateUsersInput {
   isAsc: Boolean! = false
   limit: Int = 20
@@ -516,13 +522,6 @@ input PaginateCampRegistrationsInput {
   campIds: [Int!]
   childIds: [Int!]
   parentIds: [String!]
-}
-
-input PaginateEventsInput {
-  isAsc: Boolean! = false
-  limit: Int = 20
-  afterCursor: String
-  beforeCursor: String
 }
 
 input PaginateSchoolsInput {
@@ -558,6 +557,9 @@ type Mutation {
   createCamp(input: CreateCampInput!): JSONObject!
   updateCamp(input: UpdateCampInput!): JSONObject!
   removeCamp(id: Int!): Camp!
+  createEvent(createEventInput: CreateEventInput!): Event!
+  updateEvent(updateEventInput: UpdateEventInput!): Event!
+  removeEvent(id: Int!): Event!
   tempLogin(input: TempSignInInput!): JSONObject!
   signIn(input: TokenRequestInput!): UserAuthResponse!
   createUser(input: CreateUserInput!): CreateUserResponse!
@@ -582,9 +584,6 @@ type Mutation {
   createDiscount(createDiscountInput: CreateDiscountInput!): Discount!
   updateDiscount(updateDiscountInput: UpdateDiscountInput!): Discount!
   removeDiscount(id: Int!): Discount!
-  createEvent(createEventInput: CreateEventInput!): Event!
-  updateEvent(updateEventInput: UpdateEventInput!): Event!
-  removeEvent(id: Int!): Event!
   createEventFile(createEventFileInput: CreateEventFileInput!): EventFile!
   updateEventFile(updateEventFileInput: UpdateEventFileInput!): EventFile!
   removeEventFile(id: Int!): EventFile!
@@ -763,6 +762,17 @@ input UpdateCampInput {
   variantsToUpdate: [UpdateCampVariantInput!]
 }
 
+input CreateEventInput {
+  """Example field (placeholder)"""
+  exampleField: Int!
+}
+
+input UpdateEventInput {
+  """Example field (placeholder)"""
+  exampleField: Int
+  id: Int!
+}
+
 input TempSignInInput {
   email: String!
   password: String!
@@ -865,17 +875,6 @@ input CreateDiscountInput {
 }
 
 input UpdateDiscountInput {
-  """Example field (placeholder)"""
-  exampleField: Int
-  id: Int!
-}
-
-input CreateEventInput {
-  """Example field (placeholder)"""
-  exampleField: Int!
-}
-
-input UpdateEventInput {
   """Example field (placeholder)"""
   exampleField: Int
   id: Int!
