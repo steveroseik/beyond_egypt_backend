@@ -258,8 +258,15 @@ export class CampService {
       const ageRangeIds = await this.handleAgeRanges(input, queryRunner);
 
       const camp = await queryRunner.manager.update(Camp, input.id, {
-        ...input,
-        defaultPrice: input.defaultPrice.toFixed(2),
+        name: input.name,
+        description: input.description,
+        thumbnailId: input.thumbnailId,
+        isPrivate: input.isPrivate,
+        hasShirts: input.hasShirts,
+        eventId: input.eventId,
+        locationId: input.locationId,
+        discountId: input.discountId,
+        defaultPrice: input.defaultPrice?.toFixed(2),
         mealPrice: input.mealPrice?.toFixed(2),
       });
 
