@@ -28,11 +28,6 @@ export class EventResolver {
     return this.eventService.create(createEventInput);
   }
 
-  @Query(() => [Event], { name: 'event' })
-  findAll() {
-    return this.eventService.findAll();
-  }
-
   @Public()
   @Query(() => Event)
   findOneEvent(@Args('id', { type: () => Int }) id: number) {
