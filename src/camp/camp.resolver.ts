@@ -24,6 +24,7 @@ import { Public } from 'src/auth/decorators/publicDecorator';
 import { CampRegistration } from 'src/camp-registration/entities/camp-registration.entity';
 import { CurrentUser } from 'src/auth/decorators/currentUserDecorator';
 import { UserType } from 'support/enums';
+import { Event } from 'src/event/entities/event.entity';
 
 @Resolver(() => Camp)
 export class CampResolver {
@@ -114,6 +115,16 @@ export class CampResolver {
   ) {
     return parentId
       ? this.campService.findLatestCampRegistration(parentId, parent.id)
+      : null;
+  }
+
+  @ResolveField(() => Event, { nullable: true })
+  event(
+    @Parent() parent: Camp,
+    @Context() { loaders }: { loaders: DataloaderRegistry },
+  ) {
+    return parent.eventId
+      ? (parent.event ?? loaders.EventsDataLoader.load(parent.eventId))
       : null;
   }
 }

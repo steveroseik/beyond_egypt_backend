@@ -20,6 +20,8 @@ import { CampService } from 'src/camp/camp.service';
 import EventCampsDataLoader from './loaders/eventCampsDataLoader';
 import EventFilesDataLoader from './loaders/eventFiles.loader';
 import { CampsDataLoader } from './loaders/camps.loader';
+import { EventsDataLoader } from './loaders/events.dataloader';
+import { EventService } from 'src/event/event.service';
 
 export class DataloaderRegistry {
   private cache: Record<string, any> = {};
@@ -33,6 +35,7 @@ export class DataloaderRegistry {
     private parentAdditionalService: ParentAdditionalService,
     private campVariantRegistrationService: CampVariantRegistrationService,
     private campService: CampService,
+    private eventService: EventService,
   ) {}
 
   /**
@@ -122,6 +125,11 @@ export class DataloaderRegistry {
     );
   }
 
+  public get EventsDataLoader() {
+    return this.get('EventsDataLoader', () =>
+      EventsDataLoader.create(this.eventService),
+    );
+  }
   /**
    * Just a pretty type-safe facade for invoking `this.get`.
    * Make more of your own as you wish.

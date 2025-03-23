@@ -9,6 +9,7 @@ import { ParentAdditionalModule } from 'src/parent-additional/parent-additional.
 import { ChildModule } from 'src/child/child.module';
 import { CampVariantRegistrationModule } from 'src/camp-variant-registration/camp-variant-registration.module';
 import { CampModule } from 'src/camp/camp.module';
+import { EventModule } from 'src/event/event.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { CampModule } from 'src/camp/camp.module';
     ChildModule,
     CampVariantRegistrationModule,
     CampModule,
+    EventModule,
   ],
   providers: [DataloaderRegistry, DataloaderRegistryFactory],
   exports: [DataloaderRegistryFactory],

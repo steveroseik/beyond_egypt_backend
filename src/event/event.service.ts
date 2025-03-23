@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { CreateEventInput } from './dto/create-event.input';
 import { UpdateEventInput } from './dto/update-event.input';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { PaginateEventsInput } from './dto/paginate-events.input';
 import { buildPaginator } from 'typeorm-cursor-pagination';
 import { Event } from './entities/event.entity';
@@ -17,8 +17,8 @@ export class EventService {
     return 'This action adds a new event';
   }
 
-  findAll() {
-    return `This action returns all event`;
+  findAllByKeys(keys: readonly number[]) {
+    return this.eventRepository.find({ where: { id: In(keys) } });
   }
 
   findOne(id: number) {
