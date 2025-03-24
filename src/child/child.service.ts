@@ -4,7 +4,7 @@ import { UpdateChildInput } from './dto/update-child.input';
 import { PaginateChildrenInput } from './dto/paginate-children.input';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Child } from './entities/child.entity';
-import { DataSource, In, Repository } from 'typeorm';
+import { DataSource, In, QueryRunner, Repository } from 'typeorm';
 import { buildPaginator } from 'typeorm-cursor-pagination';
 import { Camp } from 'src/camp/entities/camp.entity';
 import { UserType } from 'support/enums';
@@ -43,43 +43,7 @@ export class ChildService {
         throw new Error('Child not found');
       }
 
-      if (userType == UserType.parent) {
-        if (child.parentId !== userId) {
-          throw new Error('Child does not belong to parent');
-        }
-      }
-
-      const updated = await this.repo.update(input.id, {
-        name: input.name,
-        birthdate: input.birthdate,
-        schoolId: input.schoolId,
-        isMale: input.isMale,
-        parentRelation: input.parentRelation,
-        imageFileId: input.imageFileId,
-        medicalInfo: input.medicalInfo,
-        otherAllergies: input.otherAllergies,
-        extraNotes: input.extraNotes,
-      });
-
-      if (updated.affected !== 1) {
-        throw new Error('Failed to update child');
-      }
-
-      if (input.allergiesToAdd.length > 0) {
-        await queryRunner.manager
-          .createQueryBuilder()
-          .relation(Child, 'allergies')
-          .of(child)
-          .add(input.allergiesToAdd);
-      }
-
-      if (input.allergiesToDelete.length > 0) {
-        await queryRunner.manager
-          .createQueryBuilder()
-          .relation(Child, 'allergies')
-          .of(child)
-          .remove(input.allergiesToDelete);
-      }
+      await this.updateChild(child, input, queryRunner, userId, userType);
 
       await queryRunner.commitTransaction();
       return {
@@ -95,6 +59,59 @@ export class ChildService {
       };
     } finally {
       await queryRunner.release();
+    }
+  }
+
+  async updateChild(
+    child: Child,
+    input: UpdateChildInput,
+    queryRunner: QueryRunner,
+    userId: string,
+    userType: UserType,
+  ) {
+    if (userType == UserType.parent) {
+      if (child.parentId !== userId) {
+        throw new Error('Child does not belong to parent');
+      }
+    }
+
+    const hasValidField = Object.keys(input).some(
+      (key) =>
+        key !== 'id' && input[key as keyof UpdateChildInput] !== undefined,
+    );
+
+    if (hasValidField) {
+      const updated = await this.repo.update(input.id, {
+        name: input.name,
+        birthdate: input.birthdate,
+        schoolId: input.schoolId,
+        isMale: input.isMale,
+        parentRelation: input.parentRelation,
+        imageFileId: input.imageFileId,
+        medicalInfo: input.medicalInfo,
+        otherAllergies: input.otherAllergies,
+        extraNotes: input.extraNotes,
+      });
+
+      if (updated.affected !== 1) {
+        throw new Error('Failed to update child');
+      }
+    }
+
+    if (input.allergiesToAdd.length > 0) {
+      await queryRunner.manager
+        .createQueryBuilder()
+        .relation(Child, 'allergies')
+        .of(child)
+        .add(input.allergiesToAdd);
+    }
+
+    if (input.allergiesToDelete.length > 0) {
+      await queryRunner.manager
+        .createQueryBuilder()
+        .relation(Child, 'allergies')
+        .of(child)
+        .remove(input.allergiesToDelete);
     }
   }
 

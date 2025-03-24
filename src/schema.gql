@@ -856,6 +856,8 @@ input UpdateUserInput {
   name: String
   phone: String
   district: String
+  childrenToUpdate: [UpdateChildInput!]
+  parentAdditionalToUpdate: [UpdateParentAdditionalInput!]
 }
 
 input CreateEmployeeInput {

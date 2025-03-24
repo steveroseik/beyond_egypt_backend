@@ -19,6 +19,8 @@ import { CreateEmployeeInput } from './dto/create-employee.input';
 import { genId } from 'support/random-uuid.generator';
 import { RegisterUserInput } from './dto/register-user.input';
 import { FindInactiveUserInput } from './dto/find-inactive-user.input';
+import { ChildService } from 'src/child/child.service';
+import { ParentAdditionalService } from 'src/parent-additional/parent-additional.service';
 
 @Injectable()
 export class UserService {
@@ -27,6 +29,7 @@ export class UserService {
     @Inject(forwardRef(() => AuthService))
     private readonly authService: AuthService,
     private readonly dataSource: DataSource,
+    private readonly childService: ChildService,
   ) {}
 
   async create(
@@ -338,7 +341,53 @@ export class UserService {
         }
       }
 
+      if (input.childrenToUpdate?.length) {
+        const children = await queryRunner.manager.find(Child, {
+          where: { id: In(input.childrenToUpdate.map((child) => child.id)) },
+        });
+
+        for (const childToUpdate of input.childrenToUpdate) {
+          const child = children.find((c) => c.id === childToUpdate.id);
+          if (child) {
+            await this.childService.updateChild(
+              child,
+              childToUpdate,
+              queryRunner,
+              input.id,
+              UserType.parent,
+            );
+          }
+        }
+      }
+
+      if (input.parentAdditionalToUpdate?.length) {
+        for (const additional of input.parentAdditionalToUpdate) {
+          const hasValidField = Object.keys(additional).some(
+            (key) =>
+              key !== 'id' &&
+              additional[key as keyof CreateParentAdditionalInput] !==
+                undefined,
+          );
+
+          if (hasValidField) {
+            const updateParentAdditional = await queryRunner.manager.update(
+              ParentAdditional,
+              {
+                id: additional.id,
+                ...(input.id && { userId: input.id }),
+              },
+              additional,
+            );
+
+            if (updateParentAdditional.affected === 0) {
+              throw new Error('Parent Additional not found');
+            }
+          }
+        }
+      }
+
       await queryRunner.commitTransaction();
+
       return {
         success: true,
         message: 'User updated successfully',

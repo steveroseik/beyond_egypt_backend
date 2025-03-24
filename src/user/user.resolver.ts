@@ -50,6 +50,7 @@ export class UserResolver {
         message: 'You are not authorized to perform this action',
       };
     }
+    createUserInput.type = UserType.parent;
     return this.userService.create(createUserInput, userType);
   }
 
