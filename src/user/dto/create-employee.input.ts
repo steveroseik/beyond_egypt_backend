@@ -7,7 +7,7 @@ export class CreateEmployeeInput {
   name: string;
   @Field()
   email: string;
-  @Field()
+  @Field({ nullable: true })
   phone?: string;
   @Field(() => UserType)
   type: UserType;

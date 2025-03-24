@@ -64,6 +64,7 @@ export class UserResolver {
     return this.userService.createEmployee(input);
   }
 
+  @Public()
   @Mutation(() => CreateUserResponse)
   registerUser(@Args('input') createUserInput: RegisterUserInput) {
     return this.userService.register(createUserInput);

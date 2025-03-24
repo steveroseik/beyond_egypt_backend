@@ -830,7 +830,7 @@ input UpdateUserInput {
 input CreateEmployeeInput {
   name: String!
   email: String!
-  phone: String!
+  phone: String
   type: UserType!
 }
 
