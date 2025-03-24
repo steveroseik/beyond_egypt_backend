@@ -584,6 +584,8 @@ type Mutation {
   signIn(input: TokenRequestInput!): UserAuthResponse!
   createUser(input: CreateUserInput!): CreateUserResponse!
   updateUser(input: UpdateUserInput!): JSONObject!
+  createEmployee(input: CreateEmployeeInput!): JSONObject!
+  registerUser(input: RegisterUserInput!): CreateUserResponse!
   removeUser(id: String!): User!
   createAgeRange(createAgeRangeInput: CreateAgeRangeInput!): AgeRange!
   updateAgeRange(updateAgeRangeInput: UpdateAgeRangeInput!): AgeRange!
@@ -823,6 +825,18 @@ input UpdateUserInput {
   name: String
   phone: String
   district: String
+}
+
+input CreateEmployeeInput {
+  name: String!
+  email: String!
+  phone: String!
+  type: UserType!
+}
+
+input RegisterUserInput {
+  id: String!
+  firebaseToken: String!
 }
 
 input UpdateAgeRangeInput {

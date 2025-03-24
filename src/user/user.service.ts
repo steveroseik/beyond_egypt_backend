@@ -15,6 +15,9 @@ import { ParentAdditional } from 'src/parent-additional/entities/parent-addition
 import { CreateParentAdditionalInput } from 'src/parent-additional/dto/create-parent-additional.input';
 import { PaginateUsersInput } from './dto/paginate-users.input';
 import { buildPaginator } from 'typeorm-cursor-pagination';
+import { CreateEmployeeInput } from './dto/create-employee.input';
+import { genId } from 'support/random-uuid.generator';
+import { RegisterUserInput } from './dto/register-user.input';
 
 @Injectable()
 export class UserService {
@@ -364,5 +367,92 @@ export class UserService {
 
   remove(id: string) {
     return this.repo.delete(id);
+  }
+
+  async createEmployee(input: CreateEmployeeInput) {
+    try {
+      const tempId = genId();
+
+      const createEmployee = await this.repo.insert({
+        ...input,
+        id: tempId,
+      });
+
+      if (createEmployee.raw.affectedRows !== 1) {
+        throw new Error('Failed to create employee');
+      }
+
+      return {
+        success: true,
+        message: 'Employee created successfully',
+        data: {
+          id: tempId,
+        },
+      };
+    } catch (e) {
+      console.log(e);
+      return {
+        success: false,
+        message: e.message,
+      };
+    }
+  }
+
+  async register(input: RegisterUserInput): Promise<CreateUserResponse> {
+    try {
+      const firebaseData = await this.authService.verifyFirebaseToken(
+        input.firebaseToken,
+      );
+
+      if (!firebaseData) {
+        throw new Error('Invalid or expired token');
+      }
+
+      if (!firebaseData.email) {
+        throw new Error('Invalid token');
+      }
+
+      const user = await this.repo.findOne({ where: { id: input.id } });
+      if (!user) {
+        throw new Error('Invalid registration');
+      }
+
+      if (user.email !== firebaseData.email) {
+        throw new Error('Email does not match token');
+      }
+
+      const updateUser = await this.repo.update(
+        { id: input.id },
+        {
+          id: firebaseData.uid,
+        },
+      );
+
+      if (updateUser.affected !== 1) {
+        throw new Error('Failed to register user');
+      }
+
+      const accessToken = this.authService.generateAccessToken(
+        firebaseData.uid,
+        user.type,
+      );
+
+      return {
+        success: true,
+        message: 'User registered successfully',
+        data: {
+          user: user,
+          accessToken,
+          message: 'User registered successfully',
+          userState: 2,
+        },
+      };
+    } catch (e) {
+      console.log(e);
+      return {
+        success: false,
+        message: e.message,
+      };
+    }
   }
 }

@@ -24,6 +24,8 @@ import { CurrentUser } from 'src/auth/decorators/currentUserDecorator';
 import { UserType } from 'support/enums';
 import { UsersPage } from './entities/users-page.entity';
 import { PaginateUsersInput } from './dto/paginate-users.input';
+import { CreateEmployeeInput } from './dto/create-employee.input';
+import { RegisterUserInput } from './dto/register-user.input';
 
 @Resolver(() => User)
 export class UserResolver {
@@ -55,6 +57,16 @@ export class UserResolver {
       input.id = userId;
     }
     return this.userService.update(input);
+  }
+
+  @Mutation(() => GraphQLJSONObject)
+  createEmployee(@Args('input') input: CreateEmployeeInput) {
+    return this.userService.createEmployee(input);
+  }
+
+  @Mutation(() => CreateUserResponse)
+  registerUser(@Args('input') createUserInput: RegisterUserInput) {
+    return this.userService.register(createUserInput);
   }
 
   @Mutation(() => User)
