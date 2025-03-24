@@ -5,6 +5,7 @@ import { CampVariantRegistration } from 'src/camp-variant-registration/entities/
 import { Camp } from 'src/camp/entities/camp.entity';
 import { Discount } from 'src/discount/entities/discount.entity';
 import { RegistrationPayment } from 'src/registration-payment/entities/registration-payment.entity';
+import { User } from 'src/user/entities/user.entity';
 import { moneyFixation } from 'support/constants';
 import { CampRegistrationStatus, PaymentMethod } from 'support/enums';
 import { Decimal, GraphqlDecimal } from 'support/scalars';
@@ -138,4 +139,13 @@ export class CampRegistration {
   @JoinColumn({ name: 'campId', referencedColumnName: 'id' })
   @Field(() => Camp)
   camp: Camp;
+
+  @ManyToOne(() => User, (user) => user.campRegistrations, {
+    cascade: true,
+    onDelete: 'CASCADE',
+    onUpdate: 'CASCADE',
+  })
+  @JoinColumn([{ name: 'parentId', referencedColumnName: 'id' }])
+  @Field(() => User)
+  parent: User;
 }

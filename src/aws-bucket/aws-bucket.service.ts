@@ -126,12 +126,12 @@ export class AwsBucketService {
     base64File,
     fileName,
     isPublic = true,
-    userId,
+    // userId,
   }: {
     base64File: string; // This can be either plain base64 or a data URL (e.g. "data:image/png;base64,...")
     fileName: string; // Original file name with extension, e.g. "example.png"
     isPublic: boolean;
-    userId: string;
+    // userId: string;
   }) {
     try {
       // Extract the file extension from the provided file name.
@@ -184,27 +184,27 @@ export class AwsBucketService {
         throw new Error('Failed to upload file to S3 bucket');
       }
 
-      // Save file details in the database.
-      const addFile = await this.dataSource.manager.save(File, {
-        key,
-        type: getFileType(extension.toLowerCase()),
-        name: fileName.split('.').shift(),
-        sizeInKb: Math.floor(fileSize / 1024),
-        userId,
-      });
+      // // Save file details in the database.
+      // const addFile = await this.dataSource.manager.save(File, {
+      //   key,
+      //   type: getFileType(extension.toLowerCase()),
+      //   name: fileName.split('.').shift(),
+      //   sizeInKb: Math.floor(fileSize / 1024),
+      //   userId,
+      // });
 
-      if (!addFile) {
-        await this.deleteFile(key);
-        throw new Error('Failed to add file to database');
-      }
+      // if (!addFile) {
+      //   await this.deleteFile(key);
+      //   throw new Error('Failed to add file to database');
+      // }
 
       // Return a success response with the file URL.
       return {
         success: true,
+        key,
         url: isPublic
           ? (await this.getFileUrl(key)).url
           : (await this.getPresignedSignedUrl(key)).url,
-        file: addFile,
         extension: extension,
         isPublic,
       };

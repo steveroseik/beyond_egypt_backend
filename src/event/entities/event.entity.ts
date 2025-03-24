@@ -24,9 +24,9 @@ export class Event {
   @Field()
   name: string;
 
-  @Column('varchar', { name: 'description', length: 255 })
-  @Field()
-  description: string;
+  @Column('varchar', { name: 'description', length: 255, nullable: true })
+  @Field({ nullable: true })
+  description?: string;
 
   @Column('int', { name: 'thumbnailId' })
   @Field()

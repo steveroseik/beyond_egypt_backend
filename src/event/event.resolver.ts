@@ -18,30 +18,32 @@ import { Public } from 'src/auth/decorators/publicDecorator';
 import { Camp } from 'src/camp/entities/camp.entity';
 import { DataloaderRegistry } from 'src/dataloaders/dataloaderRegistry';
 import { File } from 'src/file/entities/file.entity';
+import { RemoveEventInput } from './dto/remove-event.input';
+import { GraphQLJSONObject } from 'graphql-type-json';
 
 @Resolver(() => Event)
 export class EventResolver {
   constructor(private readonly eventService: EventService) {}
 
-  @Mutation(() => Event)
-  createEvent(@Args('createEventInput') createEventInput: CreateEventInput) {
-    return this.eventService.create(createEventInput);
+  @Mutation(() => GraphQLJSONObject)
+  createEvent(@Args('input') input: CreateEventInput) {
+    return this.eventService.create(input);
   }
 
   @Public()
-  @Query(() => Event)
+  @Query(() => Event, { nullable: true })
   findOneEvent(@Args('id', { type: () => Int }) id: number) {
     return this.eventService.findOne(id);
   }
 
-  @Mutation(() => Event)
-  updateEvent(@Args('updateEventInput') updateEventInput: UpdateEventInput) {
-    return this.eventService.update(updateEventInput.id, updateEventInput);
+  @Mutation(() => GraphQLJSONObject)
+  updateEvent(@Args('input') input: UpdateEventInput) {
+    return this.eventService.update(input);
   }
 
-  @Mutation(() => Event)
-  removeEvent(@Args('id', { type: () => Int }) id: number) {
-    return this.eventService.remove(id);
+  @Mutation(() => GraphQLJSONObject)
+  removeEvent(@Args('input') input: RemoveEventInput) {
+    return this.eventService.remove(input);
   }
 
   @Public()

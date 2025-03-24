@@ -1,14 +1,17 @@
 import { ObjectType, Field, Int } from '@nestjs/graphql';
 import { Allergy } from 'src/allergy/entities/allergy.entity';
 import { CampVariantRegistration } from 'src/camp-variant-registration/entities/camp-variant-registration.entity';
+import { User } from 'src/user/entities/user.entity';
 import { ParentRelation } from 'support/enums';
 import {
   Column,
   CreateDateColumn,
   DeleteDateColumn,
   Entity,
+  JoinColumn,
   JoinTable,
   ManyToMany,
+  ManyToOne,
   OneToMany,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
@@ -113,4 +116,13 @@ export class Child {
   )
   @Field(() => [CampVariantRegistration])
   campVariantRegistrations: CampVariantRegistration[];
+
+  @ManyToOne(() => User, (user) => user.children, {
+    cascade: true,
+    onDelete: 'CASCADE',
+    onUpdate: 'CASCADE',
+  })
+  @JoinColumn({ name: 'parentId', referencedColumnName: 'id' })
+  @Field(() => User)
+  user: User;
 }

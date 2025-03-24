@@ -4,5 +4,5 @@ import { PaginationInput } from 'support/pagination.input';
 @InputType()
 export class PaginateLocationsInput extends PaginationInput {
   @Field({ nullable: true })
-  name?: string;
+  search?: string;
 }

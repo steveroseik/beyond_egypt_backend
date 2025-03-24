@@ -1,8 +1,18 @@
-import { Resolver, Query, Mutation, Args, Int } from '@nestjs/graphql';
+import {
+  Resolver,
+  Query,
+  Mutation,
+  Args,
+  Int,
+  Parent,
+  ResolveField,
+} from '@nestjs/graphql';
 import { RegistrationPaymentHistoryService } from './registration-payment.service';
 import { RegistrationPayment } from './entities/registration-payment.entity';
 import { CreateRegistrationPaymentHistoryInput } from './dto/create-registration-payment.input';
 import { UpdateRegistrationPaymentHistoryInput } from './dto/update-registration-payment.input';
+import * as dotenv from 'dotenv';
+dotenv.config();
 
 @Resolver(() => RegistrationPayment)
 export class RegistrationPaymentHistoryResolver {
@@ -46,5 +56,12 @@ export class RegistrationPaymentHistoryResolver {
     @Args('id', { type: () => Int }) id: number,
   ) {
     return this.registrationPaymentHistoryService.remove(id);
+  }
+
+  @ResolveField(() => String)
+  receipt(@Parent() payment: RegistrationPayment) {
+    return payment.receipt
+      ? `https://${process.env.S3_BUCKET_NAME}.s3.amazonaws.com/${payment.receipt}`
+      : null;
   }
 }

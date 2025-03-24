@@ -2,7 +2,7 @@ import { forwardRef, Inject, Injectable } from '@nestjs/common';
 import { CreateUserInput } from './dto/create-user.input';
 import { UpdateUserInput } from './dto/update-user.input';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, In, QueryRunner, Repository } from 'typeorm';
+import { DataSource, In, Not, QueryRunner, Repository } from 'typeorm';
 import { User } from './entities/user.entity';
 import { UserType } from 'support/enums';
 import { ResponseWrapper } from 'support/response-wrapper.entity';
@@ -18,6 +18,7 @@ import { buildPaginator } from 'typeorm-cursor-pagination';
 import { CreateEmployeeInput } from './dto/create-employee.input';
 import { genId } from 'support/random-uuid.generator';
 import { RegisterUserInput } from './dto/register-user.input';
+import { FindInactiveUserInput } from './dto/find-inactive-user.input';
 
 @Injectable()
 export class UserService {
@@ -28,33 +29,20 @@ export class UserService {
     private readonly dataSource: DataSource,
   ) {}
 
-  async create(input: CreateUserInput): Promise<CreateUserResponse> {
+  async create(
+    input: CreateUserInput,
+    userType: UserType,
+  ): Promise<CreateUserResponse | ResponseWrapper<Record<string, any>>> {
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
 
     try {
-      const firebaseData = await this.authService.verifyFirebaseToken(
-        input.firebaseToken,
-      );
-
-      if (!firebaseData) {
-        throw new Error('Invalid or expired token');
-      }
-
-      if (input.email !== firebaseData.email) {
-        throw new Error('Email does not match token');
-      }
-
-      if (input.type == UserType.parent) {
-        return await this.createParent(input, firebaseData, queryRunner);
+      if (userType == UserType.parent) {
+        return await this.parentRegister(input, queryRunner);
       } else {
-        await queryRunner.commitTransaction();
+        return await this.createInitialParent(input, queryRunner);
       }
-      return {
-        success: false,
-        message: 'Invalid user type, admin implementation not done',
-      };
     } catch (e) {
       await queryRunner.rollbackTransaction();
       console.log(e);
@@ -67,10 +55,67 @@ export class UserService {
     }
   }
 
+  async createInitialParent(input: CreateUserInput, queryRunner: QueryRunner) {
+    input.id = genId();
+
+    await this.createParent(input, queryRunner);
+
+    await queryRunner.commitTransaction();
+
+    return {
+      success: true,
+      message: 'Parent and children created successfully',
+      data: {
+        id: input.id,
+      },
+    };
+  }
+
+  async parentRegister(input: CreateUserInput, queryRunner: QueryRunner) {
+    if (!input.firebaseToken) {
+      throw new Error('Firebase token is required');
+    }
+    const firebaseData = await this.authService.verifyFirebaseToken(
+      input.firebaseToken,
+    );
+
+    if (!firebaseData) {
+      throw new Error('Invalid or expired token');
+    }
+
+    if (input.email !== firebaseData.email) {
+      throw new Error('Email does not match token');
+    }
+
+    input.id = firebaseData.uid;
+
+    await this.createParent(input, queryRunner);
+
+    await queryRunner.commitTransaction();
+
+    const accessToken = this.authService.generateAccessToken(
+      input.id,
+      UserType.parent,
+    );
+
+    const user = await this.findOne(firebaseData.uid);
+
+    return {
+      success: true,
+      message: 'Parent and children created successfully',
+      data: {
+        user: user,
+        accessToken,
+        message: 'Parent and children created successfully',
+        userState: 2,
+      },
+    };
+  }
+
   async createParent(
     input: CreateUserInput,
-    firebaseData: DecodedIdToken,
     queryRunner: QueryRunner,
+    withToken: boolean = false,
   ) {
     if (!input.children?.length) {
       throw new Error('Parent must have at least one child');
@@ -80,16 +125,21 @@ export class UserService {
       throw new Error('Parent must have a phone number');
     }
 
-    input.id = firebaseData.uid;
-
-    const parent = await queryRunner.manager.insert(User, input);
+    const parent = await queryRunner.manager.insert(User, {
+      id: input.id,
+      name: input.name,
+      email: input.email,
+      phone: input.phone,
+      type: input.type,
+      district: input.district,
+    });
 
     if (parent.raw.affectedRows !== 1) {
       throw new Error('Failed to create parent');
     }
 
     const children = input.children.map((child) => {
-      return { ...child, parentId: firebaseData.uid };
+      return { ...child, parentId: input.id };
     });
 
     const childrenResult = await queryRunner.manager.insert(
@@ -129,7 +179,7 @@ export class UserService {
     if (input.parentAdditional?.length) {
       const parentAdditional: CreateParentAdditionalInput[] =
         input.parentAdditional.map((additional) => {
-          return { ...additional, userId: firebaseData.uid };
+          return { ...additional, userId: input.id };
         });
 
       const parentAdditionalResult = await queryRunner.manager.insert(
@@ -145,25 +195,7 @@ export class UserService {
       }
     }
 
-    await queryRunner.commitTransaction();
-
-    const accessToken = this.authService.generateAccessToken(
-      firebaseData.uid,
-      UserType.parent,
-    );
-
-    const user = await this.findOne(firebaseData.uid);
-
-    return {
-      success: true,
-      message: 'Parent and children created successfully',
-      data: {
-        user: user,
-        accessToken,
-        message: 'Parent and children created successfully',
-        userState: 2,
-      },
-    };
+    return true;
   }
 
   findAll() {
@@ -345,10 +377,10 @@ export class UserService {
       }
     }
 
-    if (input.name) {
+    if (input.search) {
       queryBuilder.andWhere(
         'user.name LIKE :name OR user.email LIKE :name OR user.phone LIKE :name',
-        { name: `%${input.name}%` },
+        { name: `%${input.search}%` },
       );
     }
 
@@ -454,5 +486,14 @@ export class UserService {
         message: e.message,
       };
     }
+  }
+
+  findInactiveUser(input: FindInactiveUserInput) {
+    return this.repo.findOne({
+      where: {
+        id: input.id,
+        type: input.isParent ? UserType.parent : Not(UserType.parent),
+      },
+    });
   }
 }

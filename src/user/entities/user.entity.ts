@@ -1,10 +1,15 @@
 import { ObjectType, Field, Int } from '@nestjs/graphql';
+import { CampRegistration } from 'src/camp-registration/entities/camp-registration.entity';
+import { Child } from 'src/child/entities/child.entity';
+import { ParentAdditional } from 'src/parent-additional/entities/parent-additional.entity';
 import { UserType } from 'support/enums';
 import {
   Column,
   CreateDateColumn,
   DeleteDateColumn,
   Entity,
+  ManyToOne,
+  OneToMany,
   PrimaryColumn,
   UpdateDateColumn,
 } from 'typeorm';
@@ -59,4 +64,22 @@ export class User {
   @DeleteDateColumn({ name: 'deletedAt', precision: 3 })
   @Field({ nullable: true })
   deletedAt?: Date;
+
+  @OneToMany(() => Child, (child) => child.user)
+  @Field(() => [Child])
+  children: Child[];
+
+  @OneToMany(
+    () => ParentAdditional,
+    (parentAdditional) => parentAdditional.user,
+  )
+  @Field(() => [ParentAdditional])
+  parentAdditionals: ParentAdditional[];
+
+  @OneToMany(
+    () => CampRegistration,
+    (campRegistration) => campRegistration.parent,
+  )
+  @Field(() => [CampRegistration])
+  campRegistrations: CampRegistration[];
 }

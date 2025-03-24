@@ -1,9 +1,12 @@
 import { ObjectType, Field, Int } from '@nestjs/graphql';
+import { User } from 'src/user/entities/user.entity';
 import {
   Column,
   CreateDateColumn,
   DeleteDateColumn,
   Entity,
+  JoinColumn,
+  ManyToOne,
   PrimaryColumn,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
@@ -52,4 +55,13 @@ export class ParentAdditional {
   @DeleteDateColumn({ name: 'deletedAt', precision: 3 })
   @Field({ nullable: true })
   deletedAt?: Date;
+
+  @ManyToOne(() => User, (user) => user.parentAdditionals, {
+    cascade: true,
+    onDelete: 'CASCADE',
+    onUpdate: 'CASCADE',
+  })
+  @JoinColumn([{ name: 'userId', referencedColumnName: 'id' }])
+  @Field(() => User)
+  user: User;
 }

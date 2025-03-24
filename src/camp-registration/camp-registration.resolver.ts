@@ -17,7 +17,7 @@ import { UserType } from 'support/enums';
 import { GraphQLJSONObject } from 'graphql-type-json';
 import { CampRegistrationPage } from './entities/camp-registration-page.entity';
 import { PaginateCampRegistrationsInput } from './dto/paginate-camp-registrations.input';
-import { ProcessCampRegistration } from './dto/process-camp-registration.input';
+import { ProcessCampRegistrationInput } from './dto/process-camp-registration.input';
 import { CampVariantRegistration } from 'src/camp-variant-registration/entities/camp-variant-registration.entity';
 import { DataloaderRegistry } from 'src/dataloaders/dataloaderRegistry';
 import { Camp } from 'src/camp/entities/camp.entity';
@@ -90,7 +90,7 @@ export class CampRegistrationResolver {
 
   @Mutation(() => GraphQLJSONObject)
   processCampRegistration(
-    @Args('input') input: ProcessCampRegistration,
+    @Args('input') input: ProcessCampRegistrationInput,
     @CurrentUser('id') userId: string,
     @CurrentUser('type') type: UserType,
   ) {

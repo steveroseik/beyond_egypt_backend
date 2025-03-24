@@ -15,39 +15,31 @@ import { SchoolPage } from './entities/school-page.entity';
 import { PaginateSchoolsInput } from './dto/paginate-schools.input';
 import { Public } from 'src/auth/decorators/publicDecorator';
 import * as dotenv from 'dotenv';
+import { GraphQLJSONObject } from 'graphql-type-json';
 dotenv.config();
 
 @Resolver(() => School)
 export class SchoolResolver {
   constructor(private readonly schoolService: SchoolService) {}
 
-  @Mutation(() => School)
-  createSchool(
-    @Args('createSchoolInput') createSchoolInput: CreateSchoolInput,
-  ) {
-    return this.schoolService.create(createSchoolInput);
+  @Mutation(() => GraphQLJSONObject)
+  createSchool(@Args('input') input: CreateSchoolInput) {
+    return this.schoolService.create(input);
   }
 
-  @Query(() => [School], { name: 'school' })
-  findAll() {
-    return this.schoolService.findAll();
-  }
-
-  @Query(() => School, { name: 'school' })
-  findOne(@Args('id', { type: () => Int }) id: number) {
+  @Query(() => School, { nullable: true })
+  findOneSchool(@Args('id', { type: () => Int }) id: number) {
     return this.schoolService.findOne(id);
   }
 
-  @Mutation(() => School)
-  updateSchool(
-    @Args('updateSchoolInput') updateSchoolInput: UpdateSchoolInput,
-  ) {
-    return this.schoolService.update(updateSchoolInput.id, updateSchoolInput);
+  @Mutation(() => GraphQLJSONObject)
+  updateSchool(@Args('input') input: UpdateSchoolInput) {
+    return this.schoolService.update(input);
   }
 
   @Mutation(() => School)
-  removeSchool(@Args('id', { type: () => Int }) id: number) {
-    return this.schoolService.remove(id);
+  removeSchool(@Args('ids', { type: () => [Int] }) ids: number[]) {
+    return this.schoolService.remove(ids);
   }
 
   @Public()

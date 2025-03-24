@@ -34,6 +34,39 @@ type Allergy {
   children: [Child!]
 }
 
+type ParentAdditional {
+  id: Int!
+  userId: String!
+  name: String!
+  email: String
+  phone: String!
+  createdAt: DateTime!
+  lastModified: DateTime!
+  deletedAt: DateTime
+  user: User!
+}
+
+type User {
+  id: String!
+  name: String!
+  type: UserType!
+  email: String!
+  phone: String
+  district: String
+  createdAt: DateTime!
+  lastModified: DateTime!
+  deletedAt: DateTime
+  children: [Child!]!
+  parentAdditionals: [ParentAdditional!]!
+  campRegistrations: [CampRegistration!]!
+}
+
+enum UserType {
+  admin
+  parent
+  customerService
+}
+
 type Child {
   id: Int!
   parentId: String!
@@ -51,6 +84,7 @@ type Child {
   deletedAt: DateTime
   allergies: [Allergy!]
   campVariantRegistrations: [CampVariantRegistration!]!
+  user: User!
 }
 
 enum ParentRelation {
@@ -93,7 +127,7 @@ type RegistrationPayment {
   url: String
   status: PaymentStatus!
   amount: Decimal!
-  receiptId: Int
+  receipt: String
   userId: String!
   expirationDate: DateTime
   createdAt: DateTime!
@@ -130,6 +164,7 @@ type CampRegistration {
   campVariantRegistrations: [CampVariantRegistration!]
   payments: [RegistrationPayment!]!
   camp: Camp!
+  parent: User!
 }
 
 enum CampRegistrationStatus {
@@ -164,7 +199,7 @@ enum FileType {
 type Event {
   id: Int!
   name: String!
-  description: String!
+  description: String
   thumbnailId: Int!
   startDate: DateTime!
   endDate: DateTime!
@@ -231,26 +266,6 @@ type CampPage {
 
 """Cursor scalar type for pagination"""
 scalar GraphqlCursor
-
-type User {
-  id: String!
-  name: String!
-  type: UserType!
-  email: String!
-  phone: String
-  district: String
-  createdAt: DateTime!
-  lastModified: DateTime!
-  deletedAt: DateTime
-  parentAdditionals: [ParentAdditional!]!
-  children: [Child!]!
-}
-
-enum UserType {
-  admin
-  parent
-  customerService
-}
 
 type RegistrationReserve {
   id: Int!
@@ -360,17 +375,6 @@ The `JSONObject` scalar type represents JSON objects as specified by [ECMA-404](
 """
 scalar JSONObject
 
-type ParentAdditional {
-  id: Int!
-  userId: String!
-  name: String!
-  email: String
-  phone: String!
-  createdAt: DateTime!
-  lastModified: DateTime!
-  deletedAt: DateTime
-}
-
 type RegistrationHistory {
   campRegistrationId: Int!
   status: CampRegistrationStatus!
@@ -439,9 +443,10 @@ type Query {
   paginateCampVariantRegistrations(input: PaginateCampVariantRegistrationsInput!): CampVariantsRegistrationPage!
   findOneCamp(id: Int!): Camp!
   paginateCamps(input: PaginateCampsInput!): CampPage!
-  findOneEvent(id: Int!): Event!
+  findOneEvent(id: Int!): Event
   paginateEvents(input: PaginateEventsInput!): EventPage!
   user: [User!]!
+  findInactiveUser(input: FindInactiveUserInput!): User
   findOneUser(id: String!): User!
   paginateUsers(input: PaginateUsersInput!): UsersPage!
   ageRange(id: Int!): AgeRange!
@@ -456,7 +461,7 @@ type Query {
   registrationPaymentHistory(id: Int!): RegistrationPayment!
   settings: [Settings!]!
   setting(id: Int!): Settings!
-  school(id: Int!): School!
+  findOneSchool(id: Int!): School
   paginateSchools(input: PaginateSchoolsInput!): SchoolPage!
   registrationReserve(id: Int!): RegistrationReserve!
 }
@@ -473,7 +478,7 @@ input PaginateLocationsInput {
   limit: Int = 20
   afterCursor: String
   beforeCursor: String
-  name: String
+  search: String
 }
 
 input PaginateChildrenInput {
@@ -505,6 +510,9 @@ input PaginateCampsInput {
   limit: Int = 20
   afterCursor: String
   beforeCursor: String
+  search: String
+  eventIds: [Int!]
+  locationIds: [Int!]
 }
 
 input PaginateEventsInput {
@@ -512,6 +520,12 @@ input PaginateEventsInput {
   limit: Int = 20
   afterCursor: String
   beforeCursor: String
+  search: String
+}
+
+input FindInactiveUserInput {
+  id: String!
+  isParent: Boolean! = true
 }
 
 input PaginateUsersInput {
@@ -519,7 +533,7 @@ input PaginateUsersInput {
   limit: Int = 20
   afterCursor: String
   beforeCursor: String
-  name: String
+  search: String
   types: [UserType!]
   notTypes: [UserType!]
   orderBy: UsersOrderField
@@ -577,12 +591,13 @@ type Mutation {
   createCamp(input: CreateCampInput!): JSONObject!
   updateCamp(input: UpdateCampInput!): JSONObject!
   removeCamp(id: Int!): Camp!
-  createEvent(createEventInput: CreateEventInput!): Event!
-  updateEvent(updateEventInput: UpdateEventInput!): Event!
-  removeEvent(id: Int!): Event!
+  createEvent(input: CreateEventInput!): JSONObject!
+  updateEvent(input: UpdateEventInput!): JSONObject!
+  removeEvent(input: RemoveEventInput!): JSONObject!
   tempLogin(input: TempSignInInput!): JSONObject!
   signIn(input: TokenRequestInput!): UserAuthResponse!
   createUser(input: CreateUserInput!): CreateUserResponse!
+  createParent(input: CreateUserInput!): JSONObject!
   updateUser(input: UpdateUserInput!): JSONObject!
   createEmployee(input: CreateEmployeeInput!): JSONObject!
   registerUser(input: RegisterUserInput!): CreateUserResponse!
@@ -596,7 +611,7 @@ type Mutation {
   createCampRegistration(input: CreateCampRegistrationInput!): JSONObject!
   completeCampRegistration(input: UpdateCampRegistrationInput!): JSONObject!
   removeCampRegistration(id: Int!): CampRegistration!
-  processCampRegistration(input: ProcessCampRegistration!): JSONObject!
+  processCampRegistration(input: ProcessCampRegistrationInput!): JSONObject!
   createChildReport(createChildReportInput: CreateChildReportInput!): ChildReport!
   updateChildReport(updateChildReportInput: UpdateChildReportInput!): ChildReport!
   removeChildReport(id: Int!): ChildReport!
@@ -620,9 +635,9 @@ type Mutation {
   createSetting(createSettingInput: CreateSettingInput!): Settings!
   updateSetting(updateSettingInput: UpdateSettingInput!): Settings!
   removeSetting(id: Int!): Settings!
-  createSchool(createSchoolInput: CreateSchoolInput!): School!
-  updateSchool(updateSchoolInput: UpdateSchoolInput!): School!
-  removeSchool(id: Int!): School!
+  createSchool(input: CreateSchoolInput!): JSONObject!
+  updateSchool(input: UpdateSchoolInput!): JSONObject!
+  removeSchool(ids: [Int!]!): School!
   createRegistrationReserve(createRegistrationReserveInput: CreateRegistrationReserveInput!): RegistrationReserve!
   updateRegistrationReserve(updateRegistrationReserveInput: UpdateRegistrationReserveInput!): RegistrationReserve!
   removeRegistrationReserve(id: Int!): RegistrationReserve!
@@ -785,14 +800,31 @@ input UpdateCampInput {
 }
 
 input CreateEventInput {
-  """Example field (placeholder)"""
-  exampleField: Int!
+  name: String!
+  description: String
+  thumbnailId: Int!
+  startDate: DateTime!
+  endDate: DateTime!
+  earlyBirdId: Int
+  fileIds: [Int!]
 }
 
 input UpdateEventInput {
-  """Example field (placeholder)"""
-  exampleField: Int
+  name: String
+  description: String
+  thumbnailId: Int
+  startDate: DateTime
+  endDate: DateTime
+  earlyBirdId: Int
+  fileIds: [Int!]
   id: Int!
+  fileIdsToRemove: [Int!]
+  campIdsToRemove: [Int!]
+}
+
+input RemoveEventInput {
+  id: Int!
+  removeCamps: Boolean! = true
 }
 
 input TempSignInInput {
@@ -806,9 +838,8 @@ input TokenRequestInput {
 }
 
 input CreateUserInput {
-  firebaseToken: String!
+  firebaseToken: String
   name: String!
-  type: UserType!
   email: String!
   phone: String
   district: String
@@ -876,9 +907,15 @@ input UpdateCampRegistrationInput {
   campVariantRegistrations: [CreateCampVariantRegistrationInput!]
 }
 
-input ProcessCampRegistration {
+input ProcessCampRegistrationInput {
   campRegistrationId: Int!
   paymentMethod: PaymentMethod
+  receipt: Base64Image
+}
+
+input Base64Image {
+  base64: String!
+  name: String!
 }
 
 input CreateChildReportInput {
@@ -965,13 +1002,15 @@ input UpdateSettingInput {
 }
 
 input CreateSchoolInput {
-  """Example field (placeholder)"""
-  exampleField: Int!
+  nameEn: String!
+  nameAr: String!
+  base64Image: Base64Image
 }
 
 input UpdateSchoolInput {
-  """Example field (placeholder)"""
-  exampleField: Int
+  nameEn: String
+  nameAr: String
+  base64Image: Base64Image
   id: Int!
 }
 

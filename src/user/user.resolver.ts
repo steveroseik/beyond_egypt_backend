@@ -26,6 +26,7 @@ import { UsersPage } from './entities/users-page.entity';
 import { PaginateUsersInput } from './dto/paginate-users.input';
 import { CreateEmployeeInput } from './dto/create-employee.input';
 import { RegisterUserInput } from './dto/register-user.input';
+import { FindInactiveUserInput } from './dto/find-inactive-user.input';
 
 @Resolver(() => User)
 export class UserResolver {
@@ -34,12 +35,34 @@ export class UserResolver {
   @Public()
   @Mutation(() => CreateUserResponse)
   createUser(@Args('input') createUserInput: CreateUserInput) {
-    return this.userService.create(createUserInput);
+    createUserInput.type = UserType.parent;
+    return this.userService.create(createUserInput, UserType.parent);
+  }
+
+  @Mutation(() => GraphQLJSONObject)
+  createParent(
+    @Args('input') createUserInput: CreateUserInput,
+    @CurrentUser('type') userType: UserType,
+  ) {
+    if (userType === UserType.parent) {
+      return {
+        success: false,
+        message: 'You are not authorized to perform this action',
+      };
+    }
+    return this.userService.create(createUserInput, userType);
   }
 
   @Query(() => [User], { name: 'user' })
   findAll() {
     return this.userService.findAll();
+  }
+
+  @Public()
+  @Query(() => User, { nullable: true })
+  findInactiveUser(@Args('input') input: FindInactiveUserInput) {
+    if (input.id.length !== 12) return null;
+    return this.userService.findInactiveUser(input);
   }
 
   @Query(() => User)
@@ -80,7 +103,10 @@ export class UserResolver {
     @Parent() parent: User,
     @Context() { loaders }: { loaders: DataloaderRegistry },
   ) {
-    return loaders.ParentAdditionalDataLoader.load(parent.id);
+    return (
+      parent.parentAdditionals ??
+      loaders.ParentAdditionalDataLoader.load(parent.id)
+    );
   }
 
   @Query(() => UsersPage)

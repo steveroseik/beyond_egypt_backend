@@ -55,9 +55,9 @@ export class RegistrationPayment {
   @Field(() => GraphqlDecimal)
   amount: Decimal;
 
-  @Column('int', { name: 'receiptId', nullable: true })
+  @Column('varchar', { name: 'receipt', nullable: true })
   @Field({ nullable: true })
-  receiptId?: number;
+  receipt?: string;
 
   @Column('varchar', { name: 'userId' })
   @Field()

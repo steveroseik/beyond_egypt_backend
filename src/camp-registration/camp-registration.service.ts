@@ -18,7 +18,7 @@ import e from 'express';
 import { on } from 'events';
 import { PaginateCampRegistrationsInput } from './dto/paginate-camp-registrations.input';
 import { buildPaginator } from 'typeorm-cursor-pagination';
-import { ProcessCampRegistration } from './dto/process-camp-registration.input';
+import { ProcessCampRegistrationInput } from './dto/process-camp-registration.input';
 import { PaymentPayload } from 'src/fawry/models/payment.payload';
 import { RegistrationPayment } from 'src/registration-payment/entities/registration-payment.entity';
 import * as moment from 'moment-timezone';
@@ -29,6 +29,8 @@ import { CreateRegistrationReserveInput } from 'src/registration-reserve/dto/cre
 import * as dotenv from 'dotenv';
 import { Decimal } from 'support/scalars';
 import { moneyFixation } from 'support/constants';
+import { Base64Image } from 'support/shared/base64Image.object';
+import { AwsBucketService } from 'src/aws-bucket/aws-bucket.service';
 dotenv.config();
 
 @Injectable()
@@ -37,6 +39,7 @@ export class CampRegistrationService {
     @InjectRepository(CampRegistration)
     private repo: Repository<CampRegistration>,
     private dataSource: DataSource,
+    private awsService: AwsBucketService,
   ) {}
 
   async create(
@@ -614,7 +617,7 @@ export class CampRegistrationService {
   }
 
   async processCampRegistration(
-    input: ProcessCampRegistration,
+    input: ProcessCampRegistrationInput,
     userId: string,
     userType: UserType,
   ) {
@@ -651,7 +654,7 @@ export class CampRegistrationService {
         campRegistration,
         queryRunner,
         userId,
-        input.paymentMethod,
+        input,
       );
     } catch (e) {
       await queryRunner.rollbackTransaction();
@@ -669,9 +672,9 @@ export class CampRegistrationService {
     campRegistration: CampRegistration,
     queryRunner: QueryRunner,
     userId: string,
-    paymentMethod?: PaymentMethod,
+    input?: ProcessCampRegistrationInput,
   ) {
-    paymentMethod ??= campRegistration.paymentMethod;
+    const paymentMethod = input.paymentMethod ?? campRegistration.paymentMethod;
 
     if (!paymentMethod) throw Error('Select a payment method first');
 
@@ -754,6 +757,7 @@ export class CampRegistrationService {
           campVariantVacancies,
           userId,
           paymentMethod,
+          input.receipt,
         );
       case PaymentMethod.fawry:
         return await this.handleFawryPayment(
@@ -890,7 +894,12 @@ export class CampRegistrationService {
     campVariantVacancies: Map<number, number>,
     userId: string,
     paymentMethod: PaymentMethod,
+    receipt?: Base64Image,
   ) {
+    if (paymentMethod === PaymentMethod.instapay && !receipt) {
+      throw Error('Receipt is required for Instapay payment');
+    }
+
     /// create payment
     const totalAmount = this.calculateCampVariantRegistrationPrice(
       campVariants,
@@ -898,11 +907,22 @@ export class CampRegistrationService {
       campRegistration.camp.mealPrice,
     );
 
+    const { success, key } = await this.awsService.uploadSingleFileFromBase64({
+      base64File: receipt.base64,
+      fileName: receipt.name,
+      isPublic: true,
+    });
+
+    if (!success) {
+      throw Error('Failed to upload receipt');
+    }
+
     const payment = await queryRunner.manager.save(RegistrationPayment, {
       campRegistrationId: campRegistration.id,
       amount: totalAmount,
       paymentMethod,
       userId,
+      receipt: key,
     });
 
     const reservations: CreateRegistrationReserveInput[] = [];

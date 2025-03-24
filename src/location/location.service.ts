@@ -78,13 +78,13 @@ export class LocationService {
     try {
       const response = await this.repo.delete(ids);
 
-      if (response.affected !== ids.length) {
-        throw new Error('Some locations were not deleted');
+      if (response.affected === 0) {
+        throw new Error('No location was deleted');
       }
 
       return {
         success: true,
-        message: 'Locations deleted successfully',
+        message: `${response.affected} Locations deleted successfully`,
       };
     } catch (e) {
       console.log(e);
@@ -98,9 +98,9 @@ export class LocationService {
   paginate(input: PaginateLocationsInput) {
     const queryBuilder = this.repo.createQueryBuilder('location');
 
-    if (input.name) {
+    if (input.search) {
       queryBuilder.where('location.name LIKE :search', {
-        search: `%${input.name}%`,
+        search: `%${input.search}%`,
       });
     }
 

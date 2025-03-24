@@ -2,19 +2,59 @@ import { Injectable } from '@nestjs/common';
 import { CreateEventInput } from './dto/create-event.input';
 import { UpdateEventInput } from './dto/update-event.input';
 import { InjectRepository } from '@nestjs/typeorm';
-import { In, Repository } from 'typeorm';
+import { DataSource, In, Repository } from 'typeorm';
 import { PaginateEventsInput } from './dto/paginate-events.input';
 import { buildPaginator } from 'typeorm-cursor-pagination';
 import { Event } from './entities/event.entity';
+import { RemoveEventInput } from './dto/remove-event.input';
+import { Camp } from 'src/camp/entities/camp.entity';
 
 @Injectable()
 export class EventService {
   constructor(
     @InjectRepository(Event)
     private eventRepository: Repository<Event>,
+    private dataSource: DataSource,
   ) {}
-  create(createEventInput: CreateEventInput) {
-    return 'This action adds a new event';
+  async create(input: CreateEventInput) {
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      const event = await this.eventRepository.insert(input);
+
+      if (event.raw.affectedRows === 0) {
+        throw new Error('No event was created');
+      }
+
+      if (input.fileIds) {
+        await queryRunner.manager
+          .createQueryBuilder(Event, 'event')
+          .relation(Event, 'files')
+          .of(event.raw.insertId)
+          .add(input.fileIds);
+      }
+
+      await queryRunner.commitTransaction();
+
+      return {
+        success: true,
+        message: 'Event created successfully',
+        data: {
+          id: event.raw.insertId,
+        },
+      };
+    } catch (e) {
+      await queryRunner.rollbackTransaction();
+      console.log(e);
+      return {
+        success: false,
+        message: e.message ?? 'Error while creating event',
+      };
+    } finally {
+      await queryRunner.release();
+    }
   }
 
   findAllByKeys(keys: readonly number[]) {
@@ -25,16 +65,142 @@ export class EventService {
     return this.eventRepository.findOne({ where: { id } });
   }
 
-  update(id: number, updateEventInput: UpdateEventInput) {
-    return `This action updates a #${id} event`;
+  async update(input: UpdateEventInput) {
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      if (input.fileIds?.length) {
+        await queryRunner.manager
+          .createQueryBuilder(Event, 'event')
+          .relation(Event, 'files')
+          .of(input.id)
+          .add(input.fileIds);
+      }
+
+      if (input.fileIdsToRemove?.length) {
+        await queryRunner.manager
+          .createQueryBuilder(Event, 'event')
+          .relation(Event, 'files')
+          .of(input.id)
+          .remove(input.fileIdsToRemove);
+      }
+
+      if (input.campIdsToRemove?.length) {
+        const updateCamps = await queryRunner.manager.update(
+          Camp,
+          {
+            id: In(input.campIdsToRemove),
+          },
+          {
+            eventId: null,
+          },
+        );
+
+        if (updateCamps.affected !== input.campIdsToRemove.length) {
+          throw new Error('Failed to remove all camp references');
+        }
+      }
+
+      if (
+        input.name ||
+        input.description ||
+        input.startDate ||
+        input.endDate ||
+        input.thumbnailId ||
+        input.earlyBirdId
+      ) {
+        const update = await queryRunner.manager.update(Event, input.id, input);
+
+        if (update.affected === 0) {
+          throw new Error('No event was updated');
+        }
+      }
+
+      await queryRunner.commitTransaction();
+      return {
+        success: true,
+        message: 'Event updated successfully',
+      };
+    } catch (e) {
+      await queryRunner.rollbackTransaction();
+      console.log(e);
+      return {
+        success: false,
+        message: e.message ?? 'Error while updating event',
+      };
+    } finally {
+      await queryRunner.release();
+    }
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} event`;
+  async remove(input: RemoveEventInput) {
+    try {
+      if (input.removeCamps) {
+        const response = await this.eventRepository.delete(input.id);
+
+        if (response.affected === 0) {
+          throw new Error('No event was deleted');
+        }
+        return {
+          success: true,
+          message: 'Events removed successfully',
+        };
+      } else {
+        const campsRelated = await this.dataSource.manager.find(Camp, {
+          where: {
+            eventId: input.id,
+          },
+        });
+
+        if (campsRelated.length > 0) {
+          throw new Error('Event has related camps');
+        }
+
+        const updateCamps = await this.dataSource.manager.update(
+          Camp,
+          {
+            id: In(campsRelated.map((e) => e.id)),
+          },
+          {
+            eventId: null,
+          },
+        );
+
+        if (updateCamps.affected !== campsRelated.length) {
+          throw new Error('Failed to update all camps');
+        }
+
+        const response = await this.eventRepository.delete(input.id);
+
+        if (response.affected === 0) {
+          throw new Error('No event was deleted');
+        }
+
+        return {
+          success: true,
+          message: 'Events removed successfully and camps unlinked',
+        };
+      }
+    } catch (e) {
+      console.log(e);
+      return {
+        success: false,
+        message: 'Error while removing event',
+      };
+    }
   }
 
   async paginate(input: PaginateEventsInput) {
     const queryBuilder = this.eventRepository.createQueryBuilder('event');
+
+    if (input.search) {
+      queryBuilder.andWhere('event.name ILIKE :search', {
+        search: `%${input.search}%`,
+      });
+    }
+
     const paginator = buildPaginator({
       entity: Event,
       alias: 'event',

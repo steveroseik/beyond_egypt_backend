@@ -5,7 +5,7 @@ import { PaginationInput } from 'support/pagination.input';
 @InputType()
 export class PaginateUsersInput extends PaginationInput {
   @Field({ nullable: true })
-  name?: string;
+  search?: string;
 
   @Field(() => [UserType], { nullable: true })
   types?: UserType[];

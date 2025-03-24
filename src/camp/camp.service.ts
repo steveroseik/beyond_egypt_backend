@@ -399,6 +399,27 @@ export class CampService {
       .leftJoinAndSelect('camp.ageRanges', 'ageRanges')
       .leftJoinAndSelect('camp.files', 'files');
 
+    if (input.eventIds?.length) {
+      queryBuilder.andWhere('camp.eventId IN (:...eventIds)', {
+        eventIds: input.eventIds,
+      });
+    }
+
+    if (input.locationIds?.length) {
+      queryBuilder.andWhere('camp.locationId IN (:...locationIds)', {
+        locationIds: input.locationIds,
+      });
+    }
+
+    if (input.search) {
+      queryBuilder.andWhere(
+        'camp.name LIKE :search OR camp.description LIKE :search',
+        {
+          search: `%${input.search}%`,
+        },
+      );
+    }
+
     const paginator = buildPaginator({
       entity: Camp,
       alias: 'camp',

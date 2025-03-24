@@ -5,6 +5,7 @@ import {
   FileTypeValidator,
   Get,
   HttpCode,
+  HttpException,
   HttpStatus,
   MaxFileSizeValidator,
   Param,
@@ -19,6 +20,7 @@ import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import { AwsBucketService } from './aws-bucket.service';
 import { CurrentUser } from 'src/auth/decorators/currentUserDecorator';
 import { memoryStorage } from 'multer';
+import { Public } from 'src/auth/decorators/publicDecorator';
 
 const MAX_FILE_SIZE = 15 * 1024 * 1024; // 10MB
 
@@ -47,26 +49,16 @@ export class AwsBucketController {
     @CurrentUser('id') userId: string,
   ) {
     const isPublicBool = publicBool === 'true';
-    let uploadResults = [];
 
-    files.forEach(async (file) => {
-      uploadResults.push(
-        await this.bucketService.uploadSingleFile({
+    const uploadResults = await Promise.all(
+      files.map((file) =>
+        this.bucketService.uploadSingleFile({
           file,
           isPublic: isPublicBool,
           userId,
         }),
-      );
-    });
-    // const uploadResults = await Promise.all(
-    //   files.map((file) =>
-    //     this.bucketService.uploadSingleFile({
-    //       file,
-    //       isPublic: isPublicBool,
-    //       userId,
-    //     }),
-    //   ),
-    // );
+      ),
+    );
 
     return uploadResults.map(({ file, url, isPublic }, index) => ({
       file,
@@ -101,6 +93,32 @@ export class AwsBucketController {
       file,
       isPublic: isPublicBool,
       userId,
+    });
+  }
+
+  @Public()
+  @Post('/base')
+  async uploadBase64File(
+    @Body('file') base64File: string,
+    @Body('fileName') fileName: string,
+    @Body('isPublic') publicBool: boolean,
+    // @CurrentUser('id') userId: string,
+  ) {
+    console.log('base64File', base64File);
+    console.log('fileName', fileName);
+    console.log('publicBool', publicBool);
+    if (!base64File || !fileName) {
+      throw new HttpException(
+        'Base64 file and file name are required',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    return await this.bucketService.uploadSingleFileFromBase64({
+      base64File,
+      fileName,
+      isPublic: publicBool,
+      // userId,
     });
   }
 
