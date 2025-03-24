@@ -594,6 +594,12 @@ export class CampRegistrationService {
       });
     }
 
+    if (input.statuses) {
+      queryBuilder.andWhere('campRegistration.status IN (:...statuses)', {
+        statuses: input.statuses,
+      });
+    }
+
     const paginator = buildPaginator({
       entity: CampRegistration,
       alias: 'campRegistration',

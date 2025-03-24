@@ -268,6 +268,11 @@ type CampRegistrationPage {
   data: [CampRegistration!]!
 }
 
+type CampVariantsRegistrationPage {
+  cursor: GraphqlCursor!
+  data: [CampVariantRegistration!]!
+}
+
 type ChildPage {
   cursor: GraphqlCursor!
   data: [Child!]!
@@ -431,6 +436,7 @@ type Query {
   child(id: Int!): Child!
   paginateChildren(input: PaginateChildrenInput!): ChildPage!
   campVariantRegistration(id: Int!): CampVariantRegistration!
+  paginateCampVariantRegistrations(input: PaginateCampVariantRegistrationsInput!): CampVariantsRegistrationPage!
   findOneCamp(id: Int!): Camp!
   paginateCamps(input: PaginateCampsInput!): CampPage!
   findOneEvent(id: Int!): Event!
@@ -480,6 +486,20 @@ input PaginateChildrenInput {
   campId: Int
 }
 
+input PaginateCampVariantRegistrationsInput {
+  isAsc: Boolean! = false
+  limit: Int = 20
+  afterCursor: String
+  beforeCursor: String
+  campIds: [Int!]
+  campVariantIds: [Int!]
+  childIds: [Int!]
+  parentIds: [Int!]
+  statuses: [CampRegistrationStatus!]
+  withMeal: Boolean
+  withShirt: Boolean
+}
+
 input PaginateCampsInput {
   isAsc: Boolean! = false
   limit: Int = 20
@@ -520,8 +540,8 @@ input PaginateCampRegistrationsInput {
   afterCursor: String
   beforeCursor: String
   campIds: [Int!]
-  childIds: [Int!]
   parentIds: [String!]
+  statuses: [CampRegistrationStatus!]
 }
 
 input PaginateSchoolsInput {

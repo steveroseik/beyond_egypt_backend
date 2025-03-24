@@ -15,6 +15,8 @@ import { UpdateCampVariantRegistrationInput } from './dto/update-camp-variant-re
 import { Child } from 'src/child/entities/child.entity';
 import { DataloaderRegistry } from 'src/dataloaders/dataloaderRegistry';
 import { CampVariant } from 'src/camp-variant/entities/camp-variant.entity';
+import { CampVariantsRegistrationPage } from './entities/camp-variant-registration-page.entity';
+import { PaginateCampVariantRegistrationsInput } from './dto/paginate-camp-variant-registrations.input';
 
 @Resolver(() => CampVariantRegistration)
 export class CampVariantRegistrationResolver {
@@ -58,6 +60,12 @@ export class CampVariantRegistrationResolver {
     return this.campVariantRegistrationService.remove(id);
   }
 
+  @Query(() => CampVariantsRegistrationPage)
+  paginateCampVariantRegistrations(
+    @Args('input') input: PaginateCampVariantRegistrationsInput,
+  ) {
+    return this.campVariantRegistrationService.paginate(input);
+  }
   @ResolveField(() => Child)
   child(
     @Parent() campVariantRegistration: CampVariantRegistration,
