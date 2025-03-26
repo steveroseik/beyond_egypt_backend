@@ -7,7 +7,6 @@ export interface PaymentPayload {
   customerMobile: string;
   customerEmail: string;
   customerName: string;
-
   customerProfileId: string;
   paymentExpiry: string;
   language: string;
@@ -15,4 +14,21 @@ export interface PaymentPayload {
   returnUrl: string;
   signature?: string;
   authCaptureModePayment: boolean;
+}
+
+export interface PayAtFawryPayload {
+  merchantCode?: string;
+  customerName: string;
+  customerMobile: string;
+  customerEmail: string;
+  customerProfileId: string;
+  merchantRefNum: string;
+  amount: string;
+  paymentExpiry: string;
+  currencyCode: string;
+  language: string;
+  chargeItems: ChargeItem[];
+  signature?: string;
+  paymentMethod: string;
+  description: string;
 }

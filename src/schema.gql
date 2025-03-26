@@ -72,7 +72,8 @@ type Child {
   parentId: String!
   name: String!
   birthdate: DateTime!
-  schoolId: Int!
+  schoolId: Int
+  schoolName: String
   isMale: Boolean!
   parentRelation: ParentRelation!
   imageFileId: Int
@@ -92,6 +93,7 @@ enum ParentRelation {
   mother
   grandParent
   uncle
+  aunt
 }
 
 type CampVariantRegistration {
@@ -122,7 +124,7 @@ enum ShirtSize {
 
 type RegistrationPayment {
   id: Int!
-  merchantRef: String!
+  referenceNumber: Int
   campRegistrationId: Int!
   paymentMethod: PaymentMethod!
   url: String
@@ -714,8 +716,9 @@ input UpdateParentAdditionalInput {
 input CreateChildInput {
   name: String!
   birthdate: DateTime!
-  schoolId: Int!
+  schoolId: Int
   isMale: Boolean!
+  schoolName: String
   parentRelation: ParentRelation!
   imageFileId: Int
   medicalInfo: String
@@ -729,6 +732,7 @@ input UpdateChildInput {
   name: String
   birthdate: DateTime
   schoolId: Int
+  schoolName: String
   isMale: Boolean
   parentRelation: ParentRelation
   imageFileId: Int

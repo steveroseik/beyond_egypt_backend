@@ -1,5 +1,5 @@
 import * as crypto from 'crypto';
-import { PaymentPayload } from '../models/payment.payload';
+import { PayAtFawryPayload, PaymentPayload } from '../models/payment.payload';
 import * as dotenv from 'dotenv';
 import axios from 'axios';
 import { PaymentStatusResponse } from '../models/payment-status.payload';
@@ -58,6 +58,42 @@ function generateSignature(payload: PaymentPayload): string {
   return signature;
 }
 
+function generatePayAtFawrySignature(payload: PayAtFawryPayload): string {
+  const {
+    merchantCode,
+    merchantRefNum,
+    customerProfileId,
+    paymentMethod,
+    amount,
+  } = payload;
+
+  console.log(
+    'Content to sign',
+    merchantCode +
+      merchantRefNum +
+      customerProfileId +
+      paymentMethod +
+      amount +
+      process.env.FAWRY_SECURE_KEY,
+  );
+
+  // Concatenate the required fields.
+  const dataToSign =
+    merchantCode +
+    merchantRefNum +
+    customerProfileId +
+    paymentMethod +
+    amount +
+    process.env.FAWRY_SECURE_KEY;
+
+  // Hash the concatenated string using SHA256.
+  const signature = crypto
+    .createHash('sha256')
+    .update(dataToSign)
+    .digest('hex');
+  return signature;
+}
+
 /**
  * Builds the final payment payload by adding the generated signature.
  *
@@ -73,6 +109,55 @@ export function securePaymentPayload(payload: PaymentPayload): PaymentPayload {
     ...payload,
     signature,
   };
+}
+
+export function securePayAtAFawryPaymentPayload(
+  payload: PayAtFawryPayload,
+): PayAtFawryPayload {
+  payload.merchantCode = process.env.FAWRY_MERCHANT_ID;
+  const signature = generatePayAtFawrySignature(payload);
+
+  return {
+    ...payload,
+    signature,
+  };
+}
+
+export async function generatePayAtAFawryPaymentUrl(
+  payload: PayAtFawryPayload,
+) {
+  payload = securePayAtAFawryPaymentPayload(payload);
+
+  console.log('PayAtFawry Payload', payload);
+
+  const url =
+    'https://atfawry.fawrystaging.com/ECommerceWeb/Fawry/payments/charge';
+
+  try {
+    const response = await axios.post(url, payload, {
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    const data = response.data;
+
+    if (data) {
+      return data;
+    }
+  } catch (error: any) {
+    if (axios.isAxiosError(error) && error.response) {
+      console.error('Fawry API error details:', error.response.data);
+      throw new Error(
+        `Failure in url generation: ${
+          error.response.data.description ||
+          error.response.statusText ||
+          error.message
+        }`,
+      );
+    }
+    throw new Error(`Failure in url generation: ${error.message}`);
+  }
 }
 
 /**

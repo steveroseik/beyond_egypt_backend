@@ -31,7 +31,7 @@ import { Decimal } from 'support/scalars';
 import { moneyFixation } from 'support/constants';
 import { Base64Image } from 'support/shared/base64Image.object';
 import { AwsBucketService } from 'src/aws-bucket/aws-bucket.service';
-import { generatePaymentReference } from 'support/random-uuid.generator';
+import { generateMerchantRefNumber } from 'support/random-uuid.generator';
 dotenv.config();
 
 @Injectable()
@@ -794,10 +794,8 @@ export class CampRegistrationService {
       campRegistration.camp.mealPrice,
     );
 
-    const merchantRef = generatePaymentReference();
     const payment = await queryRunner.manager.save(RegistrationPayment, {
       campRegistrationId: campRegistration.id,
-      merchantRef,
       amount: totalAmount,
       paymentMethod: PaymentMethod.fawry,
       userId,
@@ -810,8 +808,10 @@ export class CampRegistrationService {
     const tenMinutesFromNow = moment.tz('Africa/Cairo').add(10, 'minute');
     // const tenMinutesFromNow = Date.now() + 10 * 60 * 1000;
 
+    const merchantRef = generateMerchantRefNumber(payment.id);
+
     const payloadData: PaymentPayload = {
-      merchantRefNum: merchantRef,
+      merchantRefNum: merchantRef.toString(),
       customerProfileId: parent.id,
       customerEmail: parent.email,
       customerMobile: parent.phone,
@@ -840,7 +840,11 @@ export class CampRegistrationService {
     const updatePayment = await queryRunner.manager.update(
       RegistrationPayment,
       { id: payment.id },
-      { url: paymentUrl, expirationDate: tenMinutesFromNow.toDate() },
+      {
+        url: paymentUrl,
+        expirationDate: tenMinutesFromNow.toDate(),
+        referenceNumber: merchantRef,
+      },
     );
 
     if (updatePayment.affected == 0) {
@@ -927,10 +931,8 @@ export class CampRegistrationService {
       key = response.key;
     }
 
-    const merchantRef = generatePaymentReference();
     const payment = await queryRunner.manager.save(RegistrationPayment, {
       campRegistrationId: campRegistration.id,
-      merchantRef,
       amount: totalAmount,
       paymentMethod,
       userId,

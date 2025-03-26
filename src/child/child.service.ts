@@ -85,6 +85,7 @@ export class ChildService {
         name: input.name,
         birthdate: input.birthdate,
         schoolId: input.schoolId,
+        schoolName: input.schoolName,
         isMale: input.isMale,
         parentRelation: input.parentRelation,
         imageFileId: input.imageFileId,

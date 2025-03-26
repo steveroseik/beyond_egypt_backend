@@ -32,9 +32,14 @@ export class FawryService {
     await queryRunner.startTransaction();
 
     try {
+      if (!query.merchantRefNumber) {
+        return res.redirect(
+          `${process.env.FRONTEND_URL}/payment-failed?message=Payment expired`,
+        );
+      }
       const payment = await queryRunner.manager.findOne(RegistrationPayment, {
         where: {
-          id: query.merchantRefNumber,
+          referenceNumber: query.merchantRefNumber,
         },
         relations: ['campRegistration'],
         lock: { mode: 'pessimistic_write' },

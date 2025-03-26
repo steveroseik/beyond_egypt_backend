@@ -18,6 +18,9 @@ export class UpdateChildInput {
   schoolId?: number;
 
   @Field({ nullable: true })
+  schoolName?: string;
+
+  @Field({ nullable: true })
   isMale?: boolean;
 
   @Field(() => ParentRelation, { nullable: true })

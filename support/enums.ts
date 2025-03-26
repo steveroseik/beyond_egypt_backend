@@ -81,6 +81,7 @@ export enum ParentRelation {
   mother = 'mother',
   grandParent = 'grandParent',
   uncle = 'uncle',
+  aunt = 'aunt',
 }
 
 registerEnumType(ParentRelation, {

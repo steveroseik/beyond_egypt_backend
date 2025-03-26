@@ -36,9 +36,13 @@ export class Child {
   @Field()
   birthdate: Date;
 
-  @Column('int', { name: 'schoolId' })
-  @Field()
-  schoolId: number;
+  @Column('int', { name: 'schoolId', nullable: true })
+  @Field({ nullable: true })
+  schoolId?: number;
+
+  @Column('varchar', { name: 'schoolId', length: 50, nullable: true })
+  @Field({ nullable: true })
+  schoolName?: string;
 
   @Column('bit', {
     name: 'isMale',

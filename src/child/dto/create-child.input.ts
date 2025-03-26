@@ -25,12 +25,18 @@ export class CreateChildInput {
   birthdate: Date;
 
   @IsInt()
-  @Field()
-  schoolId: number;
+  @IsOptional()
+  @Field({ nullable: true })
+  schoolId?: number;
 
   @IsBoolean()
   @Field()
   isMale: boolean;
+
+  @IsOptional()
+  @IsString()
+  @Field({ nullable: true })
+  schoolName: string;
 
   @IsString()
   @Field(() => ParentRelation)
