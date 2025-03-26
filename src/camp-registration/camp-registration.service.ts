@@ -794,10 +794,10 @@ export class CampRegistrationService {
       campRegistration.camp.mealPrice,
     );
 
-    const ref = generatePaymentReference();
+    const merchantRef = generatePaymentReference();
     const payment = await queryRunner.manager.save(RegistrationPayment, {
       campRegistrationId: campRegistration.id,
-
+      merchantRef,
       amount: totalAmount,
       paymentMethod: PaymentMethod.fawry,
       userId,
@@ -811,7 +811,7 @@ export class CampRegistrationService {
     // const tenMinutesFromNow = Date.now() + 10 * 60 * 1000;
 
     const payloadData: PaymentPayload = {
-      merchantRefNum: payment.id.toString(),
+      merchantRefNum: merchantRef,
       customerProfileId: parent.id,
       customerEmail: parent.email,
       customerMobile: parent.phone,
@@ -829,6 +829,8 @@ export class CampRegistrationService {
       ],
       returnUrl: `${process.env.BASE_URL}/fawry/return`,
     };
+
+    console.log(payloadData);
 
     const paymentUrl = await generateFawryPaymentUrl(payloadData);
 
@@ -925,8 +927,10 @@ export class CampRegistrationService {
       key = response.key;
     }
 
+    const merchantRef = generatePaymentReference();
     const payment = await queryRunner.manager.save(RegistrationPayment, {
       campRegistrationId: campRegistration.id,
+      merchantRef,
       amount: totalAmount,
       paymentMethod,
       userId,

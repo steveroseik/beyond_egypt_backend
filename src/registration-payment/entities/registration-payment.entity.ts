@@ -22,6 +22,7 @@ export class RegistrationPayment {
   @Field()
   id: number;
 
+  /// TODO: set as unique
   @Column('varchar', {
     name: 'merchantRef',
     length: 16,
@@ -69,6 +70,8 @@ export class RegistrationPayment {
   @Field({ nullable: true })
   receipt?: string;
 
+  @Column('varchar', { name: '', nullable: true })
+  @Field({ nullable: true })
   @Column('varchar', { name: 'userId' })
   @Field()
   userId: string;
