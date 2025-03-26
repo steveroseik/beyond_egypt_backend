@@ -907,14 +907,19 @@ export class CampRegistrationService {
       campRegistration.camp.mealPrice,
     );
 
-    const { success, key } = await this.awsService.uploadSingleFileFromBase64({
-      base64File: receipt.base64,
-      fileName: receipt.name,
-      isPublic: true,
-    });
+    let key: string = undefined;
+    if (receipt) {
+      const response = await this.awsService.uploadSingleFileFromBase64({
+        base64File: receipt.base64,
+        fileName: receipt.name,
+        isPublic: true,
+      });
 
-    if (!success) {
-      throw Error('Failed to upload receipt');
+      if (!response.success || !response.key) {
+        throw Error('Failed to upload receipt');
+      }
+
+      key = response.key;
     }
 
     const payment = await queryRunner.manager.save(RegistrationPayment, {
