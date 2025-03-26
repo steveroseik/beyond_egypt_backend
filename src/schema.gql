@@ -122,6 +122,7 @@ enum ShirtSize {
 
 type RegistrationPayment {
   id: Int!
+  merchantRef: String!
   campRegistrationId: Int!
   paymentMethod: PaymentMethod!
   url: String

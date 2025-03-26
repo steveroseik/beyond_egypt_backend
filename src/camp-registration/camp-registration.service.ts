@@ -31,6 +31,7 @@ import { Decimal } from 'support/scalars';
 import { moneyFixation } from 'support/constants';
 import { Base64Image } from 'support/shared/base64Image.object';
 import { AwsBucketService } from 'src/aws-bucket/aws-bucket.service';
+import { generatePaymentReference } from 'support/random-uuid.generator';
 dotenv.config();
 
 @Injectable()
@@ -793,8 +794,10 @@ export class CampRegistrationService {
       campRegistration.camp.mealPrice,
     );
 
+    const ref = generatePaymentReference();
     const payment = await queryRunner.manager.save(RegistrationPayment, {
       campRegistrationId: campRegistration.id,
+
       amount: totalAmount,
       paymentMethod: PaymentMethod.fawry,
       userId,

@@ -3,6 +3,7 @@ import BigNumber from 'bignumber.js';
 import { CampRegistration } from 'src/camp-registration/entities/camp-registration.entity';
 import { moneyFixation } from 'support/constants';
 import { PaymentMethod, PaymentStatus } from 'support/enums';
+import { generatePaymentReference, genId } from 'support/random-uuid.generator';
 import { Decimal, GraphqlDecimal } from 'support/scalars';
 import {
   Column,
@@ -11,6 +12,7 @@ import {
   JoinColumn,
   ManyToOne,
   PrimaryGeneratedColumn,
+  Unique,
 } from 'typeorm';
 
 @ObjectType()
@@ -19,6 +21,14 @@ export class RegistrationPayment {
   @PrimaryGeneratedColumn()
   @Field()
   id: number;
+
+  @Column('varchar', {
+    name: 'merchantRef',
+    length: 16,
+    default: () => `'${generatePaymentReference()}'`,
+  })
+  @Field()
+  merchantRef: string;
 
   @Column('int', { name: 'campRegistrationId' })
   @Field()
