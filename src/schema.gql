@@ -840,6 +840,7 @@ input TokenRequestInput {
 input CreateUserInput {
   firebaseToken: String
   name: String!
+  type: UserType!
   email: String!
   phone: String
   district: String

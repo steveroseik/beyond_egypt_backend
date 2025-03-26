@@ -20,6 +20,7 @@ export class CreateUserInput {
   @Field()
   name: string;
 
+  @Field(() => UserType)
   type: UserType;
 
   @Field()
