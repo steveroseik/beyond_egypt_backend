@@ -22,7 +22,7 @@ export class LocationResolver {
     return this.locationService.findOne(id);
   }
 
-  @Mutation(() => Location)
+  @Mutation(() => GraphQLJSONObject)
   updateLocation(@Args('input') input: UpdateLocationsInput) {
     return this.locationService.update(input);
   }

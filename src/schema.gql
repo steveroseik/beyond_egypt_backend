@@ -587,7 +587,7 @@ type Mutation {
   updateCampVariant(updateCampVariantInput: UpdateCampVariantInput!): CampVariant!
   removeCampVariant(id: Int!): CampVariant!
   createLocation(input: CreateLocationInput!): JSONObject!
-  updateLocation(input: UpdateLocationsInput!): Location!
+  updateLocation(input: UpdateLocationsInput!): JSONObject!
   removeLocation(ids: [Int!]!): Location!
   createParentAdditional(createParentAdditionalInput: CreateParentAdditionalInput!): ParentAdditional!
   updateParentAdditional(input: UpdateParentAdditionalInput!): JSONObject!
