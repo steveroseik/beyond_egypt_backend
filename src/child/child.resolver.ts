@@ -66,6 +66,6 @@ export class ChildResolver {
     @Parent() child: Child,
     @Context() { loaders }: { loaders: DataloaderRegistry },
   ) {
-    return child.imageId && loaders.FilesLoader.load(child.imageId);
+    return child.imageId ? loaders.FilesLoader.load(child.imageId) : null;
   }
 }

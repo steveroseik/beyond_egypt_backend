@@ -10,4 +10,7 @@ export class CreateAgeRangeInput {
 
   @Field({ nullable: true })
   maxAge?: number;
+
+  @Field({ nullable: true })
+  thumbnailId?: number;
 }

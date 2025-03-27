@@ -22,6 +22,10 @@ export class AgeRange {
   @Field({ nullable: true })
   name?: string;
 
+  @Column('int', { name: 'thumbnailId', nullable: true })
+  @Field({ nullable: true })
+  thumbnailId?: number;
+
   @Column('int', { name: 'minAge', nullable: true })
   @Field({ nullable: true })
   minAge?: number;

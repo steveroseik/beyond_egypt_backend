@@ -255,12 +255,14 @@ type Camp {
 type AgeRange {
   id: Int!
   name: String
+  thumbnailId: Int
   minAge: Int
   maxAge: Int
   createdAt: DateTime!
   lastModified: DateTime!
   deletedAt: DateTime
   camps: [Camp!]
+  thumbnail: File
 }
 
 type CampPage {
@@ -606,9 +608,9 @@ type Mutation {
   createEmployee(input: CreateEmployeeInput!): JSONObject!
   registerUser(input: RegisterUserInput!): CreateUserResponse!
   removeUser(id: String!): User!
-  createAgeRange(createAgeRangeInput: CreateAgeRangeInput!): AgeRange!
-  updateAgeRange(updateAgeRangeInput: UpdateAgeRangeInput!): AgeRange!
-  removeAgeRange(id: Int!): AgeRange!
+  createAgeRange(input: CreateAgeRangeInput!): JSONObject!
+  updateAgeRange(input: UpdateAgeRangeInput!): JSONObject!
+  removeAgeRange(ids: [Int!]!): JSONObject!
   createAllergy(createAllergyInput: CreateAllergyInput!): Allergy!
   updateAllergy(updateAllergyInput: UpdateAllergyInput!): Allergy!
   removeAllergy(id: Int!): Allergy!
@@ -782,6 +784,7 @@ input CreateAgeRangeInput {
   name: String
   minAge: Int
   maxAge: Int
+  thumbnailId: Int
 }
 
 input UpdateCampInput {
@@ -884,6 +887,7 @@ input UpdateAgeRangeInput {
   name: String
   minAge: Int
   maxAge: Int
+  thumbnailId: Int
   id: Int!
 }
 
