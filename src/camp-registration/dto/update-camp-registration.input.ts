@@ -24,6 +24,12 @@ export class UpdateCampRegistrationInput {
   @Field(() => PaymentMethod, { nullable: true })
   paymentMethod?: PaymentMethod;
 
+  @Field({ nullable: true })
+  behaviorConsent?: boolean;
+
+  @Field({ nullable: true })
+  refundPolicyConsent?: boolean;
+
   @Field(() => [CreateCampVariantRegistrationInput], { nullable: true })
   campVariantRegistrations?: CreateCampVariantRegistrationInput[];
 }

@@ -96,6 +96,28 @@ export class CampRegistration {
   @Field(() => CampRegistrationStatus)
   status: CampRegistrationStatus;
 
+  @Column('bit', {
+    name: 'behaviorConsent',
+    default: false,
+    transformer: {
+      to: (value: boolean) => value,
+      from: (value: Buffer) => value && value[0] === 1,
+    },
+  })
+  @Field()
+  behaviorConsent: boolean;
+
+  @Column('bit', {
+    name: 'refundPolicyConsent',
+    default: false,
+    transformer: {
+      to: (value: boolean) => value,
+      from: (value: Buffer) => value && value[0] === 1,
+    },
+  })
+  @Field()
+  refundPolicyConsent: boolean;
+
   @CreateDateColumn({
     name: 'createdAt',
     precision: 3,

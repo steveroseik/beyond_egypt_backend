@@ -409,6 +409,8 @@ export class CampRegistrationService {
         totalPrice: price,
         paymentMethod: input.paymentMethod,
         oneDayPrice: null,
+        refundPolicyConsent: input.refundPolicyConsent,
+        behaviorConsent: input.behaviorConsent,
       },
     );
 
@@ -495,6 +497,8 @@ export class CampRegistrationService {
           oneDayPrice: input.oneDayPrice,
           paymentMethod: input.paymentMethod,
           totalPrice: null,
+          refundPolicyConsent: input.refundPolicyConsent,
+          behaviorConsent: input.behaviorConsent,
         },
       );
 
@@ -563,6 +567,8 @@ export class CampRegistrationService {
             totalPrice: price,
             paymentMethod: input.paymentMethod,
             oneDayPrice: null,
+            refundPolicyConsent: input.refundPolicyConsent,
+            behaviorConsent: input.behaviorConsent,
           },
         );
 
@@ -644,6 +650,13 @@ export class CampRegistrationService {
         throw new Error('Camp registration already processed');
       }
 
+      if (
+        campRegistration.refundPolicyConsent === false &&
+        input.refundPolicyConsent === false
+      ) {
+        throw new Error('Refund policy consent is required');
+      }
+
       //TODO: handle two scenarios
       // first: if payment is secondary and the difference is positive
       // second: if the payment is secondary and the difference is negative
@@ -673,7 +686,7 @@ export class CampRegistrationService {
     campRegistration: CampRegistration,
     queryRunner: QueryRunner,
     userId: string,
-    input?: ProcessCampRegistrationInput,
+    input: ProcessCampRegistrationInput,
   ) {
     const paymentMethod = input.paymentMethod ?? campRegistration.paymentMethod;
 
@@ -758,7 +771,7 @@ export class CampRegistrationService {
           campVariantVacancies,
           userId,
           paymentMethod,
-          input.receipt,
+          input,
         );
       case PaymentMethod.fawry:
         return await this.handleFawryPayment(
@@ -767,6 +780,7 @@ export class CampRegistrationService {
           campVariantVacancies,
           queryRunner,
           userId,
+          input,
         );
     }
   }
@@ -777,6 +791,7 @@ export class CampRegistrationService {
     campVariantVacancies: Map<number, number>,
     queryRunner: QueryRunner,
     userId: string,
+    input: ProcessCampRegistrationInput,
   ) {
     //const find parent
     const parent = await queryRunner.manager.findOne(User, {
@@ -785,6 +800,20 @@ export class CampRegistrationService {
 
     if (!parent) {
       throw Error('Failed to find parent');
+    }
+
+    if (
+      campRegistration.behaviorConsent !== input.behaviorConsent ||
+      campRegistration.refundPolicyConsent !== input.refundPolicyConsent
+    ) {
+      await queryRunner.manager.update(
+        CampRegistration,
+        { id: campRegistration.id },
+        {
+          refundPolicyConsent: input.refundPolicyConsent,
+          behaviorConsent: input.behaviorConsent,
+        },
+      );
     }
 
     /// create payment
@@ -903,9 +932,12 @@ export class CampRegistrationService {
     campVariantVacancies: Map<number, number>,
     userId: string,
     paymentMethod: PaymentMethod,
-    receipt?: Base64Image,
+    input: ProcessCampRegistrationInput,
   ) {
-    if (paymentMethod === PaymentMethod.instapay && !receipt) {
+    if (
+      paymentMethod === PaymentMethod.instapay &&
+      (!input.receipt || !input.referenceNumber)
+    ) {
       throw Error('Receipt is required for Instapay payment');
     }
 
@@ -917,10 +949,10 @@ export class CampRegistrationService {
     );
 
     let key: string = undefined;
-    if (receipt) {
+    if (input.receipt) {
       const response = await this.awsService.uploadSingleFileFromBase64({
-        base64File: receipt.base64,
-        fileName: receipt.name,
+        base64File: input.receipt.base64,
+        fileName: input.receipt.name,
         isPublic: true,
       });
 
@@ -937,6 +969,7 @@ export class CampRegistrationService {
       paymentMethod,
       userId,
       receipt: key,
+      referenceNumber: input.referenceNumber,
     });
 
     const reservations: CreateRegistrationReserveInput[] = [];

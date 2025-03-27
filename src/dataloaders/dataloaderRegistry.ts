@@ -22,6 +22,8 @@ import EventFilesDataLoader from './loaders/eventFiles.loader';
 import { CampsDataLoader } from './loaders/camps.loader';
 import { EventsDataLoader } from './loaders/events.dataloader';
 import { EventService } from 'src/event/event.service';
+import { AgeRangeService } from 'src/age-range/age-range.service';
+import AgeRangesByCampDataLoader from './loaders/ageRanges.loader';
 
 export class DataloaderRegistry {
   private cache: Record<string, any> = {};
@@ -36,6 +38,7 @@ export class DataloaderRegistry {
     private campVariantRegistrationService: CampVariantRegistrationService,
     private campService: CampService,
     private eventService: EventService,
+    private ageRangeService: AgeRangeService,
   ) {}
 
   /**
@@ -128,6 +131,12 @@ export class DataloaderRegistry {
   public get EventsDataLoader() {
     return this.get('EventsDataLoader', () =>
       EventsDataLoader.create(this.eventService),
+    );
+  }
+
+  public get AgeRangesByCampDataLoader() {
+    return this.get('AgeRangesByCampDataLoader', () =>
+      AgeRangesByCampDataLoader.create(this.ageRangeService),
     );
   }
   /**

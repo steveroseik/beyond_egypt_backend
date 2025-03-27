@@ -53,6 +53,11 @@ export class CreateChildInput {
   medicalInfo?: string;
 
   @IsOptional()
+  @IsBoolean()
+  @Field({ nullable: true, defaultValue: true })
+  canTakePhotos?: boolean;
+
+  @IsOptional()
   @IsString()
   @Field({ nullable: true })
   otherAllergies?: string;

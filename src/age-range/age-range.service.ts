@@ -3,12 +3,14 @@ import { CreateAgeRangeInput } from './dto/create-age-range.input';
 import { UpdateAgeRangeInput } from './dto/update-age-range.input';
 import { InjectRepository } from '@nestjs/typeorm';
 import { AgeRange } from './entities/age-range.entity';
-import { In, Repository } from 'typeorm';
+import { DataSource, In, Repository } from 'typeorm';
+import { Camp } from 'src/camp/entities/camp.entity';
 
 @Injectable()
 export class AgeRangeService {
   constructor(
     @InjectRepository(AgeRange) private readonly repo: Repository<AgeRange>,
+    private dataSource: DataSource,
   ) {}
 
   async create(createAgeRangeInput: CreateAgeRangeInput) {
@@ -39,7 +41,9 @@ export class AgeRangeService {
   }
 
   findOne(id: number) {
-    return `This action returns a #${id} ageRange`;
+    return this.repo.findOne({
+      where: { id },
+    });
   }
 
   async update(updateAgeRangeInput: UpdateAgeRangeInput) {
@@ -83,5 +87,13 @@ export class AgeRangeService {
         message: e.message,
       };
     }
+  }
+
+  findAgeRangesByCampIds(keys: readonly number[]) {
+    return this.repo
+      .createQueryBuilder('ageRange')
+      .leftJoin('ageRange.camps', 'camp')
+      .where('camp.id IN (:...keys)', { keys })
+      .getMany();
   }
 }

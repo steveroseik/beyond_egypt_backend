@@ -78,6 +78,17 @@ export class Child {
   @Field({ nullable: true })
   extraNotes?: string;
 
+  @Column('bit', {
+    name: 'canTakePhotos',
+    default: false,
+    transformer: {
+      to: (value: boolean) => value,
+      from: (value: Buffer) => value && value[0] === 1,
+    },
+  })
+  @Field()
+  canTakePhotos: boolean;
+
   @CreateDateColumn({
     name: 'createdAt',
     precision: 3,

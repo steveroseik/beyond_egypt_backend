@@ -10,6 +10,7 @@ import { ChildModule } from 'src/child/child.module';
 import { CampVariantRegistrationModule } from 'src/camp-variant-registration/camp-variant-registration.module';
 import { CampModule } from 'src/camp/camp.module';
 import { EventModule } from 'src/event/event.module';
+import { AgeRangeModule } from 'src/age-range/age-range.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { EventModule } from 'src/event/event.module';
     CampVariantRegistrationModule,
     CampModule,
     EventModule,
+    AgeRangeModule,
   ],
   providers: [DataloaderRegistry, DataloaderRegistryFactory],
   exports: [DataloaderRegistryFactory],

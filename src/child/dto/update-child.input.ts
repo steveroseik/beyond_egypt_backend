@@ -24,6 +24,9 @@ export class UpdateChildInput {
   imageId?: number;
 
   @Field({ nullable: true })
+  canTakePhotos: boolean;
+
+  @Field({ nullable: true })
   isMale?: boolean;
 
   @Field(() => ParentRelation, { nullable: true })

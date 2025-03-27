@@ -25,6 +25,7 @@ import { CampRegistration } from 'src/camp-registration/entities/camp-registrati
 import { CurrentUser } from 'src/auth/decorators/currentUserDecorator';
 import { UserType } from 'support/enums';
 import { Event } from 'src/event/entities/event.entity';
+import { AgeRange } from 'src/age-range/entities/age-range.entity';
 
 @Resolver(() => Camp)
 export class CampResolver {
@@ -126,5 +127,15 @@ export class CampResolver {
     return parent.eventId
       ? (parent.event ?? loaders.EventsDataLoader.load(parent.eventId))
       : null;
+  }
+
+  @ResolveField(() => [AgeRange], { nullable: true })
+  ageRanges(
+    @Parent() parent: Camp,
+    @Context() { loaders }: { loaders: DataloaderRegistry },
+  ) {
+    return parent.ageRanges?.length
+      ? parent.ageRanges
+      : loaders.AgeRangesByCampDataLoader.load(parent.id);
   }
 }

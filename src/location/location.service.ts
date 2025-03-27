@@ -40,7 +40,7 @@ export class LocationService {
   }
 
   findOne(id: number) {
-    return `This action returns a #${id} location`;
+    return this.repo.findOne({ where: { id } });
   }
 
   async update(input: UpdateLocationsInput) {

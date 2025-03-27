@@ -16,8 +16,8 @@ export class LocationResolver {
     return this.locationService.create(input);
   }
 
-  @Query(() => Location, { name: 'location' })
-  findOne(@Args('id', { type: () => Int }) id: number) {
+  @Query(() => Location, { nullable: true })
+  findOneLocation(@Args('id', { type: () => Int }) id: number) {
     return this.locationService.findOne(id);
   }
 

@@ -30,8 +30,8 @@ export class AgeRangeResolver {
     return this.ageRangeService.findAll();
   }
 
-  @Query(() => AgeRange, { name: 'ageRange' })
-  findOne(@Args('id', { type: () => Int }) id: number) {
+  @Query(() => AgeRange, { nullable: true })
+  findOneAgeRange(@Args('id', { type: () => Int }) id: number) {
     return this.ageRangeService.findOne(id);
   }
 

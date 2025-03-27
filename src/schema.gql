@@ -80,6 +80,7 @@ type Child {
   medicalInfo: String
   otherAllergies: String
   extraNotes: String
+  canTakePhotos: Boolean!
   createdAt: DateTime!
   lastModified: DateTime!
   deletedAt: DateTime
@@ -162,6 +163,8 @@ type CampRegistration {
   capacity: Int
   paid: Boolean!
   status: CampRegistrationStatus!
+  behaviorConsent: Boolean!
+  refundPolicyConsent: Boolean!
   createdAt: DateTime!
   lastModified: DateTime!
   deletedAt: DateTime
@@ -451,11 +454,12 @@ type Query {
   paginateCamps(input: PaginateCampsInput!): CampPage!
   findOneEvent(id: Int!): Event
   paginateEvents(input: PaginateEventsInput!): EventPage!
+  ageRange: [AgeRange!]!
+  findOneAgeRange(id: Int!): AgeRange
   user: [User!]!
   findInactiveUser(input: FindInactiveUserInput!): User
   findOneUser(id: String!): User!
   paginateUsers(input: PaginateUsersInput!): UsersPage!
-  ageRange(id: Int!): AgeRange!
   allergy(id: Int!): Allergy!
   campRegistration(id: Int!): CampRegistration!
   paginateCampRegistrations(input: PaginateCampRegistrationsInput!): CampRegistrationPage!
@@ -600,6 +604,9 @@ type Mutation {
   createEvent(input: CreateEventInput!): JSONObject!
   updateEvent(input: UpdateEventInput!): JSONObject!
   removeEvent(input: RemoveEventInput!): JSONObject!
+  createAgeRange(input: CreateAgeRangeInput!): JSONObject!
+  updateAgeRange(input: UpdateAgeRangeInput!): JSONObject!
+  removeAgeRange(ids: [Int!]!): JSONObject!
   tempLogin(input: TempSignInInput!): JSONObject!
   signIn(input: TokenRequestInput!): UserAuthResponse!
   createUser(input: CreateUserInput!): CreateUserResponse!
@@ -608,9 +615,6 @@ type Mutation {
   createEmployee(input: CreateEmployeeInput!): JSONObject!
   registerUser(input: RegisterUserInput!): CreateUserResponse!
   removeUser(id: String!): User!
-  createAgeRange(input: CreateAgeRangeInput!): JSONObject!
-  updateAgeRange(input: UpdateAgeRangeInput!): JSONObject!
-  removeAgeRange(ids: [Int!]!): JSONObject!
   createAllergy(createAllergyInput: CreateAllergyInput!): Allergy!
   updateAllergy(updateAllergyInput: UpdateAllergyInput!): Allergy!
   removeAllergy(id: Int!): Allergy!
@@ -725,6 +729,7 @@ input CreateChildInput {
   schoolName: String
   parentRelation: ParentRelation!
   medicalInfo: String
+  canTakePhotos: Boolean = true
   otherAllergies: String
   extraNotes: String
   allergies: [Int!]
@@ -737,6 +742,7 @@ input UpdateChildInput {
   schoolId: Int
   schoolName: String
   imageId: Int
+  canTakePhotos: Boolean
   isMale: Boolean
   parentRelation: ParentRelation
   imageFileId: Int
@@ -837,6 +843,14 @@ input RemoveEventInput {
   removeCamps: Boolean! = true
 }
 
+input UpdateAgeRangeInput {
+  name: String
+  minAge: Int
+  maxAge: Int
+  thumbnailId: Int
+  id: Int!
+}
+
 input TempSignInInput {
   email: String!
   password: String!
@@ -883,14 +897,6 @@ input RegisterUserInput {
   firebaseToken: String!
 }
 
-input UpdateAgeRangeInput {
-  name: String
-  minAge: Int
-  maxAge: Int
-  thumbnailId: Int
-  id: Int!
-}
-
 input CreateAllergyInput {
   """Example field (placeholder)"""
   exampleField: Int!
@@ -907,6 +913,8 @@ input CreateCampRegistrationInput {
   campId: Int!
   oneDayPrice: Decimal
   totalPrice: Decimal
+  behaviorConsent: Boolean
+  refundPolicyConsent: Boolean
   paymentMethod: PaymentMethod
   campVariantRegistrations: [CreateCampVariantRegistrationInput!]
 }
@@ -918,6 +926,8 @@ input UpdateCampRegistrationInput {
   oneDayPrice: Decimal
   totalPrice: Decimal
   paymentMethod: PaymentMethod
+  behaviorConsent: Boolean
+  refundPolicyConsent: Boolean
   campVariantRegistrations: [CreateCampVariantRegistrationInput!]
 }
 
@@ -925,6 +935,9 @@ input ProcessCampRegistrationInput {
   campRegistrationId: Int!
   paymentMethod: PaymentMethod
   receipt: Base64Image
+  referenceNumber: Int
+  refundPolicyConsent: Boolean
+  behaviorConsent: Boolean
 }
 
 input Base64Image {

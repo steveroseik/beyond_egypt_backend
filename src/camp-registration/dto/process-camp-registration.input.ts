@@ -12,4 +12,13 @@ export class ProcessCampRegistrationInput {
 
   @Field(() => Base64Image, { nullable: true })
   receipt?: Base64Image;
+
+  @Field({ nullable: true })
+  referenceNumber?: number;
+
+  @Field({ nullable: true })
+  refundPolicyConsent: boolean;
+
+  @Field({ nullable: true })
+  behaviorConsent: boolean;
 }
