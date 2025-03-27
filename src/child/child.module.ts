@@ -3,9 +3,10 @@ import { ChildService } from './child.service';
 import { ChildResolver } from './child.resolver';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Child } from './entities/child.entity';
+import { FileModule } from 'src/file/file.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Child])],
+  imports: [TypeOrmModule.forFeature([Child]), FileModule],
   providers: [ChildResolver, ChildService],
   exports: [ChildService],
 })

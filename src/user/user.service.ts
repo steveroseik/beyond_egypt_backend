@@ -151,13 +151,13 @@ export class UserService {
         return {
           parentId: child.parentId,
           name: child.name,
+          imageId: child.imageId,
           birthdate: child.birthdate,
           schoolId: child.schoolId,
           medicalInfo: child.medicalInfo,
           parentRelation: child.parentRelation,
           isMale: child.isMale,
           extraNotes: child.extraNotes,
-          imageFileId: child.imageFileId,
           otherAllergies: child.otherAllergies,
         };
       }),
@@ -293,7 +293,6 @@ export class UserService {
               parentRelation: child.parentRelation,
               isMale: child.isMale,
               extraNotes: child.extraNotes,
-              imageFileId: child.imageFileId,
               otherAllergies: child.otherAllergies,
             };
           });

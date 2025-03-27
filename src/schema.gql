@@ -73,10 +73,10 @@ type Child {
   name: String!
   birthdate: DateTime!
   schoolId: Int
+  imageId: Int
   schoolName: String
   isMale: Boolean!
   parentRelation: ParentRelation!
-  imageFileId: Int
   medicalInfo: String
   otherAllergies: String
   extraNotes: String
@@ -86,6 +86,7 @@ type Child {
   allergies: [Allergy!]
   campVariantRegistrations: [CampVariantRegistration!]!
   user: User!
+  file: File
 }
 
 enum ParentRelation {
@@ -716,11 +717,11 @@ input UpdateParentAdditionalInput {
 input CreateChildInput {
   name: String!
   birthdate: DateTime!
+  imageId: Int
   schoolId: Int
   isMale: Boolean!
   schoolName: String
   parentRelation: ParentRelation!
-  imageFileId: Int
   medicalInfo: String
   otherAllergies: String
   extraNotes: String
@@ -733,6 +734,7 @@ input UpdateChildInput {
   birthdate: DateTime
   schoolId: Int
   schoolName: String
+  imageId: Int
   isMale: Boolean
   parentRelation: ParentRelation
   imageFileId: Int

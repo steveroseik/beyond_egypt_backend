@@ -24,6 +24,11 @@ export class CreateChildInput {
   @Field()
   birthdate: Date;
 
+  @Field({ nullable: true })
+  @IsOptional()
+  @IsInt()
+  imageId?: number;
+
   @IsInt()
   @IsOptional()
   @Field({ nullable: true })
@@ -41,11 +46,6 @@ export class CreateChildInput {
   @IsString()
   @Field(() => ParentRelation)
   parentRelation: ParentRelation;
-
-  @IsOptional()
-  @IsInt()
-  @Field({ nullable: true })
-  imageFileId?: number;
 
   @IsOptional()
   @IsString()

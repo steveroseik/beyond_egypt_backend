@@ -8,11 +8,13 @@ import { DataSource, In, QueryRunner, Repository } from 'typeorm';
 import { buildPaginator } from 'typeorm-cursor-pagination';
 import { Camp } from 'src/camp/entities/camp.entity';
 import { UserType } from 'support/enums';
+import { FileService } from 'src/file/file.service';
 
 @Injectable()
 export class ChildService {
   constructor(
     @InjectRepository(Child) private readonly repo: Repository<Child>,
+    private fileService: FileService,
     private dataSource: DataSource,
   ) {}
   create(createChildInput: CreateChildInput) {
@@ -80,15 +82,24 @@ export class ChildService {
         key !== 'id' && input[key as keyof UpdateChildInput] !== undefined,
     );
 
+    if (input.imageId) {
+      if (child.imageId != null) {
+        const deleted = await this.fileService.remove(child.imageId);
+        if (!deleted.success) {
+          throw new Error(`Failed to delete old image for ${child.name}`);
+        }
+      }
+    }
+
     if (hasValidField) {
       const updated = await this.repo.update(input.id, {
         name: input.name,
         birthdate: input.birthdate,
         schoolId: input.schoolId,
+        imageId: input.imageId,
         schoolName: input.schoolName,
         isMale: input.isMale,
         parentRelation: input.parentRelation,
-        imageFileId: input.imageFileId,
         medicalInfo: input.medicalInfo,
         otherAllergies: input.otherAllergies,
         extraNotes: input.extraNotes,

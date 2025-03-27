@@ -40,6 +40,10 @@ export class Child {
   @Field({ nullable: true })
   schoolId?: number;
 
+  @Column('int', { name: 'imageId', nullable: true })
+  @Field({ nullable: true })
+  imageId?: number;
+
   @Column('varchar', { name: 'schoolId', length: 50, nullable: true })
   @Field({ nullable: true })
   schoolName?: string;
@@ -61,10 +65,6 @@ export class Child {
   })
   @Field(() => ParentRelation)
   parentRelation: ParentRelation;
-
-  @Column('int', { name: 'imageFileId', nullable: true })
-  @Field({ nullable: true })
-  imageFileId?: number;
 
   @Column('varchar', { name: 'medicalInfo', nullable: true, length: 255 })
   @Field({ nullable: true })

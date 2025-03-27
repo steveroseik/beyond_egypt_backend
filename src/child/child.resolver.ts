@@ -1,4 +1,13 @@
-import { Resolver, Query, Mutation, Args, Int } from '@nestjs/graphql';
+import {
+  Resolver,
+  Query,
+  Mutation,
+  Args,
+  Int,
+  ResolveField,
+  Parent,
+  Context,
+} from '@nestjs/graphql';
 import { ChildService } from './child.service';
 import { Child } from './entities/child.entity';
 import { CreateChildInput } from './dto/create-child.input';
@@ -9,6 +18,8 @@ import { CurrentUser } from 'src/auth/decorators/currentUserDecorator';
 import { UserType } from 'support/enums';
 import { User } from 'src/user/entities/user.entity';
 import { GraphQLJSONObject } from 'graphql-type-json';
+import { DataloaderRegistry } from 'src/dataloaders/dataloaderRegistry';
+import { File } from 'src/file/entities/file.entity';
 
 @Resolver(() => Child)
 export class ChildResolver {
@@ -48,5 +59,13 @@ export class ChildResolver {
       input.parentId = id;
     }
     return this.childService.paginate(input);
+  }
+
+  @ResolveField(() => File, { nullable: true })
+  file(
+    @Parent() child: Child,
+    @Context() { loaders }: { loaders: DataloaderRegistry },
+  ) {
+    return child.imageId && loaders.FilesLoader.load(child.imageId);
   }
 }
