@@ -6,12 +6,13 @@ import { UpdateLocationInput } from './dto/update-location.input';
 import { LocationsPage } from './entities/location-page.entity';
 import { PaginateLocationsInput } from './dto/paginate-locations.input';
 import { UpdateLocationsInput } from './dto/update-locations.input';
+import { GraphQLJSONObject } from 'graphql-type-json';
 
 @Resolver(() => Location)
 export class LocationResolver {
   constructor(private readonly locationService: LocationService) {}
 
-  @Mutation(() => Location)
+  @Mutation(() => GraphQLJSONObject)
   createLocation(@Args('input') input: CreateLocationInput) {
     return this.locationService.create(input);
   }

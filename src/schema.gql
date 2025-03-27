@@ -443,7 +443,7 @@ type Query {
   paginateMeals(input: PaginateMealsInput!): MealPage!
   file(id: Int!): File!
   campVariant(id: Int!): CampVariant!
-  location(id: Int!): Location!
+  findOneLocation(id: Int!): Location
   paginateLocations(input: PaginateLocationsInput!): LocationsPage!
   parentAdditional(id: Int!): ParentAdditional!
   child(id: Int!): Child!
@@ -586,7 +586,7 @@ type Mutation {
   createCampVariant(createCampVariantInput: CreateCampVariantInput!): CampVariant!
   updateCampVariant(updateCampVariantInput: UpdateCampVariantInput!): CampVariant!
   removeCampVariant(id: Int!): CampVariant!
-  createLocation(input: CreateLocationInput!): Location!
+  createLocation(input: CreateLocationInput!): JSONObject!
   updateLocation(input: UpdateLocationsInput!): Location!
   removeLocation(ids: [Int!]!): Location!
   createParentAdditional(createParentAdditionalInput: CreateParentAdditionalInput!): ParentAdditional!
