@@ -44,7 +44,7 @@ export class Child {
   @Field({ nullable: true })
   imageId?: number;
 
-  @Column('varchar', { name: 'schoolId', length: 50, nullable: true })
+  @Column('varchar', { name: 'schoolName', length: 50, nullable: true })
   @Field({ nullable: true })
   schoolName?: string;
 

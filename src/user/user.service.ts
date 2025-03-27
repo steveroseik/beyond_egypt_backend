@@ -154,6 +154,7 @@ export class UserService {
           imageId: child.imageId,
           birthdate: child.birthdate,
           schoolId: child.schoolId,
+          schoolName: child.schoolName,
           medicalInfo: child.medicalInfo,
           parentRelation: child.parentRelation,
           isMale: child.isMale,
