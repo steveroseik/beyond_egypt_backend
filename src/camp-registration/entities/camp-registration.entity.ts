@@ -65,7 +65,7 @@ export class CampRegistration {
   paidAmount?: Decimal;
 
   @Column('decimal', {
-    name: 'toBePaidAmount',
+    name: 'amount',
     precision: 10,
     nullable: true,
     scale: 0,
@@ -75,7 +75,7 @@ export class CampRegistration {
     },
   })
   @Field(() => GraphqlDecimal, { nullable: true })
-  toBePaidAmount?: Decimal;
+  amount?: Decimal;
 
   @Column('enum', {
     name: 'paymentMethod',
@@ -107,6 +107,23 @@ export class CampRegistration {
   })
   @Field(() => CampRegistrationStatus)
   status: CampRegistrationStatus;
+
+  @Column('int', { name: 'discountId', nullable: true })
+  @Field({ nullable: true })
+  discountId?: number;
+
+  @Column('decimal', {
+    name: 'discountAmount',
+    nullable: true,
+    precision: 10,
+    scale: 0,
+    transformer: {
+      to: (value) => value,
+      from: (value?: string) => value && new Decimal(value),
+    },
+  })
+  @Field(() => GraphqlDecimal, { nullable: true })
+  discountAmount?: Decimal;
 
   @Column('bit', {
     name: 'behaviorConsent',

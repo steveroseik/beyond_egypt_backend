@@ -34,6 +34,7 @@ import { AwsBucketService } from 'src/aws-bucket/aws-bucket.service';
 import { generateMerchantRefNumber } from 'support/random-uuid.generator';
 import { Discount } from 'src/discount/entities/discount.entity';
 import { max, min } from 'lodash';
+import { Camp } from 'src/camp/entities/camp.entity';
 dotenv.config();
 
 @Injectable()
@@ -162,17 +163,27 @@ export class CampRegistrationService {
       }
     }
 
+    const camp = await queryRunner.manager.findOne(Camp, {
+      where: { id: input.campId },
+    });
+
+    if (!camp) {
+      throw new Error('Camp not found');
+    }
+
+    /// TODO: remove when getting meal price from variants
     const campRegistration = await queryRunner.manager.save(CampRegistration, {
       ...input,
-      oneDayPrice: input.oneDayPrice?.toFixed(moneyFixation),
-      toBePaidAmount: input.oneDayPrice?.toFixed(moneyFixation),
     });
 
     if (!campRegistration) {
       throw new Error('Failed to create camp registration');
     }
 
-    const total = await this.handleCampVariantRegistrations({
+    /// assign camp to registration
+    campRegistration.camp = camp;
+
+    let totalVariantsAmount = await this.handleCampVariantRegistrations({
       campVariantRegistrations: input.campVariantRegistrations,
       campRegistration,
       queryRunner,
@@ -180,10 +191,22 @@ export class CampRegistrationService {
       discount,
     });
 
+    let discountAmount: Decimal = undefined;
+
+    if (discount.amount) {
+      discountAmount = min([totalVariantsAmount, discount.amount]);
+    }
+
     const updatePrice = await queryRunner.manager.update(
       CampRegistration,
       { id: campRegistration.id },
-      { paidAmount: total },
+      {
+        oneDayPrice: input.oneDayPrice,
+        amount: totalVariantsAmount,
+        discountAmount,
+        paidAmount: '0',
+        discountId: discount?.id,
+      },
     );
 
     if (updatePrice.affected !== 1) {
@@ -197,7 +220,7 @@ export class CampRegistrationService {
       message: 'Camp registration created successfully',
       data: {
         campRegistrationId: campRegistration.id,
-        totalAmount: total,
+        totalAmount: totalVariantsAmount,
       },
     };
   }
@@ -216,7 +239,7 @@ export class CampRegistrationService {
     oneDayPrice?: Decimal;
     existingRegistrations?: CampVariantRegistration[];
     discount?: Discount;
-  }): Promise<string | null> {
+  }): Promise<Decimal | null> {
     if (!campVariantRegistrations?.length) {
       return null;
     }
@@ -271,29 +294,25 @@ export class CampRegistrationService {
         let basePrice =
           oneDayPrice ??
           campVariants.find((cv) => cv.id === e.campVariantId).price;
-        let priceDiscounted = undefined;
+        let priceDiscount: Decimal = undefined;
 
         /// TODO: fetch meal price from camp variant not camp
         let baseMealPrice = e.withMeal
           ? campRegistration.camp.mealPrice
           : undefined;
-        let mealDscounted = undefined;
+        let mealDscount: Decimal = undefined;
 
         /// calculate price if not one day price
         if (!oneDayPrice && discount && discount.percentage) {
-          priceDiscounted = basePrice.minus(
-            min([
-              discount.percentage.multipliedBy(basePrice),
-              discount.maximumDiscount,
-            ]),
-          );
+          priceDiscount = min([
+            discount.percentage.multipliedBy(basePrice),
+            discount.maximumDiscount,
+          ]);
 
-          mealDscounted = baseMealPrice.minus(
-            min([
-              discount.percentage.multipliedBy(baseMealPrice),
-              discount.maximumDiscount,
-            ]),
-          );
+          mealDscount = min([
+            discount.percentage.multipliedBy(baseMealPrice),
+            discount.maximumDiscount,
+          ]);
         }
 
         return {
@@ -302,12 +321,8 @@ export class CampRegistrationService {
           discountId: discount?.id,
           mealPrice: baseMealPrice,
           price: basePrice.toFixed(moneyFixation),
-          variantDiscount: priceDiscounted
-            ? basePrice.minus(priceDiscounted).toFixed(moneyFixation)
-            : undefined,
-          mealDiscount: mealDscounted
-            ? baseMealPrice.minus(mealDscounted).toFixed(moneyFixation)
-            : undefined,
+          variantDiscount: priceDiscount,
+          mealDiscount: mealDscount,
         };
       }),
     );
@@ -320,68 +335,74 @@ export class CampRegistrationService {
       // update existing registration discounts
       if (discount) {
         for (const registration of existingRegistrations) {
-          await queryRunner.manager.update(
-            CampVariantRegistration,
-            { id: registration.id },
-            { discountId: discount.id },
-          );
+          // only if discount is different change the discount
+          if (registration.discountId !== discount.id) {
+            const basePrice = registration.price;
+            const mealPrice = registration.mealPrice;
+            let priceDiscount: Decimal = null;
+            let mealDiscount: Decimal = null;
+
+            if (discount.percentage) {
+              priceDiscount = min([
+                discount.percentage.multipliedBy(basePrice),
+                discount.maximumDiscount,
+              ]);
+
+              mealDiscount = mealPrice
+                ? min([
+                    discount.percentage.multipliedBy(mealPrice),
+                    discount.maximumDiscount,
+                  ])
+                : null;
+            }
+
+            registration.discountId = discount.id;
+            registration.variantDiscount = priceDiscount;
+            registration.mealDiscount = mealDiscount;
+
+            const saved = await queryRunner.manager.save(
+              CampVariantRegistration,
+              registration,
+            );
+
+            if (!saved) {
+              throw new Error(
+                'Failed to update existing registration discount',
+              );
+            }
+          }
         }
       }
+
       const existingPrice = this.calculateCampVariantRegistrationPrice(
         campVariants,
         existingRegistrations,
-        campRegistration.camp.mealPrice,
       );
 
       const newPrice = this.calculateCampVariantRegistrationPrice(
         campVariants,
-        campVariantRegistrations,
-        campRegistration.camp.mealPrice,
+        inserts,
       );
 
-      return new Decimal(existingPrice).plus(newPrice).toFixed(moneyFixation);
+      return existingPrice.plus(newPrice);
     }
 
     return oneDayPrice
-      ? oneDayPrice.toFixed(moneyFixation)
-      : this.calculateCampVariantRegistrationPrice(
-          campVariants,
-          campVariantRegistrations,
-          campRegistration.camp.mealPrice,
-        );
+      ? oneDayPrice
+      : this.calculateCampVariantRegistrationPrice(campVariants, inserts);
   }
 
   calculateCampVariantRegistrationPrice(
     campVariants: CampVariant[],
-    campVariantRegistrations:
-      | CreateCampVariantRegistrationInput[]
-      | CampVariantRegistration[],
-    mealPrice?: Decimal,
-  ): string {
+    campVariantRegistrations: CampVariantRegistration[],
+  ): Decimal {
     let totalPrice = new Decimal('0');
 
-    if (campVariantRegistrations.some((item) => 'withMeal' in item)) {
-      for (const registration of campVariantRegistrations as CreateCampVariantRegistrationInput[]) {
-        const cvr = campVariants.find(
-          (e) => e.id === registration.campVariantId,
-        );
-
-        totalPrice = totalPrice.plus(
-          cvr.price.plus(registration.withMeal ? mealPrice : 0),
-        );
-      }
-    } else {
-      for (const registration of campVariantRegistrations as CampVariantRegistration[]) {
-        const cvr = campVariants.find(
-          (e) => e.id === registration.campVariantId,
-        );
-        totalPrice = totalPrice.plus(
-          cvr.price.plus(registration.mealPrice ?? 0),
-        );
-      }
+    for (const registration of campVariantRegistrations as CampVariantRegistration[]) {
+      const cvr = campVariants.find((e) => e.id === registration.campVariantId);
+      totalPrice = totalPrice.plus(cvr.price.plus(registration.mealPrice ?? 0));
     }
-
-    return totalPrice.toFixed(2);
+    return totalPrice;
   }
 
   findOne(id: number) {
@@ -889,7 +910,6 @@ export class CampRegistrationService {
     const totalAmount = this.calculateCampVariantRegistrationPrice(
       campVariants,
       campRegistration.campVariantRegistrations,
-      campRegistration.camp.mealPrice,
     );
 
     const payment = await queryRunner.manager.save(RegistrationPayment, {
@@ -921,7 +941,8 @@ export class CampRegistrationService {
         {
           itemId: campRegistration.id.toString(),
           description: 'Camp Registration Payment',
-          price: totalAmount,
+          /// TODO: fix, old implementation
+          price: totalAmount.toFixed(moneyFixation),
           quantity: 1,
         },
       ],
@@ -1014,7 +1035,6 @@ export class CampRegistrationService {
     const totalAmount = this.calculateCampVariantRegistrationPrice(
       campVariants,
       campRegistration.campVariantRegistrations,
-      campRegistration.camp.mealPrice,
     );
 
     let key: string = undefined;

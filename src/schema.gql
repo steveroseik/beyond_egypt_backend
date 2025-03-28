@@ -172,10 +172,12 @@ type CampRegistration {
   campId: Int!
   oneDayPrice: Decimal
   paidAmount: Decimal
-  toBePaidAmount: Decimal
+  amount: Decimal
   paymentMethod: PaymentMethod
   capacity: Int
   status: CampRegistrationStatus!
+  discountId: Int
+  discountAmount: Decimal
   behaviorConsent: Boolean!
   refundPolicyConsent: Boolean!
   createdAt: DateTime!
