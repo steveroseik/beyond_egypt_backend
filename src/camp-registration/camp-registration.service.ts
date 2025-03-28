@@ -300,7 +300,7 @@ export class CampRegistrationService {
         let baseMealPrice = e.withMeal
           ? campRegistration.camp.mealPrice
           : undefined;
-        let mealDscount: Decimal = undefined;
+        let mealDiscount: Decimal = undefined;
 
         /// calculate price if not one day price
         if (!oneDayPrice && discount && discount.percentage) {
@@ -309,7 +309,7 @@ export class CampRegistrationService {
             discount.maximumDiscount,
           ]);
 
-          mealDscount = min([
+          mealDiscount = min([
             discount.percentage.multipliedBy(baseMealPrice),
             discount.maximumDiscount,
           ]);
@@ -319,10 +319,10 @@ export class CampRegistrationService {
           ...e,
           campRegistrationId: campRegistration.id,
           discountId: discount?.id,
-          mealPrice: baseMealPrice,
+          mealPrice: baseMealPrice?.toFixed(moneyFixation),
           price: basePrice.toFixed(moneyFixation),
-          variantDiscount: priceDiscount,
-          mealDiscount: mealDscount,
+          variantDiscount: priceDiscount?.toFixed(moneyFixation),
+          mealDiscount: mealDiscount?.toFixed(moneyFixation),
         };
       }),
     );
