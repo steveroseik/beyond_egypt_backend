@@ -193,7 +193,7 @@ export class CampRegistrationService {
 
     let discountAmount: Decimal = undefined;
 
-    if (discount.amount) {
+    if (discount?.amount) {
       discountAmount = min([totalVariantsAmount, discount.amount]);
     }
 
@@ -303,7 +303,7 @@ export class CampRegistrationService {
         let mealDiscount: Decimal = undefined;
 
         /// calculate price if not one day price
-        if (!oneDayPrice && discount && discount.percentage) {
+        if (!oneDayPrice && discount?.percentage) {
           priceDiscount = min([
             discount.percentage.multipliedBy(basePrice),
             discount.maximumDiscount,
