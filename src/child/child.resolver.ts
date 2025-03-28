@@ -20,6 +20,7 @@ import { User } from 'src/user/entities/user.entity';
 import { GraphQLJSONObject } from 'graphql-type-json';
 import { DataloaderRegistry } from 'src/dataloaders/dataloaderRegistry';
 import { File } from 'src/file/entities/file.entity';
+import { Allergy } from 'src/allergy/entities/allergy.entity';
 
 @Resolver(() => Child)
 export class ChildResolver {
@@ -67,5 +68,13 @@ export class ChildResolver {
     @Context() { loaders }: { loaders: DataloaderRegistry },
   ) {
     return child.imageId ? loaders.FilesLoader.load(child.imageId) : null;
+  }
+
+  @ResolveField(() => [Allergy])
+  allergies(
+    @Parent() child: Child,
+    @Context() { loaders }: { loaders: DataloaderRegistry },
+  ) {
+    return child.allergies ?? loaders.AllergiesByChildDataLoader.load(child.id);
   }
 }

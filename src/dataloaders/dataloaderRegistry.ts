@@ -23,7 +23,9 @@ import { CampsDataLoader } from './loaders/camps.loader';
 import { EventsDataLoader } from './loaders/events.dataloader';
 import { EventService } from 'src/event/event.service';
 import { AgeRangeService } from 'src/age-range/age-range.service';
-import AgeRangesByCampDataLoader from './loaders/ageRanges.loader';
+import AgeRangesByCampDataLoader from './loaders/ageRangesByCamp.loader';
+import { AllergyService } from 'src/allergy/allergy.service';
+import AllergiesByChildDataLoader from './loaders/allergiesByChild.loader';
 
 export class DataloaderRegistry {
   private cache: Record<string, any> = {};
@@ -39,6 +41,7 @@ export class DataloaderRegistry {
     private campService: CampService,
     private eventService: EventService,
     private ageRangeService: AgeRangeService,
+    private allergyService: AllergyService,
   ) {}
 
   /**
@@ -137,6 +140,12 @@ export class DataloaderRegistry {
   public get AgeRangesByCampDataLoader() {
     return this.get('AgeRangesByCampDataLoader', () =>
       AgeRangesByCampDataLoader.create(this.ageRangeService),
+    );
+  }
+
+  public get AllergiesByChildDataLoader() {
+    return this.get('AllergiesByChildDataLoader', () =>
+      AllergiesByChildDataLoader.create(this.allergyService),
     );
   }
   /**

@@ -10,6 +10,7 @@ import { CampVariantRegistrationService } from 'src/camp-variant-registration/ca
 import { CampService } from 'src/camp/camp.service';
 import { EventService } from 'src/event/event.service';
 import { AgeRangeService } from 'src/age-range/age-range.service';
+import { AllergyService } from 'src/allergy/allergy.service';
 
 @Injectable()
 export class DataloaderRegistryFactory {
@@ -24,6 +25,7 @@ export class DataloaderRegistryFactory {
     private campService: CampService,
     private eventService: EventService,
     private ageRangeService: AgeRangeService,
+    private allergyService: AllergyService,
   ) {}
 
   public create() {
@@ -38,6 +40,7 @@ export class DataloaderRegistryFactory {
       this.campService,
       this.eventService,
       this.ageRangeService,
+      this.allergyService,
     );
   }
 }

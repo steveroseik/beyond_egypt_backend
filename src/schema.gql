@@ -487,12 +487,12 @@ type Query {
   paginateEvents(input: PaginateEventsInput!): EventPage!
   findOneAgeRange(id: Int!): AgeRange
   paginateAgeRanges(input: PaginateAgeRangesInput!): AgeRangePage!
+  findOneAllergy(id: Int!): Allergy
+  paginateAllergies(input: PaginateAllergiesInput!): AllergyPage!
   user: [User!]!
   findInactiveUser(input: FindInactiveUserInput!): User
   findOneUser(id: String!): User!
   paginateUsers(input: PaginateUsersInput!): UsersPage!
-  findOneAllergy(id: Int!): Allergy
-  paginateAllergies(input: PaginateAllergiesInput!): AllergyPage!
   campRegistration(id: Int!): CampRegistration!
   paginateCampRegistrations(input: PaginateCampRegistrationsInput!): CampRegistrationPage!
   childReport(id: Int!): ChildReport!
@@ -574,6 +574,14 @@ input PaginateAgeRangesInput {
   search: String
 }
 
+input PaginateAllergiesInput {
+  isAsc: Boolean! = false
+  limit: Int = 20
+  afterCursor: String
+  beforeCursor: String
+  search: String
+}
+
 input FindInactiveUserInput {
   id: String!
   isParent: Boolean! = true
@@ -597,14 +605,6 @@ enum UsersOrderField {
   district
   createdAt
   lastModified
-}
-
-input PaginateAllergiesInput {
-  isAsc: Boolean! = false
-  limit: Int = 20
-  afterCursor: String
-  beforeCursor: String
-  search: String
 }
 
 input PaginateCampRegistrationsInput {
@@ -665,6 +665,9 @@ type Mutation {
   createAgeRange(input: CreateAgeRangeInput!): JSONObject!
   updateAgeRange(input: UpdateAgeRangeInput!): JSONObject!
   removeAgeRange(ids: [Int!]!): JSONObject!
+  createAllergy(input: CreateAllergyInput!): JSONObject!
+  updateAllergy(updateAllergyInput: UpdateAllergyInput!): JSONObject!
+  removeAllergy(ids: [Int!]!): JSONObject!
   tempLogin(input: TempSignInInput!): JSONObject!
   signIn(input: TokenRequestInput!): UserAuthResponse!
   createUser(input: CreateUserInput!): CreateUserResponse!
@@ -673,9 +676,6 @@ type Mutation {
   createEmployee(input: CreateEmployeeInput!): JSONObject!
   registerUser(input: RegisterUserInput!): CreateUserResponse!
   removeUser(id: String!): User!
-  createAllergy(input: CreateAllergyInput!): JSONObject!
-  updateAllergy(updateAllergyInput: UpdateAllergyInput!): JSONObject!
-  removeAllergy(ids: [Int!]!): JSONObject!
   createCampRegistration(input: CreateCampRegistrationInput!): JSONObject!
   completeCampRegistration(input: UpdateCampRegistrationInput!): JSONObject!
   removeCampRegistration(id: Int!): CampRegistration!
@@ -909,6 +909,19 @@ input UpdateAgeRangeInput {
   id: Int!
 }
 
+input CreateAllergyInput {
+  nameEn: String!
+  nameAr: String!
+  category: AllergyCategory!
+}
+
+input UpdateAllergyInput {
+  nameEn: String
+  nameAr: String
+  category: AllergyCategory
+  id: Int!
+}
+
 input TempSignInInput {
   email: String!
   password: String!
@@ -953,19 +966,6 @@ input CreateEmployeeInput {
 input RegisterUserInput {
   id: String!
   firebaseToken: String!
-}
-
-input CreateAllergyInput {
-  nameEn: String!
-  nameAr: String!
-  category: AllergyCategory!
-}
-
-input UpdateAllergyInput {
-  nameEn: String
-  nameAr: String
-  category: AllergyCategory
-  id: Int!
 }
 
 input CreateCampRegistrationInput {

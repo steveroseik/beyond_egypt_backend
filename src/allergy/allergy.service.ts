@@ -116,4 +116,13 @@ export class AllergyService {
 
     return paginator.paginate(queryBuilder);
   }
+
+  findAllergiesByChildIds(childIds: readonly number[]) {
+    return this.dataSource
+      .getRepository(Allergy)
+      .createQueryBuilder('allergy')
+      .innerJoin('allergy.children', 'child')
+      .where('child.id IN (:...childIds)', { childIds })
+      .getMany();
+  }
 }
