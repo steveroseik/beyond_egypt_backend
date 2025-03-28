@@ -268,12 +268,15 @@ export class CampRegistrationService {
     const inserts = await queryRunner.manager.insert(
       CampVariantRegistration,
       campVariantRegistrations.map((e) => {
-        /// calculate price if not one day price
         let basePrice =
           oneDayPrice ??
           campVariants.find((cv) => cv.id === e.campVariantId).price;
         let priceDiscounted = basePrice;
 
+        let baseMealPrice =
+          campRegistration.camp.mealPrice.toFixed(moneyFixation);
+
+        /// calculate price if not one day price
         if (!oneDayPrice && discount) {
           if (discount.amount) {
             priceDiscounted = max([

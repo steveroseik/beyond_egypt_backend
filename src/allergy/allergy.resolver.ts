@@ -4,6 +4,9 @@ import { Allergy } from './entities/allergy.entity';
 import { CreateAllergyInput } from './dto/create-allergy.input';
 import { UpdateAllergyInput } from './dto/update-allergy.input';
 import { GraphQLJSONObject } from 'graphql-type-json';
+import { AllergyPage } from './entities/allergy-page.entity';
+import { PaginateAllergiesInput } from './dto/paginate-allergies.input';
+import { Public } from 'src/auth/decorators/publicDecorator';
 
 @Resolver(() => Allergy)
 export class AllergyResolver {
@@ -27,5 +30,11 @@ export class AllergyResolver {
   @Mutation(() => GraphQLJSONObject)
   removeAllergy(@Args('ids', { type: () => [Int] }) ids: number[]) {
     return this.allergyService.remove(ids);
+  }
+
+  @Public()
+  @Query(() => AllergyPage)
+  paginateAllergies(@Args('input') input: PaginateAllergiesInput) {
+    return this.allergyService.paginate(input);
   }
 }

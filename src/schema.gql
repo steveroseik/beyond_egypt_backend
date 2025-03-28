@@ -281,13 +281,23 @@ type AgeRange {
   thumbnail: File
 }
 
-type CampPage {
+type AgeRangePage {
   cursor: GraphqlCursor!
-  data: [Camp!]!
+  data: [AgeRange!]!
 }
 
 """Cursor scalar type for pagination"""
 scalar GraphqlCursor
+
+type AllergyPage {
+  cursor: GraphqlCursor!
+  data: [Allergy!]!
+}
+
+type CampPage {
+  cursor: GraphqlCursor!
+  data: [Camp!]!
+}
 
 type RegistrationReserve {
   id: Int!
@@ -475,13 +485,14 @@ type Query {
   paginateCamps(input: PaginateCampsInput!): CampPage!
   findOneEvent(id: Int!): Event
   paginateEvents(input: PaginateEventsInput!): EventPage!
-  ageRange: [AgeRange!]!
   findOneAgeRange(id: Int!): AgeRange
+  paginateAgeRanges(input: PaginateAgeRangesInput!): AgeRangePage!
   user: [User!]!
   findInactiveUser(input: FindInactiveUserInput!): User
   findOneUser(id: String!): User!
   paginateUsers(input: PaginateUsersInput!): UsersPage!
   findOneAllergy(id: Int!): Allergy
+  paginateAllergies(input: PaginateAllergiesInput!): AllergyPage!
   campRegistration(id: Int!): CampRegistration!
   paginateCampRegistrations(input: PaginateCampRegistrationsInput!): CampRegistrationPage!
   childReport(id: Int!): ChildReport!
@@ -555,6 +566,14 @@ input PaginateEventsInput {
   search: String
 }
 
+input PaginateAgeRangesInput {
+  isAsc: Boolean! = false
+  limit: Int = 20
+  afterCursor: String
+  beforeCursor: String
+  search: String
+}
+
 input FindInactiveUserInput {
   id: String!
   isParent: Boolean! = true
@@ -578,6 +597,14 @@ enum UsersOrderField {
   district
   createdAt
   lastModified
+}
+
+input PaginateAllergiesInput {
+  isAsc: Boolean! = false
+  limit: Int = 20
+  afterCursor: String
+  beforeCursor: String
+  search: String
 }
 
 input PaginateCampRegistrationsInput {

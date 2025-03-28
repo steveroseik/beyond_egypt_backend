@@ -4,6 +4,8 @@ import { UpdateAllergyInput } from './dto/update-allergy.input';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Allergy } from './entities/allergy.entity';
 import { DataSource, Repository } from 'typeorm';
+import { PaginateAllergiesInput } from './dto/paginate-allergies.input';
+import { buildPaginator } from 'typeorm-cursor-pagination';
 
 @Injectable()
 export class AllergyService {
@@ -88,5 +90,30 @@ export class AllergyService {
         message: 'Error while deleting allergy',
       };
     }
+  }
+
+  paginate(input: PaginateAllergiesInput) {
+    const queryBuilder = this.repo.createQueryBuilder('allergy');
+
+    if (input.search) {
+      queryBuilder.where(
+        'allergy.nameEn LIKE :search OR allergy.nameAr LIKE :search',
+        {
+          search: `%${input.search}%`,
+        },
+      );
+    }
+
+    const paginator = buildPaginator({
+      entity: Allergy,
+      alias: 'allergy',
+      paginationKeys: ['createdAt', 'id'],
+      query: {
+        ...input,
+        order: input.isAsc ? 'ASC' : 'DESC',
+      },
+    });
+
+    return paginator.paginate(queryBuilder);
   }
 }

@@ -15,6 +15,8 @@ import { UpdateAgeRangeInput } from './dto/update-age-range.input';
 import { File } from 'src/file/entities/file.entity';
 import { DataloaderRegistry } from 'src/dataloaders/dataloaderRegistry';
 import { GraphQLJSONObject } from 'graphql-type-json';
+import { AgeRangePage } from './entities/age-range-page.entity';
+import { PaginateAgeRangesInput } from './dto/paginate-age-ranges.input';
 
 @Resolver(() => AgeRange)
 export class AgeRangeResolver {
@@ -23,11 +25,6 @@ export class AgeRangeResolver {
   @Mutation(() => GraphQLJSONObject)
   createAgeRange(@Args('input') createAgeRangeInput: CreateAgeRangeInput) {
     return this.ageRangeService.create(createAgeRangeInput);
-  }
-
-  @Query(() => [AgeRange], { name: 'ageRange' })
-  findAll() {
-    return this.ageRangeService.findAll();
   }
 
   @Query(() => AgeRange, { nullable: true })
@@ -43,6 +40,11 @@ export class AgeRangeResolver {
   @Mutation(() => GraphQLJSONObject)
   removeAgeRange(@Args('ids', { type: () => [Int] }) ids: number[]) {
     return this.ageRangeService.remove(ids);
+  }
+
+  @Query(() => AgeRangePage)
+  paginateAgeRanges(@Args('input') input: PaginateAgeRangesInput) {
+    return this.ageRangeService.paginate(input);
   }
 
   @ResolveField(() => File, { nullable: true })

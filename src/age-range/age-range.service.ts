@@ -5,6 +5,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { AgeRange } from './entities/age-range.entity';
 import { DataSource, In, Repository } from 'typeorm';
 import { Camp } from 'src/camp/entities/camp.entity';
+import { PaginateAgeRangesInput } from './dto/paginate-age-ranges.input';
+import { buildPaginator } from 'typeorm-cursor-pagination';
 
 @Injectable()
 export class AgeRangeService {
@@ -34,10 +36,6 @@ export class AgeRangeService {
         message: e.message,
       };
     }
-  }
-
-  findAll() {
-    return `This action returns all ageRange`;
   }
 
   findOne(id: number) {
@@ -95,5 +93,27 @@ export class AgeRangeService {
       .leftJoin('ageRange.camps', 'camp')
       .where('camp.id IN (:...keys)', { keys })
       .getMany();
+  }
+
+  paginate(input: PaginateAgeRangesInput) {
+    const queryBuilder = this.repo.createQueryBuilder('ageRange');
+
+    if (input.search) {
+      queryBuilder.where('ageRange.name LIKE :search', {
+        search: `%${input.search}%`,
+      });
+    }
+
+    const paginator = buildPaginator({
+      entity: AgeRange,
+      alias: 'ageRange',
+      paginationKeys: ['createdAt', 'id'],
+      query: {
+        ...input,
+        order: input.isAsc ? 'ASC' : 'DESC',
+      },
+    });
+
+    return paginator.paginate(queryBuilder);
   }
 }
