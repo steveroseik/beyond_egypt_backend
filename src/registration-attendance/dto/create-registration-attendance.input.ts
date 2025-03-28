@@ -8,7 +8,6 @@ export class CreateRegistrationAttendanceInput {
   @Field(() => Int)
   campVariantId: number;
 
-  @Field(() => Int)
-  childId: number;
-  //auditor kaman?
+  @Field(() => [Int])
+  childIds: number[];
 }

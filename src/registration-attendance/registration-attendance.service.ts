@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { CreateRegistrationAttendanceInput } from './dto/create-registration-attendance.input';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { RegistrationAttendance } from './entities/registration-attendance.entity';
 import { CampRegistration } from 'src/camp-registration/entities/camp-registration.entity';
 import { AttendanceResponse } from './dto/attendance-response.type';
@@ -19,21 +19,21 @@ export class RegistrationAttendanceService {
     input: CreateRegistrationAttendanceInput,
     auditorId: string,
   ): Promise<AttendanceResponse> {
-    // Check if there's an existing active attendance record
-    const existingAttendance = await this.repo.findOne({
+    // Check if there are any existing active attendance records for these children
+    const existingAttendances = await this.repo.find({
       where: {
         campRegistrationId: input.campRegistrationId,
         campVariantId: input.campVariantId,
-        childId: input.childId,
+        childId: In(input.childIds),
         leaveTime: null,
       },
     });
 
-    if (existingAttendance) {
+    if (existingAttendances.length > 0) {
       return {
         success: false,
-        message: 'Child already has an active attendance record',
-        data: existingAttendance,
+        message: 'Some children already have active attendance records',
+        data: existingAttendances[0],
       };
     }
 
@@ -55,53 +55,80 @@ export class RegistrationAttendanceService {
         message: 'Camp registration not found',
       };
     }
-    console.log('currentAttendances', currentAttendances);
-    console.log('campRegistration.capacity', campRegistration);
-    if (currentAttendances >= campRegistration.capacity) {
+
+    if (
+      currentAttendances + input.childIds.length >
+      campRegistration.capacity
+    ) {
       return {
         success: false,
         message: 'Camp has reached maximum capacity for today',
       };
     }
 
-    const attendance = await this.repo.save({
-      ...input,
-      enterTime: new Date(),
-      enterAuditorId: auditorId,
-    });
+    // Create attendance records for all children
+    const attendances = await Promise.all(
+      input.childIds.map((childId) =>
+        this.repo.save({
+          campRegistrationId: input.campRegistrationId,
+          campVariantId: input.campVariantId,
+          childId,
+          enterTime: new Date(),
+          enterAuditorId: auditorId,
+        }),
+      ),
+    );
 
     return {
       success: true,
-      message: 'Attendance recorded successfully',
-      data: attendance,
+      message: 'Attendance recorded successfully for all children',
+      data: attendances[0], // Return first record as reference
     };
   }
 
-  async leave(id: number, auditorId: string): Promise<AttendanceResponse> {
-    const attendance = await this.findActiveAttendanceById(id);
+  async leave(
+    attendanceIds: number[],
+    auditorId: string,
+  ): Promise<AttendanceResponse> {
+    // Find all active attendance records
+    const attendances = await this.repo.find({
+      where: {
+        id: In(attendanceIds),
+        leaveTime: null,
+      },
+    });
 
-    if (!attendance) {
+    if (attendances.length === 0) {
       return {
         success: false,
-        message: 'No active attendance record found',
+        message: 'No active attendance records found',
       };
     }
 
-    attendance.leaveTime = new Date();
-    attendance.leaveAuditorId = auditorId;
-    const updatedAttendance = await this.repo.save(attendance);
+    if (attendances.length !== attendanceIds.length) {
+      return {
+        success: false,
+        message:
+          'Some attendance records were not found or are already completed',
+      };
+    }
+
+    // Update all attendance records with leave time
+    const updatedAttendances = await Promise.all(
+      attendances.map((attendance) =>
+        this.repo.save({
+          ...attendance,
+          leaveTime: new Date(),
+          leaveAuditorId: auditorId,
+        }),
+      ),
+    );
 
     return {
       success: true,
-      message: 'Leave time recorded successfully',
-      data: updatedAttendance,
+      message: 'Leave time recorded successfully for all children',
+      data: updatedAttendances[0], // Return first record as reference
     };
-  }
-
-  async findActiveAttendanceById(id: number) {
-    return this.repo.findOne({
-      where: { id, leaveTime: null },
-    });
   }
 
   checkCampVariant(campVariantId: number) {

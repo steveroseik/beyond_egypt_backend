@@ -2,6 +2,7 @@ import { Resolver, Query, Mutation, Args, Int } from '@nestjs/graphql';
 import { RegistrationAttendanceService } from './registration-attendance.service';
 import { RegistrationAttendance } from './entities/registration-attendance.entity';
 import { CreateRegistrationAttendanceInput } from './dto/create-registration-attendance.input';
+import { LeaveAttendanceInput } from './dto/leave-attendance.input';
 import { UseGuards } from '@nestjs/common';
 // import { GqlAuthGuard } from '../auth/guards/gql-auth.guard';
 // import { CurrentUser } from '../auth/decorators/current-user.decorator';
@@ -28,6 +29,7 @@ export class RegistrationAttendanceResolver {
         success: false,
       };
     }
+
     const existingCampVariant = await this.service.checkCampVariant(
       input.campVariantId,
     );
@@ -38,19 +40,23 @@ export class RegistrationAttendanceResolver {
       };
     }
 
-    const existingChild = await this.service.checkChild(input.childId);
-    if (!existingChild) {
-      return {
-        message: 'Child not found',
-        success: false,
-      };
+    // Check all children exist
+    for (const childId of input.childIds) {
+      const existingChild = await this.service.checkChild(childId);
+      if (!existingChild) {
+        return {
+          message: `Child with ID ${childId} not found`,
+          success: false,
+        };
+      }
     }
+
     return this.service.enter(input, userId);
   }
 
   @Mutation(() => GraphQLJSONObject, { name: 'leaveAttendance' })
   async leave(
-    @Args('id', { type: () => Int }) id: number,
+    @Args('input') input: LeaveAttendanceInput,
     @CurrentUser('id') userId: string,
     @CurrentUser('type') type: UserType,
   ) {
@@ -61,14 +67,6 @@ export class RegistrationAttendanceResolver {
       };
     }
 
-    const existingAttendance = await this.service.findActiveAttendanceById(id);
-    if (!existingAttendance) {
-      return {
-        message: 'No active attendance record found',
-        success: false,
-      };
-    }
-
-    return this.service.leave(id, userId);
+    return this.service.leave(input.attendanceIds, userId);
   }
 }
