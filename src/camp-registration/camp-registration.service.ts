@@ -406,7 +406,9 @@ export class CampRegistrationService {
   }
 
   findOne(id: number) {
-    return `This action returns a #${id} campRegistration`;
+    return this.repo.findOne({
+      where: { id },
+    });
   }
 
   async completeCampRegistration(

@@ -495,7 +495,7 @@ type Query {
   findInactiveUser(input: FindInactiveUserInput!): User
   findOneUser(id: String!): User!
   paginateUsers(input: PaginateUsersInput!): UsersPage!
-  campRegistration(id: Int!): CampRegistration!
+  findOneCampRegistration(id: Int!): CampRegistration
   paginateCampRegistrations(input: PaginateCampRegistrationsInput!): CampRegistrationPage!
   childReport(id: Int!): ChildReport!
   childReportHistory(id: Int!): ChildReportHistory!
