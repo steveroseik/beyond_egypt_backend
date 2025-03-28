@@ -27,11 +27,21 @@ type Allergy {
   id: Int!
   nameEn: String!
   nameAr: String!
-  category: Int!
+  category: AllergyCategory!
   createdAt: DateTime!
   lastModified: DateTime!
   deletedAt: DateTime
   children: [Child!]
+}
+
+enum AllergyCategory {
+  food
+  pet
+  drug
+  pollen
+  latex
+  mold
+  insects
 }
 
 type ParentAdditional {
@@ -105,6 +115,9 @@ type CampVariantRegistration {
   campVariantId: Int!
   price: Decimal!
   mealPrice: Decimal
+  discountId: Int
+  mealDiscount: Decimal
+  variantDiscount: Decimal
   shirtSize: ShirtSize
   createdAt: DateTime!
   lastModified: DateTime!
@@ -158,10 +171,10 @@ type CampRegistration {
   parentId: String!
   campId: Int!
   oneDayPrice: Decimal
-  totalPrice: Decimal
+  paidAmount: Decimal
+  toBePaidAmount: Decimal
   paymentMethod: PaymentMethod
   capacity: Int
-  paid: Boolean!
   status: CampRegistrationStatus!
   behaviorConsent: Boolean!
   refundPolicyConsent: Boolean!
@@ -287,6 +300,20 @@ type RegistrationReserve {
   createdAt: DateTime!
 }
 
+type Discount {
+  id: Int!
+  name: String!
+  code: String
+  percentage: Decimal
+  maximumDiscount: Decimal
+  amount: Decimal
+  startDate: DateTime!
+  endDate: DateTime!
+  createdAt: DateTime!
+  lastModified: DateTime!
+  deletedAt: DateTime
+}
+
 type CampRegistrationPage {
   cursor: GraphqlCursor!
   data: [CampRegistration!]!
@@ -333,15 +360,9 @@ type ChildReportHistory {
   userId: Int!
 }
 
-type Discount {
-  code: String
-  percentage: Decimal
-  amount: Decimal
-  startDate: DateTime
-  endDate: DateTime
-  createdAt: DateTime!
-  lastModified: DateTime!
-  deletedAt: DateTime
+type DiscountsPage {
+  cursor: GraphqlCursor!
+  data: [Discount!]!
 }
 
 type EventPage {
@@ -460,12 +481,13 @@ type Query {
   findInactiveUser(input: FindInactiveUserInput!): User
   findOneUser(id: String!): User!
   paginateUsers(input: PaginateUsersInput!): UsersPage!
-  allergy(id: Int!): Allergy!
+  findOneAllergy(id: Int!): Allergy
   campRegistration(id: Int!): CampRegistration!
   paginateCampRegistrations(input: PaginateCampRegistrationsInput!): CampRegistrationPage!
   childReport(id: Int!): ChildReport!
   childReportHistory(id: Int!): ChildReportHistory!
-  discount(id: Int!): Discount!
+  findOneDiscount(id: Int!): Discount
+  paginateDiscounts(input: PaginateDiscountsInput!): DiscountsPage!
   eventFile(id: Int!): EventFile!
   registrationHistory(id: Int!): RegistrationHistory!
   registrationPaymentHistory(id: Int!): RegistrationPayment!
@@ -568,6 +590,15 @@ input PaginateCampRegistrationsInput {
   statuses: [CampRegistrationStatus!]
 }
 
+input PaginateDiscountsInput {
+  isAsc: Boolean! = false
+  limit: Int = 20
+  afterCursor: String
+  beforeCursor: String
+  search: String
+  active: Boolean
+}
+
 input PaginateSchoolsInput {
   isAsc: Boolean! = false
   limit: Int = 20
@@ -615,9 +646,9 @@ type Mutation {
   createEmployee(input: CreateEmployeeInput!): JSONObject!
   registerUser(input: RegisterUserInput!): CreateUserResponse!
   removeUser(id: String!): User!
-  createAllergy(createAllergyInput: CreateAllergyInput!): Allergy!
-  updateAllergy(updateAllergyInput: UpdateAllergyInput!): Allergy!
-  removeAllergy(id: Int!): Allergy!
+  createAllergy(input: CreateAllergyInput!): JSONObject!
+  updateAllergy(updateAllergyInput: UpdateAllergyInput!): JSONObject!
+  removeAllergy(ids: [Int!]!): JSONObject!
   createCampRegistration(input: CreateCampRegistrationInput!): JSONObject!
   completeCampRegistration(input: UpdateCampRegistrationInput!): JSONObject!
   removeCampRegistration(id: Int!): CampRegistration!
@@ -628,9 +659,9 @@ type Mutation {
   createChildReportHistory(createChildReportHistoryInput: CreateChildReportHistoryInput!): ChildReportHistory!
   updateChildReportHistory(updateChildReportHistoryInput: UpdateChildReportHistoryInput!): ChildReportHistory!
   removeChildReportHistory(id: Int!): ChildReportHistory!
-  createDiscount(createDiscountInput: CreateDiscountInput!): Discount!
-  updateDiscount(updateDiscountInput: UpdateDiscountInput!): Discount!
-  removeDiscount(id: Int!): Discount!
+  createDiscount(input: CreateDiscountInput!): JSONObject!
+  updateDiscount(input: UpdateDiscountInput!): JSONObject!
+  removeDiscount(ids: [Int!]!): JSONObject!
   createEventFile(createEventFileInput: CreateEventFileInput!): EventFile!
   updateEventFile(updateEventFileInput: UpdateEventFileInput!): EventFile!
   removeEventFile(id: Int!): EventFile!
@@ -898,13 +929,15 @@ input RegisterUserInput {
 }
 
 input CreateAllergyInput {
-  """Example field (placeholder)"""
-  exampleField: Int!
+  nameEn: String!
+  nameAr: String!
+  category: AllergyCategory!
 }
 
 input UpdateAllergyInput {
-  """Example field (placeholder)"""
-  exampleField: Int
+  nameEn: String
+  nameAr: String
+  category: AllergyCategory
   id: Int!
 }
 
@@ -912,7 +945,7 @@ input CreateCampRegistrationInput {
   parentId: String!
   campId: Int!
   oneDayPrice: Decimal
-  totalPrice: Decimal
+  discountId: Int
   behaviorConsent: Boolean
   refundPolicyConsent: Boolean
   paymentMethod: PaymentMethod
@@ -968,13 +1001,23 @@ input UpdateChildReportHistoryInput {
 }
 
 input CreateDiscountInput {
-  """Example field (placeholder)"""
-  exampleField: Int!
+  name: String!
+  code: String
+  percentage: Decimal
+  maximumDiscount: Decimal
+  amount: Decimal
+  startDate: DateTime!
+  endDate: DateTime!
 }
 
 input UpdateDiscountInput {
-  """Example field (placeholder)"""
-  exampleField: Int
+  name: String
+  code: String
+  percentage: Decimal
+  maximumDiscount: Decimal
+  amount: Decimal
+  startDate: DateTime
+  endDate: DateTime
   id: Int!
 }
 

@@ -32,6 +32,8 @@ import { moneyFixation } from 'support/constants';
 import { Base64Image } from 'support/shared/base64Image.object';
 import { AwsBucketService } from 'src/aws-bucket/aws-bucket.service';
 import { generateMerchantRefNumber } from 'support/random-uuid.generator';
+import { Discount } from 'src/discount/entities/discount.entity';
+import { max, min } from 'lodash';
 dotenv.config();
 
 @Injectable()
@@ -72,6 +74,7 @@ export class CampRegistrationService {
 
     try {
       if (type == UserType.parent) {
+        input.discountId = undefined;
         return await this.handleParentCampCreation(input, queryRunner, userId);
       } else {
         return await this.handleAdminCampRegistration(
@@ -125,22 +128,44 @@ export class CampRegistrationService {
     queryRunner: QueryRunner,
     userId: string,
   ) {
-    if (input.totalPrice) {
-      if (!input.campVariantRegistrations?.length) {
-        throw new Error('Registration must have at least one week');
-      }
-    } else if (input.oneDayPrice) {
+    if (!input.campVariantRegistrations?.length) {
+      throw new Error('Registration must have at least one week');
+    }
+
+    if (input.oneDayPrice) {
       if (input.campVariantRegistrations?.length != 1) {
         throw new Error('One day registration must have only one week');
       }
-    } else {
-      throw new Error('Total price or one day price is required');
+
+      if (input.discountId) {
+        throw new Error('Discounts are not allowed for one day registrations');
+      }
+    }
+
+    let discount: Discount;
+
+    if (input.discountId) {
+      discount = await queryRunner.manager.findOne(Discount, {
+        where: { id: input.discountId },
+      });
+      if (!discount) {
+        throw new Error('Discount not found');
+      }
+
+      const discountEnded =
+        moment().tz('Africa/Cairo').diff(discount.endDate) < 0;
+      const discountStarted =
+        moment().tz('Africa/Cairo').diff(discount.startDate) > 0;
+
+      if (discountEnded || !discountStarted) {
+        throw new Error('Discount is not valid');
+      }
     }
 
     const campRegistration = await queryRunner.manager.save(CampRegistration, {
       ...input,
       oneDayPrice: input.oneDayPrice?.toFixed(moneyFixation),
-      totalPrice: input.totalPrice?.toFixed(moneyFixation),
+      toBePaidAmount: input.oneDayPrice?.toFixed(moneyFixation),
     });
 
     if (!campRegistration) {
@@ -152,12 +177,13 @@ export class CampRegistrationService {
       campRegistration,
       queryRunner,
       oneDayPrice: input.oneDayPrice,
+      discount,
     });
 
     const updatePrice = await queryRunner.manager.update(
       CampRegistration,
       { id: campRegistration.id },
-      { totalPrice: total },
+      { paidAmount: total },
     );
 
     if (updatePrice.affected !== 1) {
@@ -182,12 +208,14 @@ export class CampRegistrationService {
     queryRunner,
     oneDayPrice,
     existingVariants: existingRegistrations,
+    discount,
   }: {
     campVariantRegistrations: CreateCampVariantRegistrationInput[];
     campRegistration: CampRegistration;
     queryRunner: QueryRunner;
     oneDayPrice?: Decimal;
     existingVariants?: CampVariantRegistration[];
+    discount?: Discount;
   }): Promise<string | null> {
     if (!campVariantRegistrations?.length) {
       return null;
@@ -239,18 +267,45 @@ export class CampRegistrationService {
 
     const inserts = await queryRunner.manager.insert(
       CampVariantRegistration,
-      campVariantRegistrations.map((e) => ({
-        ...e,
-        campRegistrationId: campRegistration.id,
-        mealPrice: e.withMeal
-          ? campRegistration.camp.mealPrice.toFixed(moneyFixation)
-          : undefined,
-        price:
-          oneDayPrice?.toFixed(moneyFixation) ??
-          campVariants
-            .find((cv) => cv.id === e.campVariantId)
-            .price?.toFixed(moneyFixation),
-      })),
+      campVariantRegistrations.map((e) => {
+        /// calculate price if not one day price
+        let basePrice =
+          oneDayPrice ??
+          campVariants.find((cv) => cv.id === e.campVariantId).price;
+        let priceDiscounted = basePrice;
+
+        if (!oneDayPrice && discount) {
+          if (discount.amount) {
+            priceDiscounted = max([
+              new Decimal('0'),
+              priceDiscounted.minus(discount.amount),
+            ]);
+          } else {
+            priceDiscounted = max([
+              new Decimal('0'),
+              priceDiscounted.minus(
+                min([
+                  discount.percentage.multipliedBy(priceDiscounted),
+                  discount.maximumDiscount,
+                ]),
+              ),
+            ]);
+          }
+        }
+
+        return {
+          ...e,
+          campRegistrationId: campRegistration.id,
+          discountId: discount?.id,
+          mealPrice: e.withMeal
+            ? campRegistration.camp.mealPrice.toFixed(moneyFixation)
+            : undefined,
+          price: basePrice.toFixed(moneyFixation),
+          variantDiscount: discount
+            ? basePrice.minus(priceDiscounted).toFixed(moneyFixation)
+            : undefined,
+        };
+      }),
     );
 
     if (inserts.raw.affectedRows !== campVariantRegistrations.length) {
@@ -406,7 +461,7 @@ export class CampRegistrationService {
       CampRegistration,
       { id: input.id, parentId: userId },
       {
-        totalPrice: price,
+        paidAmount: price,
         paymentMethod: input.paymentMethod,
         oneDayPrice: null,
         refundPolicyConsent: input.refundPolicyConsent,
@@ -496,7 +551,7 @@ export class CampRegistrationService {
         {
           oneDayPrice: input.oneDayPrice,
           paymentMethod: input.paymentMethod,
-          totalPrice: null,
+          paidAmount: null,
           refundPolicyConsent: input.refundPolicyConsent,
           behaviorConsent: input.behaviorConsent,
         },
@@ -564,7 +619,7 @@ export class CampRegistrationService {
           CampRegistration,
           { id: input.id },
           {
-            totalPrice: price,
+            paidAmount: price,
             paymentMethod: input.paymentMethod,
             oneDayPrice: null,
             refundPolicyConsent: input.refundPolicyConsent,

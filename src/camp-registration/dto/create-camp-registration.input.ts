@@ -14,8 +14,12 @@ export class CreateCampRegistrationInput {
   @Field(() => GraphqlDecimal, { nullable: true })
   oneDayPrice?: Decimal;
 
-  @Field(() => GraphqlDecimal, { nullable: true })
-  totalPrice?: Decimal;
+  paidAmount?: Decimal;
+
+  toBePaidAmount?: Decimal;
+
+  @Field({ nullable: true })
+  discountId?: number;
 
   @Field({ nullable: true })
   behaviorConsent?: boolean;

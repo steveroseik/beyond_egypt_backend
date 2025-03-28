@@ -38,7 +38,7 @@ export class CampRegistrationResolver {
       input.parentId = id;
       if (
         input.campVariantRegistrations?.length ||
-        input.totalPrice ||
+        input.paidAmount ||
         input.oneDayPrice ||
         input.paymentMethod
       ) {

@@ -3,7 +3,6 @@ import BigNumber from 'bignumber.js';
 
 import { CampVariantRegistration } from 'src/camp-variant-registration/entities/camp-variant-registration.entity';
 import { Camp } from 'src/camp/entities/camp.entity';
-import { Discount } from 'src/discount/entities/discount.entity';
 import { RegistrationPayment } from 'src/registration-payment/entities/registration-payment.entity';
 import { User } from 'src/user/entities/user.entity';
 import { moneyFixation } from 'support/constants';
@@ -53,7 +52,7 @@ export class CampRegistration {
   oneDayPrice?: Decimal;
 
   @Column('decimal', {
-    name: 'totalPrice',
+    name: 'paidAmount',
     precision: 10,
     nullable: true,
     scale: 0,
@@ -63,7 +62,20 @@ export class CampRegistration {
     },
   })
   @Field(() => GraphqlDecimal, { nullable: true })
-  totalPrice?: Decimal;
+  paidAmount?: Decimal;
+
+  @Column('decimal', {
+    name: 'toBePaidAmount',
+    precision: 10,
+    nullable: true,
+    scale: 0,
+    transformer: {
+      to: (value) => value,
+      from: (value?: string) => value && new Decimal(value),
+    },
+  })
+  @Field(() => GraphqlDecimal, { nullable: true })
+  toBePaidAmount?: Decimal;
 
   @Column('enum', {
     name: 'paymentMethod',
@@ -77,16 +89,16 @@ export class CampRegistration {
   @Field({ nullable: true })
   capacity?: number;
 
-  @Column('bit', {
-    name: 'paid',
-    default: false,
-    transformer: {
-      to: (value: boolean) => value,
-      from: (value: Buffer) => value && value[0] === 1,
-    },
-  })
-  @Field()
-  paid: boolean;
+  // @Column('bit', {
+  //   name: 'paid',
+  //   default: false,
+  //   transformer: {
+  //     to: (value: boolean) => value,
+  //     from: (value: Buffer) => value && value[0] === 1,
+  //   },
+  // })
+  // @Field()
+  // paid: boolean;
 
   @Column('enum', {
     name: 'status',

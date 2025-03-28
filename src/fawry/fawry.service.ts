@@ -201,7 +201,7 @@ export class FawryService {
     const updateCampRegistration = await queryRunner.manager.update(
       CampRegistration,
       { id: payment.campRegistrationId },
-      { status: CampRegistrationStatus.accepted, paid: true },
+      { status: CampRegistrationStatus.accepted, toBePaidAmount: null },
     );
 
     if (payment.status != PaymentStatus.expired) {

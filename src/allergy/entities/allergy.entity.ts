@@ -31,8 +31,8 @@ export class Allergy {
     name: 'category',
     enum: AllergyCategory,
   })
-  @Field()
-  category?: AllergyCategory;
+  @Field(() => AllergyCategory)
+  category: AllergyCategory;
 
   @CreateDateColumn({
     name: 'createdAt',

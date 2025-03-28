@@ -1,7 +1,14 @@
 import { InputType, Int, Field } from '@nestjs/graphql';
+import { AllergyCategory } from 'support/enums';
 
 @InputType()
 export class CreateAllergyInput {
-  @Field(() => Int, { description: 'Example field (placeholder)' })
-  exampleField: number;
+  @Field()
+  nameEn: string;
+
+  @Field()
+  nameAr: string;
+
+  @Field(() => AllergyCategory)
+  category: AllergyCategory;
 }

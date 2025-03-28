@@ -1,13 +1,13 @@
 import { registerEnumType } from '@nestjs/graphql';
 
 export enum AllergyCategory {
-  'food',
-  'pet',
-  'drug',
-  'pollen',
-  'latex',
-  'mold',
-  'insects',
+  food = 'food',
+  pet = 'pet',
+  drug = 'drug',
+  pollen = 'pollen',
+  latex = 'latex',
+  mold = 'mold',
+  insects = 'insects',
 }
 
 registerEnumType(AllergyCategory, {

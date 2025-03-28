@@ -17,9 +17,11 @@ import {
 @Entity('discount', { schema: 'beyond_egypt' })
 export class Discount {
   @PrimaryGeneratedColumn()
+  @Field()
   id: number;
 
   @Column('varchar', { name: 'name', length: 255 })
+  @Field()
   name: string;
 
   @Column('varchar', { name: 'code', nullable: true, length: 255 })
@@ -40,6 +42,19 @@ export class Discount {
   percentage?: Decimal;
 
   @Column('decimal', {
+    name: 'maximumDiscount',
+    nullable: true,
+    precision: 10,
+    scale: 2,
+    transformer: {
+      to: (value) => value,
+      from: (value?: string) => value && new Decimal(value),
+    },
+  })
+  @Field(() => GraphqlDecimal, { nullable: true })
+  maximumDiscount?: Decimal;
+
+  @Column('decimal', {
     name: 'amount',
     nullable: true,
     precision: 10,
@@ -50,14 +65,18 @@ export class Discount {
     },
   })
   @Field(() => GraphqlDecimal, { nullable: true })
-  amount?: string;
+  amount?: Decimal;
 
-  @Column('datetime', { name: 'startDate', nullable: true, precision: 3 })
-  @Field({ nullable: true })
+  @Column('datetime', {
+    name: 'startDate',
+    precision: 3,
+    default: () => 'CURRENT_TIMESTAMP(3)',
+  })
+  @Field()
   startDate: Date;
 
-  @Column('datetime', { name: 'endDate', nullable: true, precision: 3 })
-  @Field({ nullable: true })
+  @Column('datetime', { name: 'endDate', precision: 3 })
+  @Field()
   endDate: Date;
 
   @CreateDateColumn({

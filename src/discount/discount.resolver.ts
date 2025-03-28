@@ -3,33 +3,36 @@ import { DiscountService } from './discount.service';
 import { Discount } from './entities/discount.entity';
 import { CreateDiscountInput } from './dto/create-discount.input';
 import { UpdateDiscountInput } from './dto/update-discount.input';
+import { GraphQLJSONObject } from 'graphql-type-json';
+import { DiscountsPage } from './entities/discounts-page.entity';
+import { PaginateDiscountsInput } from './dto/paginate-discounts.input';
 
 @Resolver(() => Discount)
 export class DiscountResolver {
   constructor(private readonly discountService: DiscountService) {}
 
-  @Mutation(() => Discount)
-  createDiscount(@Args('createDiscountInput') createDiscountInput: CreateDiscountInput) {
-    return this.discountService.create(createDiscountInput);
+  @Mutation(() => GraphQLJSONObject)
+  createDiscount(@Args('input') input: CreateDiscountInput) {
+    return this.discountService.create(input);
   }
 
-  @Query(() => [Discount], { name: 'discount' })
-  findAll() {
-    return this.discountService.findAll();
-  }
-
-  @Query(() => Discount, { name: 'discount' })
-  findOne(@Args('id', { type: () => Int }) id: number) {
+  @Query(() => Discount, { nullable: true })
+  findOneDiscount(@Args('id', { type: () => Int }) id: number) {
     return this.discountService.findOne(id);
   }
 
-  @Mutation(() => Discount)
-  updateDiscount(@Args('updateDiscountInput') updateDiscountInput: UpdateDiscountInput) {
-    return this.discountService.update(updateDiscountInput.id, updateDiscountInput);
+  @Query(() => DiscountsPage)
+  paginateDiscounts(@Args('input') input: PaginateDiscountsInput) {
+    return this.discountService.paginate(input);
   }
 
-  @Mutation(() => Discount)
-  removeDiscount(@Args('id', { type: () => Int }) id: number) {
-    return this.discountService.remove(id);
+  @Mutation(() => GraphQLJSONObject)
+  updateDiscount(@Args('input') input: UpdateDiscountInput) {
+    return this.discountService.update(input);
+  }
+
+  @Mutation(() => GraphQLJSONObject)
+  removeDiscount(@Args('ids', { type: () => [Int] }) ids: number[]) {
+    return this.discountService.remove(ids);
   }
 }
