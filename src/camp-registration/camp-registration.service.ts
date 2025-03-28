@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { CreateCampRegistrationInput } from './dto/create-camp-registration.input';
-import { UpdateCampRegistrationInput } from './dto/update-camp-registration.input';
+import { CompleteCampRegistrationInput } from './dto/complete-camp-registration.input';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, In, QueryRunner, Repository } from 'typeorm';
 import { CampRegistration } from './entities/camp-registration.entity';
@@ -412,7 +412,7 @@ export class CampRegistrationService {
   }
 
   async completeCampRegistration(
-    input: UpdateCampRegistrationInput,
+    input: CompleteCampRegistrationInput,
     userId: string,
     type: UserType,
   ) {
@@ -480,7 +480,7 @@ export class CampRegistrationService {
   }
 
   async handleParentCampCompletion(
-    input: UpdateCampRegistrationInput,
+    input: CompleteCampRegistrationInput,
     campRegistration: CampRegistration,
     queryRunner: QueryRunner,
     userId: string,
@@ -518,7 +518,7 @@ export class CampRegistrationService {
   }
 
   async handleAdminCampCompletion(
-    input: UpdateCampRegistrationInput,
+    input: CompleteCampRegistrationInput,
     campRegistration: CampRegistration,
     queryRunner: QueryRunner,
   ) {

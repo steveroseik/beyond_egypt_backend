@@ -11,7 +11,7 @@ import {
 import { CampRegistrationService } from './camp-registration.service';
 import { CampRegistration } from './entities/camp-registration.entity';
 import { CreateCampRegistrationInput } from './dto/create-camp-registration.input';
-import { UpdateCampRegistrationInput } from './dto/update-camp-registration.input';
+import { CompleteCampRegistrationInput } from './dto/complete-camp-registration.input';
 import { CurrentUser } from 'src/auth/decorators/currentUserDecorator';
 import { UserType } from 'support/enums';
 import { GraphQLJSONObject } from 'graphql-type-json';
@@ -61,7 +61,7 @@ export class CampRegistrationResolver {
   @Mutation(() => GraphQLJSONObject)
   completeCampRegistration(
     @Args('input')
-    input: UpdateCampRegistrationInput,
+    input: CompleteCampRegistrationInput,
     @CurrentUser('id') userId: string,
     @CurrentUser('type') type: UserType,
   ) {

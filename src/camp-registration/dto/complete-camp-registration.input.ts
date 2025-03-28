@@ -5,7 +5,7 @@ import { CreateCampRegistrationInput } from './create-camp-registration.input';
 import { InputType, Field, Int, PartialType } from '@nestjs/graphql';
 
 @InputType()
-export class UpdateCampRegistrationInput {
+export class CompleteCampRegistrationInput {
   @Field(() => Int)
   id: number;
 
