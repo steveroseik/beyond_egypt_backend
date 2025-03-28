@@ -11,6 +11,7 @@ import { CampService } from 'src/camp/camp.service';
 import { EventService } from 'src/event/event.service';
 import { AgeRangeService } from 'src/age-range/age-range.service';
 import { AllergyService } from 'src/allergy/allergy.service';
+import { UserService } from 'src/user/user.service';
 
 @Injectable()
 export class DataloaderRegistryFactory {
@@ -26,6 +27,7 @@ export class DataloaderRegistryFactory {
     private eventService: EventService,
     private ageRangeService: AgeRangeService,
     private allergyService: AllergyService,
+    private userService: UserService,
   ) {}
 
   public create() {
@@ -41,6 +43,7 @@ export class DataloaderRegistryFactory {
       this.eventService,
       this.ageRangeService,
       this.allergyService,
+      this.userService,
     );
   }
 }

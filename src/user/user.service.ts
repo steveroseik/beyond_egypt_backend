@@ -545,4 +545,12 @@ export class UserService {
       },
     });
   }
+
+  findAllByKeys(keys: readonly string[]) {
+    return this.repo.find({
+      where: {
+        id: In(keys),
+      },
+    });
+  }
 }

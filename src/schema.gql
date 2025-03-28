@@ -668,14 +668,14 @@ type Mutation {
   createAllergy(input: CreateAllergyInput!): JSONObject!
   updateAllergy(updateAllergyInput: UpdateAllergyInput!): JSONObject!
   removeAllergy(ids: [Int!]!): JSONObject!
-  tempLogin(input: TempSignInInput!): JSONObject!
-  signIn(input: TokenRequestInput!): UserAuthResponse!
   createUser(input: CreateUserInput!): CreateUserResponse!
   createParent(input: CreateUserInput!): JSONObject!
   updateUser(input: UpdateUserInput!): JSONObject!
   createEmployee(input: CreateEmployeeInput!): JSONObject!
   registerUser(input: RegisterUserInput!): CreateUserResponse!
   removeUser(id: String!): User!
+  tempLogin(input: TempSignInInput!): JSONObject!
+  signIn(input: TokenRequestInput!): UserAuthResponse!
   createCampRegistration(input: CreateCampRegistrationInput!): JSONObject!
   completeCampRegistration(input: UpdateCampRegistrationInput!): JSONObject!
   removeCampRegistration(id: Int!): CampRegistration!
@@ -922,16 +922,6 @@ input UpdateAllergyInput {
   id: Int!
 }
 
-input TempSignInInput {
-  email: String!
-  password: String!
-}
-
-input TokenRequestInput {
-  firebaseToken: String!
-  isAdmin: Boolean = false
-}
-
 input CreateUserInput {
   firebaseToken: String
   name: String!
@@ -966,6 +956,16 @@ input CreateEmployeeInput {
 input RegisterUserInput {
   id: String!
   firebaseToken: String!
+}
+
+input TempSignInInput {
+  email: String!
+  password: String!
+}
+
+input TokenRequestInput {
+  firebaseToken: String!
+  isAdmin: Boolean = false
 }
 
 input CreateCampRegistrationInput {

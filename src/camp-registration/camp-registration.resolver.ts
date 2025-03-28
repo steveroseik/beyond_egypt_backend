@@ -21,6 +21,7 @@ import { ProcessCampRegistrationInput } from './dto/process-camp-registration.in
 import { CampVariantRegistration } from 'src/camp-variant-registration/entities/camp-variant-registration.entity';
 import { DataloaderRegistry } from 'src/dataloaders/dataloaderRegistry';
 import { Camp } from 'src/camp/entities/camp.entity';
+import { User } from 'src/user/entities/user.entity';
 
 @Resolver(() => CampRegistration)
 export class CampRegistrationResolver {
@@ -118,5 +119,13 @@ export class CampRegistrationResolver {
     @Context() { loaders }: { loaders: DataloaderRegistry },
   ) {
     return loaders.CampsDataLoader.load(campRegistration.campId);
+  }
+
+  @ResolveField(() => User)
+  parent(
+    @Parent() campRegistration: CampRegistration,
+    @Context() { loaders }: { loaders: DataloaderRegistry },
+  ) {
+    return loaders.UsersDataLoader.load(campRegistration.parentId);
   }
 }

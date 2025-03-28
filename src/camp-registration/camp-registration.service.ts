@@ -207,14 +207,14 @@ export class CampRegistrationService {
     campRegistration,
     queryRunner,
     oneDayPrice,
-    existingVariants: existingRegistrations,
+    existingRegistrations,
     discount,
   }: {
     campVariantRegistrations: CreateCampVariantRegistrationInput[];
     campRegistration: CampRegistration;
     queryRunner: QueryRunner;
     oneDayPrice?: Decimal;
-    existingVariants?: CampVariantRegistration[];
+    existingRegistrations?: CampVariantRegistration[];
     discount?: Discount;
   }): Promise<string | null> {
     if (!campVariantRegistrations?.length) {
@@ -317,6 +317,16 @@ export class CampRegistrationService {
     }
 
     if (existingRegistrations?.length) {
+      // update existing registration discounts
+      if (discount) {
+        for (const registration of existingRegistrations) {
+          await queryRunner.manager.update(
+            CampVariantRegistration,
+            { id: registration.id },
+            { discountId: discount.id },
+          );
+        }
+      }
       const existingPrice = this.calculateCampVariantRegistrationPrice(
         campVariants,
         existingRegistrations,
@@ -616,7 +626,7 @@ export class CampRegistrationService {
           campVariantRegistrations: input.campVariantRegistrations,
           campRegistration,
           queryRunner,
-          existingVariants,
+          existingRegistrations: existingVariants,
         });
 
         const updated = await queryRunner.manager.update(

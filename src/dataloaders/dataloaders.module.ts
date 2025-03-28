@@ -12,6 +12,7 @@ import { CampModule } from 'src/camp/camp.module';
 import { EventModule } from 'src/event/event.module';
 import { AgeRangeModule } from 'src/age-range/age-range.module';
 import { AllergyModule } from 'src/allergy/allergy.module';
+import { UserModule } from 'src/user/user.module';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { AllergyModule } from 'src/allergy/allergy.module';
     EventModule,
     AgeRangeModule,
     AllergyModule,
+    UserModule,
   ],
   providers: [DataloaderRegistry, DataloaderRegistryFactory],
   exports: [DataloaderRegistryFactory],
