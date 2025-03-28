@@ -110,7 +110,10 @@ export class Child {
   @Field({ nullable: true })
   deletedAt?: Date;
 
-  @ManyToMany(() => Allergy, (allergy) => allergy.children, { nullable: true })
+  @ManyToMany(() => Allergy, (allergy) => allergy.children, {
+    nullable: true,
+    cascade: ['remove'],
+  })
   @JoinTable({
     name: 'child-allergy',
     joinColumn: {
