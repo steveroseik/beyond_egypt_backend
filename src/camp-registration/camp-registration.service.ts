@@ -265,53 +265,54 @@ export class CampRegistrationService {
       }
     }
 
-    const inserts = await queryRunner.manager.insert(
+    const inserts = await queryRunner.manager.save(
       CampVariantRegistration,
       campVariantRegistrations.map((e) => {
         let basePrice =
           oneDayPrice ??
           campVariants.find((cv) => cv.id === e.campVariantId).price;
-        let priceDiscounted = basePrice;
+        let priceDiscounted = undefined;
 
-        let baseMealPrice =
-          campRegistration.camp.mealPrice.toFixed(moneyFixation);
+        /// TODO: fetch meal price from camp variant not camp
+        let baseMealPrice = e.withMeal
+          ? campRegistration.camp.mealPrice
+          : undefined;
+        let mealDscounted = undefined;
 
         /// calculate price if not one day price
-        if (!oneDayPrice && discount) {
-          if (discount.amount) {
-            priceDiscounted = max([
-              new Decimal('0'),
-              priceDiscounted.minus(discount.amount),
-            ]);
-          } else {
-            priceDiscounted = max([
-              new Decimal('0'),
-              priceDiscounted.minus(
-                min([
-                  discount.percentage.multipliedBy(priceDiscounted),
-                  discount.maximumDiscount,
-                ]),
-              ),
-            ]);
-          }
+        if (!oneDayPrice && discount && discount.percentage) {
+          priceDiscounted = basePrice.minus(
+            min([
+              discount.percentage.multipliedBy(basePrice),
+              discount.maximumDiscount,
+            ]),
+          );
+
+          mealDscounted = baseMealPrice.minus(
+            min([
+              discount.percentage.multipliedBy(baseMealPrice),
+              discount.maximumDiscount,
+            ]),
+          );
         }
 
         return {
           ...e,
           campRegistrationId: campRegistration.id,
           discountId: discount?.id,
-          mealPrice: e.withMeal
-            ? campRegistration.camp.mealPrice.toFixed(moneyFixation)
-            : undefined,
+          mealPrice: baseMealPrice,
           price: basePrice.toFixed(moneyFixation),
-          variantDiscount: discount
+          variantDiscount: priceDiscounted
             ? basePrice.minus(priceDiscounted).toFixed(moneyFixation)
+            : undefined,
+          mealDiscount: mealDscounted
+            ? baseMealPrice.minus(mealDscounted).toFixed(moneyFixation)
             : undefined,
         };
       }),
     );
 
-    if (inserts.raw.affectedRows !== campVariantRegistrations.length) {
+    if (inserts.length !== campVariantRegistrations.length) {
       throw new Error('Failed to insert camp variant registrations');
     }
 

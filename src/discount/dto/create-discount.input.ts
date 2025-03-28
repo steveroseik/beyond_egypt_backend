@@ -13,10 +13,10 @@ export class CreateDiscountInput {
   percentage?: Decimal;
 
   @Field(() => GraphqlDecimal, { nullable: true })
-  maximumDiscount?: string;
+  maximumDiscount?: Decimal;
 
   @Field(() => GraphqlDecimal, { nullable: true })
-  amount?: string;
+  amount?: Decimal;
 
   @Field()
   startDate: Date;

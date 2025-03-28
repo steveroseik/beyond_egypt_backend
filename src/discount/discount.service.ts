@@ -6,6 +6,7 @@ import { Discount } from './entities/discount.entity';
 import { DataSource, Repository } from 'typeorm';
 import { PaginateDiscountsInput } from './dto/paginate-discounts.input';
 import { buildPaginator } from 'typeorm-cursor-pagination';
+import { moneyFixation } from 'support/constants';
 
 @Injectable()
 export class DiscountService {
@@ -26,7 +27,12 @@ export class DiscountService {
         );
       }
 
-      const response = await this.repo.insert(input);
+      const response = await this.repo.insert({
+        ...input,
+        amount: input.amount?.toFixed(moneyFixation),
+        percentage: input.percentage?.toFixed(moneyFixation),
+        maximumDiscount: input.maximumDiscount?.toFixed(moneyFixation),
+      });
 
       if (response.raw.affectedRows !== 1) {
         throw new Error('Discount was not created');
@@ -61,7 +67,12 @@ export class DiscountService {
         throw new Error('No valid fields to update');
       }
 
-      const response = await this.repo.update(input.id, input);
+      const response = await this.repo.update(input.id, {
+        ...input,
+        amount: input.amount?.toFixed(moneyFixation),
+        percentage: input.percentage?.toFixed(moneyFixation),
+        maximumDiscount: input.maximumDiscount?.toFixed(moneyFixation),
+      });
 
       if (response.affected !== 1) {
         throw new Error('Discount was not updated');
@@ -95,7 +106,7 @@ export class DiscountService {
       console.log(e);
       return {
         success: false,
-        message: 'Error while deleting discount',
+        message: e,
       };
     }
   }
