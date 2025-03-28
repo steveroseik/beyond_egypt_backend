@@ -202,8 +202,8 @@ export class CampRegistrationService {
       { id: campRegistration.id },
       {
         oneDayPrice: input.oneDayPrice,
-        amount: totalVariantsAmount,
-        discountAmount,
+        amount: totalVariantsAmount?.toFixed(moneyFixation),
+        discountAmount: discountAmount?.toFixed(moneyFixation),
         paidAmount: '0',
         discountId: discount?.id,
       },
