@@ -812,8 +812,7 @@ input UpdateChildInput {
   medicalInfo: String
   otherAllergies: String
   extraNotes: String
-  allergiesToDelete: [Int!] = []
-  allergiesToAdd: [Int!] = []
+  allergies: [Int!] = []
 }
 
 input CreateCampVariantRegistrationInput {

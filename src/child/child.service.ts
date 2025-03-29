@@ -39,7 +39,10 @@ export class ChildService {
     await queryRunner.startTransaction();
 
     try {
-      const child = await this.repo.findOne({ where: { id: input.id } });
+      const child = await this.repo.findOne({
+        where: { id: input.id },
+        relations: ['allergies'],
+      });
 
       if (!child) {
         throw new Error('Child not found');
@@ -98,6 +101,7 @@ export class ChildService {
         schoolId: input.schoolId,
         imageId: input.imageId,
         schoolName: input.schoolName,
+        canTakePhotos: input.canTakePhotos,
         isMale: input.isMale,
         parentRelation: input.parentRelation,
         medicalInfo: input.medicalInfo,
@@ -110,20 +114,30 @@ export class ChildService {
       }
     }
 
-    if (input.allergiesToAdd.length > 0) {
-      await queryRunner.manager
-        .createQueryBuilder()
-        .relation(Child, 'allergies')
-        .of(child)
-        .add(input.allergiesToAdd);
-    }
+    if (input.allergies) {
+      const allergiesToAdd = input.allergies.filter(
+        (allergy) => !child.allergies.find((a) => a.id === allergy),
+      );
 
-    if (input.allergiesToDelete.length > 0) {
-      await queryRunner.manager
-        .createQueryBuilder()
-        .relation(Child, 'allergies')
-        .of(child)
-        .remove(input.allergiesToDelete);
+      const allergiesToDelete = child.allergies.filter(
+        (allergy) => !input.allergies.find((a) => a === allergy.id),
+      );
+
+      if (allergiesToAdd?.length) {
+        await queryRunner.manager
+          .createQueryBuilder()
+          .relation(Child, 'allergies')
+          .of(child)
+          .add(allergiesToAdd);
+      }
+
+      if (allergiesToDelete?.length) {
+        await queryRunner.manager
+          .createQueryBuilder()
+          .relation(Child, 'allergies')
+          .of(child)
+          .remove(allergiesToDelete);
+      }
     }
   }
 

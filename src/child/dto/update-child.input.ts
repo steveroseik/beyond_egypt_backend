@@ -45,8 +45,5 @@ export class UpdateChildInput {
   extraNotes?: string;
 
   @Field(() => [Int], { nullable: true, defaultValue: [] })
-  allergiesToDelete: number[];
-
-  @Field(() => [Int], { nullable: true, defaultValue: [] })
-  allergiesToAdd: number[];
+  allergies: number[];
 }

@@ -153,6 +153,7 @@ export class UserService {
           name: child.name,
           imageId: child.imageId,
           birthdate: child.birthdate,
+          canTakePhotos: child.canTakePhotos,
           schoolId: child.schoolId,
           schoolName: child.schoolName,
           medicalInfo: child.medicalInfo,
@@ -245,7 +246,9 @@ export class UserService {
         if (input.childrenToDelete?.length) {
           const children = await queryRunner.manager.find(Child, {
             where: { id: In(input.childrenToDelete) },
+            relations: ['allergies'],
           });
+
           if (children.length !== input.childrenToDelete.length) {
             throw new Error('Some children not found');
           }
