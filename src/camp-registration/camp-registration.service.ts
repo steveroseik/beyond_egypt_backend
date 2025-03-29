@@ -510,8 +510,8 @@ export class CampRegistrationService {
       CampRegistration,
       { id: input.id, parentId: userId },
       {
-        amount,
-        discountAmount,
+        amount: amount?.toFixed(moneyFixation),
+        discountAmount: discountAmount?.toFixed(moneyFixation) ?? null,
         oneDayPrice: null,
         discountId: discount?.id,
         paidAmount: '0',
