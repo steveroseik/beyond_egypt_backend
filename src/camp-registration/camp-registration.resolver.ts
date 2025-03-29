@@ -22,6 +22,7 @@ import { CampVariantRegistration } from 'src/camp-variant-registration/entities/
 import { DataloaderRegistry } from 'src/dataloaders/dataloaderRegistry';
 import { Camp } from 'src/camp/entities/camp.entity';
 import { User } from 'src/user/entities/user.entity';
+import { UpdateCampRegistrationInput } from './dto/update-camp-registration.input';
 
 @Resolver(() => CampRegistration)
 export class CampRegistrationResolver {
@@ -90,6 +91,20 @@ export class CampRegistrationResolver {
   }
 
   @Mutation(() => GraphQLJSONObject)
+  updateCampRegistration(
+    @Args('input') input: UpdateCampRegistrationInput,
+    @CurrentUser('type') type: UserType,
+  ) {
+    if (type === UserType.parent) {
+      return {
+        success: false,
+        message: 'You are not authorized to perform this action',
+      };
+    }
+    return this.campRegistrationService.update(input);
+  }
+
+  @Mutation(() => GraphQLJSONObject)
   processCampRegistration(
     @Args('input') input: ProcessCampRegistrationInput,
     @CurrentUser('id') userId: string,
@@ -127,5 +142,10 @@ export class CampRegistrationResolver {
     @Context() { loaders }: { loaders: DataloaderRegistry },
   ) {
     return loaders.UsersDataLoader.load(campRegistration.parentId);
+  }
+
+  @Mutation(() => GraphQLJSONObject, { nullable: true })
+  async sendTestEmail() {
+    return this.campRegistrationService.test();
   }
 }

@@ -39,6 +39,7 @@ import { SchoolModule } from './school/school.module';
 import { AwsBucketModule } from './aws-bucket/aws-bucket.module';
 import { RegistrationReserveModule } from './registration-reserve/registration-reserve.module';
 import { FawryModule } from './fawry/fawry.module';
+import { MailModule } from './mail/mail.module';
 
 @Module({
   imports: [
@@ -124,6 +125,7 @@ import { FawryModule } from './fawry/fawry.module';
     AwsBucketModule,
     RegistrationReserveModule,
     FawryModule,
+    MailModule,
   ],
   controllers: [AppController],
   providers: [

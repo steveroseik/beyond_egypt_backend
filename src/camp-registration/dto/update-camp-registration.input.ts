@@ -5,21 +5,18 @@ import { CreateCampRegistrationInput } from './create-camp-registration.input';
 import { InputType, Field, Int, PartialType } from '@nestjs/graphql';
 
 @InputType()
-export class CompleteCampRegistrationInput {
+export class UpdateCampRegistrationInput {
   @Field(() => Int)
   id: number;
 
   @Field({ nullable: true })
-  parentId?: string;
-
-  @Field({ nullable: true })
-  behaviorConsent?: boolean;
-
-  @Field({ nullable: true })
-  refundPolicyConsent?: boolean;
-
-  @Field({ nullable: true })
   discountId: number;
+
+  @Field(() => GraphqlDecimal, { nullable: true })
+  oneDayPrice?: Decimal;
+
+  @Field(() => PaymentMethod, { nullable: true })
+  paymentMethod: PaymentMethod;
 
   @Field(() => [CreateCampVariantRegistrationInput], { nullable: true })
   campVariantRegistrations?: CreateCampVariantRegistrationInput[];

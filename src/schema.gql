@@ -679,9 +679,11 @@ type Mutation {
   tempLogin(input: TempSignInInput!): JSONObject!
   signIn(input: TokenRequestInput!): UserAuthResponse!
   createCampRegistration(input: CreateCampRegistrationInput!): JSONObject!
-  completeCampRegistration(input: UpdateCampRegistrationInput!): JSONObject!
+  completeCampRegistration(input: CompleteCampRegistrationInput!): JSONObject!
   removeCampRegistration(id: Int!): CampRegistration!
+  updateCampRegistration(input: UpdateCampRegistrationInput!): JSONObject!
   processCampRegistration(input: ProcessCampRegistrationInput!): JSONObject!
+  sendTestEmail: JSONObject
   createChildReport(createChildReportInput: CreateChildReportInput!): ChildReport!
   updateChildReport(updateChildReportInput: UpdateChildReportInput!): ChildReport!
   removeChildReport(id: Int!): ChildReport!
@@ -981,15 +983,20 @@ input CreateCampRegistrationInput {
   campVariantRegistrations: [CreateCampVariantRegistrationInput!]
 }
 
-input UpdateCampRegistrationInput {
+input CompleteCampRegistrationInput {
   id: Int!
   parentId: String
-  variantsToDelete: [Int!]
-  oneDayPrice: Decimal
-  totalPrice: Decimal
-  paymentMethod: PaymentMethod
   behaviorConsent: Boolean
   refundPolicyConsent: Boolean
+  discountId: Int
+  campVariantRegistrations: [CreateCampVariantRegistrationInput!]
+}
+
+input UpdateCampRegistrationInput {
+  id: Int!
+  discountId: Int
+  oneDayPrice: Decimal
+  paymentMethod: PaymentMethod
   campVariantRegistrations: [CreateCampVariantRegistrationInput!]
 }
 

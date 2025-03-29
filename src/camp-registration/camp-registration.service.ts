@@ -35,6 +35,10 @@ import { generateMerchantRefNumber } from 'support/random-uuid.generator';
 import { Discount } from 'src/discount/entities/discount.entity';
 import { max, min } from 'lodash';
 import { Camp } from 'src/camp/entities/camp.entity';
+import { MailService } from 'src/mail/mail.service';
+import { generateCampRegistrationEmail } from 'src/mail/templates/camp-registration-confirmation';
+import { UpdateCampRegistrationInput } from './dto/update-camp-registration.input';
+import { UpdateCampVariantRegistrationInput } from 'src/camp-variant-registration/dto/update-camp-variant-registration.input';
 dotenv.config();
 
 @Injectable()
@@ -44,6 +48,7 @@ export class CampRegistrationService {
     private repo: Repository<CampRegistration>,
     private dataSource: DataSource,
     private awsService: AwsBucketService,
+    private mailService: MailService,
   ) {}
 
   async create(
@@ -146,21 +151,7 @@ export class CampRegistrationService {
     let discount: Discount;
 
     if (input.discountId) {
-      discount = await queryRunner.manager.findOne(Discount, {
-        where: { id: input.discountId },
-      });
-      if (!discount) {
-        throw new Error('Discount not found');
-      }
-
-      const discountEnded =
-        moment().tz('Africa/Cairo').diff(discount.endDate) < 0;
-      const discountStarted =
-        moment().tz('Africa/Cairo').diff(discount.startDate) > 0;
-
-      if (discountEnded || !discountStarted) {
-        throw new Error('Discount is not valid');
-      }
+      discount = await this.findDiscount(input.discountId, queryRunner);
     }
 
     const camp = await queryRunner.manager.findOne(Camp, {
@@ -233,14 +224,15 @@ export class CampRegistrationService {
     existingRegistrations,
     discount,
   }: {
-    campVariantRegistrations: CreateCampVariantRegistrationInput[];
+    campVariantRegistrations?: CreateCampVariantRegistrationInput[];
     campRegistration: CampRegistration;
     queryRunner: QueryRunner;
     oneDayPrice?: Decimal;
     existingRegistrations?: CampVariantRegistration[];
     discount?: Discount;
   }): Promise<Decimal | null> {
-    if (!campVariantRegistrations?.length) {
+    if (!campVariantRegistrations?.length && !existingRegistrations?.length) {
+      console.log('Failed to find data to calculate within');
       return null;
     }
 
@@ -288,46 +280,48 @@ export class CampRegistrationService {
       }
     }
 
-    const inserts = await queryRunner.manager.save(
-      CampVariantRegistration,
-      campVariantRegistrations.map((e) => {
-        let basePrice =
-          oneDayPrice ??
-          campVariants.find((cv) => cv.id === e.campVariantId).price;
-        let priceDiscount: Decimal = undefined;
+    const inserts: CampVariantRegistration[] = !campVariantRegistrations?.length
+      ? []
+      : await queryRunner.manager.save(
+          CampVariantRegistration,
+          campVariantRegistrations.map((e) => {
+            let basePrice =
+              oneDayPrice ??
+              campVariants.find((cv) => cv.id === e.campVariantId).price;
+            let priceDiscount: Decimal = undefined;
 
-        /// TODO: fetch meal price from camp variant not camp
-        let baseMealPrice = e.withMeal
-          ? campRegistration.camp.mealPrice
-          : undefined;
-        let mealDiscount: Decimal = undefined;
+            /// TODO: fetch meal price from camp variant not camp
+            let baseMealPrice = e.withMeal
+              ? campRegistration.camp.mealPrice
+              : undefined;
+            let mealDiscount: Decimal = undefined;
 
-        /// calculate price if not one day price
-        if (!oneDayPrice && discount?.percentage) {
-          priceDiscount = min([
-            discount.percentage.multipliedBy(basePrice),
-            discount.maximumDiscount,
-          ]);
+            /// calculate price if not one day price
+            if (!oneDayPrice && discount?.percentage) {
+              priceDiscount = min([
+                discount.percentage.multipliedBy(basePrice),
+                discount.maximumDiscount,
+              ]);
 
-          mealDiscount = min([
-            discount.percentage.multipliedBy(baseMealPrice),
-            discount.maximumDiscount,
-          ]);
-        }
+              mealDiscount = min([
+                discount.percentage.multipliedBy(baseMealPrice),
+                discount.maximumDiscount,
+              ]);
+            }
 
-        return {
-          ...e,
-          campRegistrationId: campRegistration.id,
-          discountId: discount?.id,
-          mealPrice: baseMealPrice?.toFixed(moneyFixation),
-          price: basePrice.toFixed(moneyFixation),
-          variantDiscount: priceDiscount?.toFixed(moneyFixation),
-          mealDiscount: mealDiscount?.toFixed(moneyFixation),
-        };
-      }),
-    );
+            return {
+              ...e,
+              campRegistrationId: campRegistration.id,
+              discountId: discount?.id ?? null,
+              mealPrice: baseMealPrice?.toFixed(moneyFixation),
+              price: basePrice.toFixed(moneyFixation),
+              variantDiscount: priceDiscount?.toFixed(moneyFixation),
+              mealDiscount: mealDiscount?.toFixed(moneyFixation),
+            };
+          }),
+        );
 
-    if (inserts.length !== campVariantRegistrations.length) {
+    if (inserts.length !== (campVariantRegistrations?.length ?? 0)) {
       throw new Error('Failed to insert camp variant registrations');
     }
 
@@ -356,7 +350,7 @@ export class CampRegistrationService {
                 : null;
             }
 
-            registration.discountId = discount.id;
+            registration.discountId = discount.id ?? null;
             registration.variantDiscount = priceDiscount;
             registration.mealDiscount = mealDiscount;
 
@@ -416,15 +410,14 @@ export class CampRegistrationService {
     userId: string,
     type: UserType,
   ) {
-    if (type === UserType.parent) {
-      input.parentId = userId;
-      if (input.totalPrice || input.oneDayPrice) {
-        return {
-          success: false,
-          message: 'Unauthorized, admin actions done by parent',
-        };
-      }
+    if (type !== UserType.parent) {
+      return {
+        success: false,
+        message: 'Unauthorized, only parents can complete registrations',
+      };
     }
+
+    input.parentId = userId;
 
     const campRegistration = await this.repo.findOne({
       where: {
@@ -453,20 +446,12 @@ export class CampRegistrationService {
     await queryRunner.startTransaction();
 
     try {
-      if (type == UserType.parent) {
-        return await this.handleParentCampCompletion(
-          input,
-          campRegistration,
-          queryRunner,
-          userId,
-        );
-      } else {
-        return await this.handleAdminCampCompletion(
-          input,
-          campRegistration,
-          queryRunner,
-        );
-      }
+      return await this.handleParentCampCompletion(
+        input,
+        campRegistration,
+        queryRunner,
+        userId,
+      );
     } catch (e) {
       await queryRunner.rollbackTransaction();
       console.log(e);
@@ -488,19 +473,47 @@ export class CampRegistrationService {
     if (!input.campVariantRegistrations?.length)
       throw new Error('Set at least one week for registration');
 
-    const price = await this.handleCampVariantRegistrations({
+    const deleteOldVariants = await queryRunner.manager.delete(
+      CampVariantRegistration,
+      {
+        campRegistrationId: campRegistration.id,
+      },
+    );
+
+    if (
+      deleteOldVariants.affected !==
+      campRegistration.campVariantRegistrations?.length
+    ) {
+      throw Error('Failed to remove old weeks from registration');
+    }
+
+    let discount: Discount = undefined;
+
+    if (input.discountId) {
+      discount = await this.findDiscount(input.discountId, queryRunner);
+    }
+
+    const amount = await this.handleCampVariantRegistrations({
       campVariantRegistrations: input.campVariantRegistrations,
       campRegistration,
       queryRunner,
+      discount,
     });
+
+    let discountAmount: Decimal = undefined;
+    if (discount?.amount) {
+      discountAmount = min([amount, discount.amount]);
+    }
 
     await queryRunner.manager.update(
       CampRegistration,
       { id: input.id, parentId: userId },
       {
-        paidAmount: price,
-        paymentMethod: input.paymentMethod,
+        amount,
+        discountAmount,
         oneDayPrice: null,
+        discountId: discount?.id,
+        paidAmount: '0',
         refundPolicyConsent: input.refundPolicyConsent,
         behaviorConsent: input.behaviorConsent,
       },
@@ -512,65 +525,39 @@ export class CampRegistrationService {
       success: true,
       message: 'Camp registration completed successfully',
       data: {
-        totalAmount: price,
+        totalAmount: amount,
       },
     };
   }
 
-  async handleAdminCampCompletion(
-    input: CompleteCampRegistrationInput,
+  async handleIdleCampUpdate(
+    input: UpdateCampRegistrationInput,
     campRegistration: CampRegistration,
     queryRunner: QueryRunner,
   ) {
     // admin only
     if (input.oneDayPrice) {
-      /// the variants to register length is one
-      if (input.campVariantRegistrations?.length == 1) {
-        // delete old camp variants if existing
-        if (campRegistration.campVariantRegistrations?.length) {
-          const deleted = await queryRunner.manager.delete(
-            CampVariantRegistration,
-            {
-              id: In(
-                campRegistration.campVariantRegistrations?.map((e) => e.id),
-              ),
-            },
-          );
-          if (
-            deleted.affected !==
-            campRegistration.campVariantRegistrations?.length
-          ) {
-            throw Error('Failed to remove old weeks from registration');
-          }
-        }
-        /// if variants to register are more than one OR null
-      } else {
-        if (input.campVariantRegistrations?.length) {
-          throw new Error('One day registration must have only one week');
-        }
+      if (input.discountId) {
+        throw new Error('Discounts are not allowed for one day registrations');
+      }
 
-        /// if input.campVariantRegistrations is null
-        // must delete variants - 1
-        if (!input.campVariantRegistrations?.length) {
-          if (
-            (input.variantsToDelete?.length ?? 0) -
-              (campRegistration?.campVariantRegistrations?.length ?? 0) !=
-            1
-          ) {
-            throw new Error('One day registration must have only one week');
-          }
-        }
+      if (
+        input.campVariantRegistrations?.length != 1 &&
+        campRegistration.campVariantRegistrations?.length != 1
+      ) {
+        throw new Error('One day registration must have only one week');
+      }
 
-        if (input.variantsToDelete?.length) {
-          const deleted = await queryRunner.manager.delete(
-            CampVariantRegistration,
-            {
-              id: In(input.variantsToDelete),
-            },
-          );
-          if (deleted.affected !== input.variantsToDelete.length) {
-            throw Error('Failed to remove old weeks from registration');
-          }
+      if (campRegistration.campVariantRegistrations?.length > 1) {
+        const deleteOldVariants = await queryRunner.manager.delete(
+          CampVariantRegistration,
+          {
+            campRegistrationId: campRegistration.id,
+          },
+        );
+
+        if (deleteOldVariants.affected !== 1) {
+          throw Error('Failed to remove old weeks from registration');
         }
       }
 
@@ -588,9 +575,10 @@ export class CampRegistrationService {
         {
           oneDayPrice: input.oneDayPrice,
           paymentMethod: input.paymentMethod,
-          paidAmount: null,
-          refundPolicyConsent: input.refundPolicyConsent,
-          behaviorConsent: input.behaviorConsent,
+          amount: total.toFixed(moneyFixation),
+          paidAmount: '0',
+          discountId: null,
+          discountAmount: null,
         },
       );
 
@@ -598,11 +586,14 @@ export class CampRegistrationService {
         throw new Error('Failed to update camp registration');
       }
 
+      // reset all payments
+      await this.resetCampPaymentMethod(campRegistration, queryRunner);
+
       await queryRunner.commitTransaction();
 
       return {
         success: true,
-        message: 'Camp registration completed successfully',
+        message: 'One Day Camp registration updated successfully',
         data: {
           totalAmount: input.oneDayPrice,
         },
@@ -610,75 +601,102 @@ export class CampRegistrationService {
 
       /// if one day price is null
     } else {
-      let existingVariants: CampVariantRegistration[] = [];
+      if (!input.campVariantRegistrations?.length)
+        throw new Error('Set at least one week for registration');
+
+      let discount: Discount = null;
+      if (input.discountId) {
+        discount = await this.findDiscount(input.discountId, queryRunner);
+      }
+
+      const deleted = await queryRunner.manager.delete(
+        CampVariantRegistration,
+        {
+          campRegistrationId: campRegistration.id,
+        },
+      );
+
       if (
-        campRegistration.oneDayPrice &&
-        campRegistration.campVariantRegistrations?.length === 1
+        deleted.affected !== campRegistration.campVariantRegistrations?.length
       ) {
-        const deleteOldOneDayPass = await queryRunner.manager.delete(
-          CampVariantRegistration,
-          {
-            id: campRegistration.campVariantRegistrations[0].id,
-          },
-        );
-
-        if (deleteOldOneDayPass.affected !== 1) {
-          throw new Error('Failed to remove old one day registration');
-        }
-      } else {
-        if (input.variantsToDelete?.length) {
-          const deleteOldVariants = await queryRunner.manager.delete(
-            CampVariantRegistration,
-            {
-              id: In(input.variantsToDelete),
-            },
-          );
-
-          if (deleteOldVariants.affected !== input.variantsToDelete.length) {
-            throw Error('Failed to remove old weeks from registration');
-          }
-
-          existingVariants = campRegistration.campVariantRegistrations.filter(
-            (e) => !input.variantsToDelete.includes(e.id),
-          );
-        }
+        throw new Error('Failed to remove old one day registration');
       }
 
-      if (input.campVariantRegistrations?.length) {
-        const price = await this.handleCampVariantRegistrations({
-          campVariantRegistrations: input.campVariantRegistrations,
-          campRegistration,
-          queryRunner,
-          existingRegistrations: existingVariants,
-        });
+      const price = await this.handleCampVariantRegistrations({
+        campVariantRegistrations: input.campVariantRegistrations,
+        campRegistration,
+        queryRunner,
+        discount,
+      });
 
-        const updated = await queryRunner.manager.update(
-          CampRegistration,
-          { id: input.id },
-          {
-            paidAmount: price,
-            paymentMethod: input.paymentMethod,
-            oneDayPrice: null,
-            refundPolicyConsent: input.refundPolicyConsent,
-            behaviorConsent: input.behaviorConsent,
-          },
-        );
-
-        if (updated.affected !== 1) {
-          throw new Error('Failed to update camp registration');
-        }
-
-        await queryRunner.commitTransaction();
-
-        return {
-          success: true,
-          message: 'Camp registration completed successfully',
-          data: {
-            totalAmount: price,
-          },
-        };
+      let amountDiscounted: Decimal = null;
+      if (discount?.amount) {
+        amountDiscounted = min([price, discount.amount]);
       }
+
+      const updated = await queryRunner.manager.update(
+        CampRegistration,
+        { id: input.id },
+        {
+          paidAmount: '0',
+          paymentMethod: input.paymentMethod,
+          oneDayPrice: null,
+          amount: price.toFixed(moneyFixation),
+          discountId: discount?.id ?? null,
+          discountAmount: amountDiscounted?.toFixed(moneyFixation) ?? null,
+        },
+      );
+
+      if (updated.affected !== 1) {
+        throw new Error('Failed to update camp registration');
+      }
+
+      // reset all payments
+      await this.resetCampPaymentMethod(campRegistration, queryRunner);
+
+      await queryRunner.commitTransaction();
+
+      return {
+        success: true,
+        message: 'Camp registration completed successfully',
+        data: {
+          totalAmount: price,
+        },
+      };
     }
+  }
+
+  async resetCampPaymentMethod(
+    campRegistration: CampRegistration,
+    queryRunner: QueryRunner,
+  ) {
+    const expirePayments = await queryRunner.manager.update(
+      RegistrationPayment,
+      { campRegistrationId: campRegistration.id },
+      { status: PaymentStatus.expired },
+    );
+
+    return expirePayments;
+  }
+
+  async findDiscount(id: number, queryRunner: QueryRunner): Promise<Discount> {
+    const discount = await queryRunner.manager.findOne(Discount, {
+      where: { id },
+    });
+
+    if (!discount) {
+      throw new Error('Discount not found');
+    }
+
+    const discountEnded =
+      moment().tz('Africa/Cairo').diff(discount.endDate) < 0;
+    const discountStarted =
+      moment().tz('Africa/Cairo').diff(discount.startDate) > 0;
+
+    if (discountEnded || !discountStarted) {
+      throw new Error('Discount is not valid');
+    }
+    return discount;
   }
 
   async paginateCampRegistrations(input: PaginateCampRegistrationsInput) {
@@ -1123,6 +1141,127 @@ export class CampRegistrationService {
     return `This action removes a #${id} campRegistration`;
   }
 
+  async update(input: UpdateCampRegistrationInput) {
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      /// get old registration
+      const campRegistration = await queryRunner.manager.findOne(
+        CampRegistration,
+        {
+          where: { id: input.id },
+          relations: [
+            'camp',
+            'campVariantRegistrations',
+            'campVariantRegistrations',
+          ],
+        },
+      );
+
+      if (!campRegistration) {
+        throw new Error('Camp registration not found');
+      }
+      if (
+        campRegistration.status === CampRegistrationStatus.idle ||
+        (campRegistration.status === CampRegistrationStatus.pending &&
+          campRegistration.paymentMethod === PaymentMethod.cash)
+      ) {
+        return this.handleIdleCampUpdate(input, campRegistration, queryRunner);
+      }
+
+      return this.handlePaidCampUpdate(input, campRegistration, queryRunner);
+    } catch (e) {
+      await queryRunner.rollbackTransaction();
+      console.log(e);
+      return {
+        success: false,
+        message: e,
+      };
+    } finally {
+      queryRunner.release();
+    }
+  }
+
+  async handlePaidCampUpdate(
+    input: UpdateCampRegistrationInput,
+    campRegistration: CampRegistration,
+    queryRunner: QueryRunner,
+  ) {
+    let existingVariants = campRegistration.campVariantRegistrations;
+    let variantsToUpdate: UpdateCampVariantRegistrationInput[] = [];
+    let variantsToInsert: CreateCampVariantRegistrationInput[] = [];
+    let variantsToDelete: number[] = [];
+    let campVariantIds: number[] = [];
+
+    if (input.campVariantRegistrations?.length) {
+      for (const variant of input.campVariantRegistrations) {
+        const existing = existingVariants.find(
+          (e) =>
+            e.childId == variant.childId &&
+            e.campVariantId == variant.campVariantId,
+        );
+        if (existing) {
+          if (
+            (variant.withMeal && !existing.mealPrice) ||
+            (!variant.withMeal && existing.mealPrice)
+          ) {
+            variantsToUpdate.push({
+              id: existing.id,
+              ...variant,
+            });
+          }
+        } else {
+          variantsToInsert.push(variant);
+        }
+      }
+    }
+
+    variantsToDelete = existingVariants
+      .filter((e) => {
+        return !input.campVariantRegistrations?.find(
+          (i) => i.childId == e.childId && i.campVariantId == e.campVariantId,
+        );
+      })
+      .map((e) => e.id);
+
+    existingVariants = existingVariants.filter((e) => {
+      return (
+        !variantsToUpdate.find((v) => v.id == e.id) &&
+        !variantsToDelete.find((v) => v == e.id) &&
+        !variantsToInsert.find(
+          (v) => v.childId == e.childId && v.campVariantId == e.campVariantId,
+        )
+      );
+    });
+
+    let discount: Discount = undefined;
+
+    if (input.discountId || campRegistration.discountId) {
+      discount = await this.findDiscount(
+        input.discountId ?? campRegistration.discountId,
+        queryRunner,
+      );
+    }
+
+    campVariantIds = [
+      ...variantsToUpdate.map((e) => e.campVariantId),
+      ...variantsToInsert.map((e) => e.campVariantId),
+      ...existingVariants.map((e) => e.campVariantId),
+    ];
+
+    const campVariants = await queryRunner.manager.find(CampVariant, {
+      where: { id: In(campVariantIds) },
+      lock: { mode: 'pessimistic_write' },
+    });
+    if (campVariants.length !== campVariantIds.length) {
+      throw new Error('Invalid camp week reference');
+    }
+
+    throw new Error('Not implemented');
+  }
+
   setPaymentTimoout(paymentId: number) {
     const timeout = 11 * 60 * 1000; // 11 minutes
     setTimeout(async () => {
@@ -1195,5 +1334,35 @@ export class CampRegistrationService {
         queryRunner.release();
       }
     }, timeout);
+  }
+
+  async test() {
+    const campRegistration = await this.repo.findOne({
+      where: { id: 4 },
+      relations: [
+        'campVariantRegistrations',
+        'parent',
+        'campVariantRegistrations.child',
+        'campVariantRegistrations.campVariant',
+      ],
+    });
+
+    if (!campRegistration) {
+      throw new Error('Camp registration not found');
+    }
+
+    const htmlContent = generateCampRegistrationEmail({
+      registration: campRegistration,
+      qrCodeUrl:
+        'https://beyond-egypt.s3.amazonaws.com/91895637-f3ee-4cb5-8a28-f6d78c362219.png',
+    });
+    const response = await this.mailService.sendMail({
+      to: 'steveroseik@gmail.com',
+      subject: 'New Camp Registration',
+      text: 'Helloo',
+      html: htmlContent,
+    });
+
+    return response;
   }
 }
