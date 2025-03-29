@@ -39,6 +39,7 @@ import { MailService } from 'src/mail/mail.service';
 import { generateCampRegistrationEmail } from 'src/mail/templates/camp-registration-confirmation';
 import { UpdateCampRegistrationInput } from './dto/update-camp-registration.input';
 import { UpdateCampVariantRegistrationInput } from 'src/camp-variant-registration/dto/update-camp-variant-registration.input';
+import { ConfirmCampRegistrationInput } from './dto/confirm-camp-registration.input';
 dotenv.config();
 
 @Injectable()
@@ -1260,6 +1261,73 @@ export class CampRegistrationService {
     }
 
     throw new Error('Not implemented');
+  }
+
+  async confirmCampRegistration(
+    input: ConfirmCampRegistrationInput,
+    userId: string,
+  ) {
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      const campRegistration = await this.repo.findOne({
+        where: { id: input.id },
+        relations: ['campVariantRegistrations', 'camp'],
+      });
+
+      if (!campRegistration) {
+        throw new Error('Camp registration not found or incomplete');
+      }
+
+      if (campRegistration.status !== CampRegistrationStatus.pending) {
+        throw new Error('Camp registration already processed');
+      }
+
+      if (campRegistration.refundPolicyConsent === false) {
+        throw new Error('Refund policy consent is required');
+      }
+
+      if (campRegistration.paymentMethod === PaymentMethod.fawry) {
+        throw new Error('Fawry payment is not supported');
+      }
+
+      const campVariantIds = Array.from(
+        new Set(
+          campRegistration.campVariantRegistrations.map((e) => e.campVariantId),
+        ),
+      );
+
+      // Lock the CampVariant records
+      const campVariants = await queryRunner.manager.find(CampVariant, {
+        where: { id: In(campVariantIds) },
+        lock: { mode: 'pessimistic_write' },
+      });
+
+      // Validate if there are enough vacancies
+      const vacancies = new Map<number, number>();
+      for (const cv of campVariants) {
+        const count = campRegistration.campVariantRegistrations.filter(
+          (e) => e.campVariantId === cv.id,
+        ).length;
+        if (cv.remainingCapacity < count) {
+          throw new Error(`Not enough vacancies for ${cv.name}`);
+        }
+        vacancies.set(cv.id, count);
+
+        throw new Error('Not implemented');
+      }
+    } catch (e) {
+      await queryRunner.rollbackTransaction();
+      console.log(e);
+      return {
+        success: false,
+        message: e.message,
+      };
+    } finally {
+      queryRunner.release();
+    }
   }
 
   setPaymentTimoout(paymentId: number) {
