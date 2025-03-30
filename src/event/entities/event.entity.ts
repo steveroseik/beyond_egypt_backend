@@ -68,11 +68,11 @@ export class Event {
   @ManyToMany(() => File, (file) => file.events)
   @JoinTable({
     name: 'event-file',
-    inverseJoinColumn: {
+    joinColumn: {
       name: 'event',
       referencedColumnName: 'id',
     },
-    joinColumn: {
+    inverseJoinColumn: {
       name: 'file',
       referencedColumnName: 'id',
     },

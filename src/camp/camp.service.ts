@@ -227,16 +227,19 @@ export class CampService {
       }
     }
 
-    const newAgeRanges = await queryRunner.manager.insert(
-      AgeRange,
-      input.ageRanges,
-    );
-    if (newAgeRanges.identifiers.length !== input.ageRanges.length) {
-      throw new Error('Failed to insert age ranges');
+    let newAgeRanges: any;
+    if (input.ageRanges?.length) {
+      newAgeRanges = await queryRunner.manager.insert(
+        AgeRange,
+        input.ageRanges,
+      );
+      if (newAgeRanges.identifiers.length !== input.ageRanges.length) {
+        throw new Error('Failed to insert age ranges');
+      }
     }
 
     return [
-      ...newAgeRanges.identifiers.map((ageRange: any) => ageRange.id),
+      ...(newAgeRanges?.identifiers.map((ageRange: any) => ageRange.id) ?? []),
       ...(input.ageRangeIds ?? []),
     ];
   }
