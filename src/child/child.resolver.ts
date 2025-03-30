@@ -70,7 +70,7 @@ export class ChildResolver {
     return child.imageId ? loaders.FilesLoader.load(child.imageId) : null;
   }
 
-  @ResolveField(() => [Allergy])
+  @ResolveField(() => [Allergy], { nullable: true })
   allergies(
     @Parent() child: Child,
     @Context() { loaders }: { loaders: DataloaderRegistry },
