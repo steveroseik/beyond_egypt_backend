@@ -9,6 +9,7 @@ import { buildPaginator } from 'typeorm-cursor-pagination';
 import { Camp } from 'src/camp/entities/camp.entity';
 import { UserType } from 'support/enums';
 import { FileService } from 'src/file/file.service';
+import { Allergy } from 'src/allergy/entities/allergy.entity';
 
 @Injectable()
 export class ChildService {
@@ -133,16 +134,16 @@ export class ChildService {
 
       if (allergiesToAdd?.length) {
         await queryRunner.manager
-          .createQueryBuilder()
-          .relation(Child, 'allergies')
+          .createQueryBuilder(Child, 'child')
+          .relation(Allergy, 'allergies')
           .of(child)
           .add(allergiesToAdd);
       }
 
       if (allergiesToDelete?.length) {
         await queryRunner.manager
-          .createQueryBuilder()
-          .relation(Child, 'allergies')
+          .createQueryBuilder(Child, 'child')
+          .relation(Allergy, 'allergies')
           .of(child)
           .remove(allergiesToDelete);
       }
