@@ -94,7 +94,7 @@ type Child {
   createdAt: DateTime!
   lastModified: DateTime!
   deletedAt: DateTime
-  allergies: [Allergy!]
+  allergies: [Allergy!]!
   campVariantRegistrations: [CampVariantRegistration!]!
   user: User!
   file: File

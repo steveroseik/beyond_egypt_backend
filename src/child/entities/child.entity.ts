@@ -110,23 +110,20 @@ export class Child {
   @Field({ nullable: true })
   deletedAt?: Date;
 
-  @ManyToMany(() => Allergy, (allergy) => allergy.children, {
-    nullable: true,
-    cascade: ['remove'],
-  })
+  @ManyToMany(() => Allergy, (allergy) => allergy.children)
   @JoinTable({
     name: 'child-allergy',
     joinColumn: {
-      name: 'allergy',
+      name: 'childId',
       referencedColumnName: 'id',
     },
     inverseJoinColumn: {
-      name: 'child',
+      name: 'allergyId',
       referencedColumnName: 'id',
     },
   })
-  @Field(() => [Allergy], { nullable: true })
-  allergies?: Allergy[];
+  @Field(() => [Allergy])
+  allergies: Allergy[];
 
   @OneToMany(
     () => CampVariantRegistration,

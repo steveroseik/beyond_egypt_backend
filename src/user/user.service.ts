@@ -347,6 +347,7 @@ export class UserService {
       if (input.childrenToUpdate?.length) {
         const children = await queryRunner.manager.find(Child, {
           where: { id: In(input.childrenToUpdate.map((child) => child.id)) },
+          relations: ['allergies'],
         });
 
         for (const childToUpdate of input.childrenToUpdate) {
