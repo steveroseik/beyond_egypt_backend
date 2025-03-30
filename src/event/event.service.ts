@@ -28,7 +28,7 @@ export class EventService {
         throw new Error('No event was created');
       }
 
-      if (input.fileIds) {
+      if (input.fileIds?.length) {
         await queryRunner.manager
           .createQueryBuilder(Event, 'event')
           .relation(Event, 'files')
@@ -111,7 +111,14 @@ export class EventService {
         input.thumbnailId ||
         input.earlyBirdId
       ) {
-        const update = await queryRunner.manager.update(Event, input.id, input);
+        const update = await queryRunner.manager.update(Event, input.id, {
+          name: input.name,
+          description: input.description,
+          startDate: input.startDate,
+          endDate: input.endDate,
+          thumbnailId: input.thumbnailId,
+          earlyBirdId: input.earlyBirdId,
+        });
 
         if (update.affected === 0) {
           throw new Error('No event was updated');
