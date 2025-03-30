@@ -115,13 +115,15 @@ export class ChildService {
     }
 
     if (input.allergies) {
-      const allergiesToAdd = input.allergies.filter(
-        (allergy) => !child.allergies.find((a) => a.id === allergy),
-      );
+      const allergiesToAdd =
+        input.allergies?.filter(
+          (allergy) => !child.allergies.find((a) => a.id === allergy),
+        ) ?? [];
 
-      const allergiesToDelete = child.allergies.filter(
-        (allergy) => !input.allergies.find((a) => a === allergy.id),
-      );
+      const allergiesToDelete =
+        child.allergies?.filter(
+          (allergy) => !input.allergies.find((a) => a === allergy.id),
+        ) ?? [];
 
       if (allergiesToAdd?.length) {
         await queryRunner.manager
