@@ -116,9 +116,9 @@ export class ChildService {
 
     console.log(
       'child allergies: ',
-      child.allergies.map((e) => e.id),
+      child?.allergies?.map((e) => e.id),
     );
-    console.log('input allergies: ', input.allergies);
+    console.log('input allergies: ', input?.allergies);
 
     if (input.allergies) {
       const allergiesToAdd =
