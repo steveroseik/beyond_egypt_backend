@@ -121,7 +121,7 @@ export class AllergyService {
     return this.dataSource
       .getRepository(Allergy)
       .createQueryBuilder('allergy')
-      .innerJoin('allergy.children', 'child')
+      .innerJoinAndSelect('allergy.children', 'child')
       .where('child.id IN (:...childIds)', { childIds })
       .getMany();
   }
