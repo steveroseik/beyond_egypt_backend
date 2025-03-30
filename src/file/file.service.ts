@@ -68,7 +68,7 @@ export class FileService {
   findFilesByCampIds(keys: readonly number[]) {
     return this.repo
       .createQueryBuilder('file')
-      .leftJoin('file.camps', 'camp')
+      .leftJoinAndSelect('file.camps', 'camp')
       .where('camp.id IN (:...keys)', { keys })
       .getMany();
   }
@@ -76,7 +76,7 @@ export class FileService {
   findFilesByEventIds(keys: readonly number[]) {
     return this.repo
       .createQueryBuilder('file')
-      .leftJoin('file.events', 'event')
+      .leftJoinAndSelect('file.events', 'event')
       .where('event.id IN (:...keys)', { keys })
       .getMany();
   }
