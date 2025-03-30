@@ -935,7 +935,7 @@ export class CampRegistrationService {
 
     const payment = await queryRunner.manager.save(RegistrationPayment, {
       campRegistrationId: campRegistration.id,
-      amount: totalAmount,
+      amount: totalAmount?.toFixed(moneyFixation),
       paymentMethod: PaymentMethod.fawry,
       userId,
     });
@@ -1075,7 +1075,7 @@ export class CampRegistrationService {
 
     const payment = await queryRunner.manager.save(RegistrationPayment, {
       campRegistrationId: campRegistration.id,
-      amount: totalAmount,
+      amount: totalAmount?.toFixed(moneyFixation),
       paymentMethod,
       userId,
       receipt: key,
