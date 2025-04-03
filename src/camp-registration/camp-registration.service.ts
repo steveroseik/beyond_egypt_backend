@@ -1169,16 +1169,24 @@ export class CampRegistrationService {
         (campRegistration.status === CampRegistrationStatus.pending &&
           campRegistration.paymentMethod === PaymentMethod.cash)
       ) {
-        return this.handleIdleCampUpdate(input, campRegistration, queryRunner);
+        return await this.handleIdleCampUpdate(
+          input,
+          campRegistration,
+          queryRunner,
+        );
       }
 
-      return this.handlePaidCampUpdate(input, campRegistration, queryRunner);
+      return await this.handlePaidCampUpdate(
+        input,
+        campRegistration,
+        queryRunner,
+      );
     } catch (e) {
       await queryRunner.rollbackTransaction();
       console.log(e);
       return {
         success: false,
-        message: e,
+        message: e.message,
       };
     } finally {
       queryRunner.release();
@@ -1237,14 +1245,16 @@ export class CampRegistrationService {
       );
     });
 
-    let discount: Discount = undefined;
+    let oldDiscount: Discount = undefined;
+    let newDiscount: Discount = null;
 
-    if (input.discountId || campRegistration.discountId) {
-      discount = await this.findDiscount(
-        input.discountId ?? campRegistration.discountId,
-        queryRunner,
-      );
-    }
+    newDiscount =
+      input.discountId &&
+      (await this.findDiscount(input.discountId, queryRunner));
+
+    oldDiscount =
+      campRegistration.discountId &&
+      (await this.findDiscount(campRegistration.discountId, queryRunner));
 
     campVariantIds = [
       ...variantsToUpdate.map((e) => e.campVariantId),
@@ -1260,7 +1270,89 @@ export class CampRegistrationService {
       throw new Error('Invalid camp week reference');
     }
 
+    if (!oldDiscount && !newDiscount) {
+      // first flow
+    }
+
+    if (oldDiscount && !newDiscount) {
+      // second flow
+      await this.validateVacancies(variantsToInsert, queryRunner);
+    }
+
+    if (!oldDiscount && newDiscount) {
+      // third flow
+    }
+
+    // fourth flow
+
+    if (oldDiscount?.isValid && newDiscount) {
+      throw Error('Cannot add new discount, old discount is still valid');
+    }
+
     throw new Error('Not implemented');
+  }
+
+  /// validate if there are enough vacancies
+  async getMoneyDifference(
+    input: UpdateCampRegistrationInput,
+    campRegistration: CampRegistration,
+    campVariants: CampVariant[],
+    queryRunner: QueryRunner,
+  ) {
+    /// get total of paid amount
+    const response = await queryRunner.manager
+      .createQueryBuilder(RegistrationPayment, 'registrationPayment')
+      .select('SUM(amount) as paidAmount')
+      .where({ status: PaymentStatus.paid, campRegistrationId: input.id })
+      .getRawOne();
+
+    const paidAmount = new Decimal(`${response.paidAmount ?? 0}`);
+  }
+
+  async validateVacancies(
+    campVariantRegistrations: CreateCampVariantRegistrationInput[],
+    queryRunner: QueryRunner,
+  ) {
+    const campVariantVacancies = new Map<number, number>();
+
+    for (const cvr of campVariantRegistrations) {
+      // validate if there are no duplicate registrations
+      const existing = campVariantRegistrations.filter(
+        (e) =>
+          e.childId === cvr.childId && e.campVariantId == cvr.campVariantId,
+      );
+      if (existing.length > 1) {
+        throw new Error('Duplicate camp variant registration');
+      }
+
+      // update camp variant count
+      if (!campVariantVacancies.has(cvr.campVariantId)) {
+        campVariantVacancies.set(cvr.campVariantId, 1);
+      } else {
+        campVariantVacancies.set(
+          cvr.campVariantId,
+          campVariantVacancies.get(cvr.campVariantId) + 1,
+        );
+      }
+    }
+
+    const campVariantIds = Array.from(campVariantVacancies.keys());
+    const campVariants = await queryRunner.manager.find(CampVariant, {
+      where: { id: In(campVariantIds) },
+      lock: { mode: 'pessimistic_write' },
+    });
+
+    if (campVariants.length !== campVariantIds.length) {
+      throw new Error('Invalid camp week reference');
+    }
+
+    for (const cv of campVariants) {
+      if (campVariantVacancies.get(cv.id) > cv.remainingCapacity) {
+        throw new Error(`Not enough vacancies for ${cv.name} (${cv.campId})`);
+      }
+    }
+
+    return campVariantVacancies;
   }
 
   async confirmCampRegistration(

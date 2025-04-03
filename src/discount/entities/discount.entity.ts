@@ -1,5 +1,6 @@
 import { ObjectType, Field, Int } from '@nestjs/graphql';
 import BigNumber from 'bignumber.js';
+import moment from 'moment-timezone';
 import { RegistrationHistory } from 'src/registration-history/entities/registration-history.entity';
 import { moneyFixation } from 'support/constants';
 import { Decimal, GraphqlDecimal } from 'support/scalars';
@@ -99,6 +100,13 @@ export class Discount {
   @DeleteDateColumn({ name: 'deletedAt', precision: 3 })
   @Field({ nullable: true })
   deletedAt?: Date;
+
+  isValid = (): boolean => {
+    const now = moment.tz('Africa/Cairo');
+    const startDiff = now.diff(this.startDate, 'seconds');
+    const endDiff = now.diff(this.endDate, 'seconds');
+    return startDiff >= 0 && endDiff <= 0;
+  };
 
   // @ManyToMany(
   //   () => RegistrationHistory,

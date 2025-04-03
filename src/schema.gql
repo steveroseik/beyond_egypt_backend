@@ -997,6 +997,8 @@ input UpdateCampRegistrationInput {
   discountId: Int
   oneDayPrice: Decimal
   paymentMethod: PaymentMethod
+  behaviorConsent: Boolean
+  refundPolicyConsent: Boolean
   campVariantRegistrations: [CreateCampVariantRegistrationInput!]
 }
 
