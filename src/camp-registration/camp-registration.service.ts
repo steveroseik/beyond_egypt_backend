@@ -33,7 +33,7 @@ import { Base64Image } from 'support/shared/base64Image.object';
 import { AwsBucketService } from 'src/aws-bucket/aws-bucket.service';
 import { generateMerchantRefNumber } from 'support/random-uuid.generator';
 import { Discount } from 'src/discount/entities/discount.entity';
-import { max, min } from 'lodash';
+import { difference, max, min } from 'lodash';
 import { Camp } from 'src/camp/entities/camp.entity';
 import { MailService } from 'src/mail/mail.service';
 import { generateCampRegistrationEmail } from 'src/mail/templates/camp-registration-confirmation';
@@ -223,14 +223,18 @@ export class CampRegistrationService {
     queryRunner,
     oneDayPrice,
     existingRegistrations,
+    updatedRegistrations,
     discount,
+    overwriteExisting = true,
   }: {
     campVariantRegistrations?: CreateCampVariantRegistrationInput[];
     campRegistration: CampRegistration;
     queryRunner: QueryRunner;
     oneDayPrice?: Decimal;
     existingRegistrations?: CampVariantRegistration[];
+    updatedRegistrations?: CampVariantRegistration[];
     discount?: Discount;
+    overwriteExisting?: boolean;
   }): Promise<Decimal | null> {
     if (!campVariantRegistrations?.length && !existingRegistrations?.length) {
       console.log('Failed to find data to calculate within');
@@ -326,9 +330,18 @@ export class CampRegistrationService {
       throw new Error('Failed to insert camp variant registrations');
     }
 
+    let totalPrice: Decimal = new Decimal('0');
+
+    const newInsertsPrice = this.calculateCampVariantRegistrationPrice(
+      campVariants,
+      inserts,
+    );
+
+    totalPrice = totalPrice.plus(newInsertsPrice);
+
     if (existingRegistrations?.length) {
       // update existing registration discounts
-      if (discount) {
+      if (discount && overwriteExisting) {
         for (const registration of existingRegistrations) {
           // only if discount is different change the discount
           if (registration.discountId !== discount.id) {
@@ -374,17 +387,19 @@ export class CampRegistrationService {
         existingRegistrations,
       );
 
-      const newPrice = this.calculateCampVariantRegistrationPrice(
-        campVariants,
-        inserts,
-      );
-
-      return existingPrice.plus(newPrice);
+      totalPrice = totalPrice.plus(existingPrice);
     }
 
-    return oneDayPrice
-      ? oneDayPrice
-      : this.calculateCampVariantRegistrationPrice(campVariants, inserts);
+    if (updatedRegistrations?.length) {
+      totalPrice = totalPrice.plus(
+        this.calculateCampVariantRegistrationPrice(
+          campVariants,
+          updatedRegistrations,
+        ),
+      );
+    }
+
+    return oneDayPrice ? oneDayPrice : totalPrice;
   }
 
   calculateCampVariantRegistrationPrice(
@@ -393,9 +408,12 @@ export class CampRegistrationService {
   ): Decimal {
     let totalPrice = new Decimal('0');
 
-    for (const registration of campVariantRegistrations as CampVariantRegistration[]) {
-      const cvr = campVariants.find((e) => e.id === registration.campVariantId);
-      totalPrice = totalPrice.plus(cvr.price.plus(registration.mealPrice ?? 0));
+    for (const registration of campVariantRegistrations) {
+      const totalRegistrationPrice = registration.price
+        .plus(registration.mealPrice ?? 0)
+        .minus(registration.variantDiscount ?? 0)
+        .minus(registration.mealDiscount ?? 0);
+      totalPrice = totalPrice.plus(totalRegistrationPrice);
     }
     return totalPrice;
   }
@@ -590,6 +608,21 @@ export class CampRegistrationService {
       // reset all payments
       await this.resetCampPaymentMethod(campRegistration, queryRunner);
 
+      if (
+        campRegistration.paymentMethod === PaymentMethod.cash ||
+        input.paymentMethod === PaymentMethod.cash
+      ) {
+        const payment = await queryRunner.manager.save(RegistrationPayment, {
+          campRegistrationId: campRegistration.id,
+          amount: total.toFixed(moneyFixation),
+          paymentMethod: PaymentMethod.cash,
+        });
+
+        if (!payment) {
+          throw new Error('Failed to create payment record');
+        }
+      }
+
       await queryRunner.commitTransaction();
 
       return {
@@ -680,7 +713,11 @@ export class CampRegistrationService {
     return expirePayments;
   }
 
-  async findDiscount(id: number, queryRunner: QueryRunner): Promise<Discount> {
+  async findDiscount(
+    id: number,
+    queryRunner: QueryRunner,
+    validate: boolean = true,
+  ): Promise<Discount> {
     const discount = await queryRunner.manager.findOne(Discount, {
       where: { id },
     });
@@ -689,13 +726,15 @@ export class CampRegistrationService {
       throw new Error('Discount not found');
     }
 
-    const discountEnded =
-      moment().tz('Africa/Cairo').diff(discount.endDate) < 0;
-    const discountStarted =
-      moment().tz('Africa/Cairo').diff(discount.startDate) > 0;
+    if (validate) {
+      const discountEnded =
+        moment().tz('Africa/Cairo').diff(discount.endDate) < 0;
+      const discountStarted =
+        moment().tz('Africa/Cairo').diff(discount.startDate) > 0;
 
-    if (discountEnded || !discountStarted) {
-      throw new Error('Discount is not valid');
+      if (discountEnded || !discountStarted) {
+        throw new Error(`Discount is not valid`);
+      }
     }
     return discount;
   }
@@ -1169,6 +1208,7 @@ export class CampRegistrationService {
         (campRegistration.status === CampRegistrationStatus.pending &&
           campRegistration.paymentMethod === PaymentMethod.cash)
       ) {
+        /// handle if cash to remove old
         return await this.handleIdleCampUpdate(
           input,
           campRegistration,
@@ -1199,9 +1239,12 @@ export class CampRegistrationService {
     queryRunner: QueryRunner,
   ) {
     let existingVariants = campRegistration.campVariantRegistrations;
-    let variantsToUpdate: UpdateCampVariantRegistrationInput[] = [];
+    let variantsToUpdate: {
+      variant: CampVariantRegistration;
+      update: UpdateCampVariantRegistrationInput;
+    }[] = [];
     let variantsToInsert: CreateCampVariantRegistrationInput[] = [];
-    let variantsToDelete: number[] = [];
+    let variantsToDelete: CampVariantRegistration[] = [];
     let campVariantIds: number[] = [];
 
     if (input.campVariantRegistrations?.length) {
@@ -1217,8 +1260,8 @@ export class CampRegistrationService {
             (!variant.withMeal && existing.mealPrice)
           ) {
             variantsToUpdate.push({
-              id: existing.id,
-              ...variant,
+              variant: existing,
+              update: { id: existing.id, ...variant },
             });
           }
         } else {
@@ -1227,18 +1270,16 @@ export class CampRegistrationService {
       }
     }
 
-    variantsToDelete = existingVariants
-      .filter((e) => {
-        return !input.campVariantRegistrations?.find(
-          (i) => i.childId == e.childId && i.campVariantId == e.campVariantId,
-        );
-      })
-      .map((e) => e.id);
+    variantsToDelete = existingVariants.filter((e) => {
+      return !input.campVariantRegistrations?.find(
+        (i) => i.childId == e.childId && i.campVariantId == e.campVariantId,
+      );
+    });
 
     existingVariants = existingVariants.filter((e) => {
       return (
-        !variantsToUpdate.find((v) => v.id == e.id) &&
-        !variantsToDelete.find((v) => v == e.id) &&
+        !variantsToUpdate.find((v) => v.variant.id == e.id) &&
+        !variantsToDelete.find((v) => v.id == e.id) &&
         !variantsToInsert.find(
           (v) => v.childId == e.childId && v.campVariantId == e.campVariantId,
         )
@@ -1250,14 +1291,18 @@ export class CampRegistrationService {
 
     newDiscount =
       input.discountId &&
-      (await this.findDiscount(input.discountId, queryRunner));
+      (await this.findDiscount(input.discountId, queryRunner, false));
 
     oldDiscount =
       campRegistration.discountId &&
-      (await this.findDiscount(campRegistration.discountId, queryRunner));
+      (await this.findDiscount(
+        campRegistration.discountId,
+        queryRunner,
+        false,
+      ));
 
     campVariantIds = [
-      ...variantsToUpdate.map((e) => e.campVariantId),
+      ...variantsToUpdate.map((e) => e.variant.campVariantId),
       ...variantsToInsert.map((e) => e.campVariantId),
       ...existingVariants.map((e) => e.campVariantId),
     ];
@@ -1270,49 +1315,367 @@ export class CampRegistrationService {
       throw new Error('Invalid camp week reference');
     }
 
+    // first flow
+    // no-discount flow
     if (!oldDiscount && !newDiscount) {
-      // first flow
+      await this.validateVacancies(queryRunner, variantsToInsert);
+
+      // update variants
+      const updatedVariants = await this.updatePaidCampVariantRegistrations({
+        input: variantsToUpdate,
+        queryRunner,
+        mealPrice: campRegistration.camp.mealPrice,
+      });
+
+      if (updatedVariants.length !== variantsToUpdate.length) {
+        throw new Error('Failed to update camp variant registrations');
+      }
+
+      //delete variants
+      await this.deleteCampVariantRegistrations(variantsToDelete, queryRunner);
+
+      // insert new variants and get total price
+      const newTotalPrice = await this.handleCampVariantRegistrations({
+        campVariantRegistrations: variantsToInsert,
+        campRegistration,
+        queryRunner,
+        existingRegistrations: existingVariants,
+        updatedRegistrations: updatedVariants,
+        overwriteExisting: false,
+      });
+
+      return await this.updateMoneyDifference(
+        campRegistration,
+        newTotalPrice,
+        queryRunner,
+      );
     }
 
+    // second flow
     if (oldDiscount && !newDiscount) {
-      // second flow
-      await this.validateVacancies(variantsToInsert, queryRunner);
+      await this.validateVacancies(queryRunner, variantsToInsert);
+
+      // update variants
+      const updatedVariants = await this.updatePaidCampVariantRegistrations({
+        input: variantsToUpdate,
+        queryRunner,
+        mealPrice: campRegistration.camp.mealPrice,
+        discounts: [oldDiscount],
+      });
+
+      if (updatedVariants.length !== variantsToUpdate.length) {
+        throw new Error('Failed to update camp variant registrations');
+      }
+
+      //delete variants
+      await this.deleteCampVariantRegistrations(variantsToDelete, queryRunner);
+
+      // insert new variants and get total price
+      const newTotalPrice = await this.handleCampVariantRegistrations({
+        campVariantRegistrations: variantsToInsert,
+        campRegistration,
+        queryRunner,
+        discount: oldDiscount.isValid() ? oldDiscount : null,
+        existingRegistrations: existingVariants,
+        updatedRegistrations: updatedVariants,
+        overwriteExisting: false,
+      });
+
+      return await this.updateMoneyDifference(
+        campRegistration,
+        newTotalPrice,
+        queryRunner,
+        oldDiscount,
+      );
     }
 
+    // third flow
     if (!oldDiscount && newDiscount) {
-      // third flow
+      if (!newDiscount.isValid()) {
+        throw new Error('Discount is not valid');
+      }
+
+      if (newDiscount?.amount) {
+        throw new Error(
+          'Only Percentage discounts are not allowed for paid registrations',
+        );
+      }
+
+      if (newDiscount?.percentage) {
+        /// apply discount on new camps only
+        await this.validateVacancies(queryRunner, variantsToInsert);
+
+        /// update variants
+        const updatedVariants = await this.updatePaidCampVariantRegistrations({
+          input: variantsToUpdate,
+          queryRunner,
+          mealPrice: campRegistration.camp.mealPrice,
+          discounts: [newDiscount],
+        });
+
+        if (updatedVariants.length !== variantsToUpdate.length) {
+          throw new Error('Failed to update camp variant registrations');
+        }
+
+        //delete variants
+
+        await this.deleteCampVariantRegistrations(
+          variantsToDelete,
+          queryRunner,
+        );
+
+        const newTotalPrice = await this.handleCampVariantRegistrations({
+          campVariantRegistrations: variantsToInsert,
+          campRegistration,
+          queryRunner,
+          discount: newDiscount,
+          updatedRegistrations: updatedVariants,
+          existingRegistrations: existingVariants,
+          overwriteExisting: false,
+        });
+
+        return await this.updateMoneyDifference(
+          campRegistration,
+          newTotalPrice,
+          queryRunner,
+          newDiscount,
+        );
+      }
+
+      throw new Error(
+        'Unknow error occured, make sure discount is valid with percentage',
+      );
     }
 
     // fourth flow
-
-    if (oldDiscount?.isValid && newDiscount) {
-      throw Error('Cannot add new discount, old discount is still valid');
+    // overwrite all
+    if (oldDiscount?.isValid() && newDiscount) {
+      if (oldDiscount.id !== newDiscount.id) {
+        throw Error('Cannot add new discount, old discount is still valid');
+      }
     }
 
-    throw new Error('Not implemented');
+    // update variants
+    const updatedVariants = await this.updatePaidCampVariantRegistrations({
+      input: variantsToUpdate,
+      queryRunner,
+      mealPrice: campRegistration.camp.mealPrice,
+      discounts: [newDiscount],
+      overwrite: true,
+    });
+
+    if (updatedVariants.length !== variantsToUpdate.length) {
+      throw new Error('Failed to update camp variant registrations');
+    }
+
+    //delete variants
+    await this.deleteCampVariantRegistrations(variantsToDelete, queryRunner);
+
+    // insert new variants and get total price
+    const newTotalPrice = await this.handleCampVariantRegistrations({
+      campVariantRegistrations: variantsToInsert,
+      campRegistration,
+      queryRunner,
+      discount: newDiscount,
+      existingRegistrations: existingVariants,
+      updatedRegistrations: updatedVariants,
+      overwriteExisting: true,
+    });
+
+    return await this.updateMoneyDifference(
+      campRegistration,
+      newTotalPrice,
+      queryRunner,
+      newDiscount,
+    );
   }
 
-  /// validate if there are enough vacancies
-  async getMoneyDifference(
-    input: UpdateCampRegistrationInput,
-    campRegistration: CampRegistration,
-    campVariants: CampVariant[],
+  async updatePaidCampVariantRegistrations({
+    input,
+    queryRunner,
+    mealPrice,
+    discounts,
+    overwrite = false,
+  }: {
+    input: {
+      variant: CampVariantRegistration;
+      update: UpdateCampVariantRegistrationInput;
+    }[];
+    queryRunner: QueryRunner;
+    mealPrice?: Decimal;
+    discounts?: Discount[];
+    overwrite?: boolean;
+  }): Promise<CampVariantRegistration[]> {
+    if (!input?.length) return [];
+
+    let updatedVariants: CampVariantRegistration[] = [];
+
+    for (const { variant, update } of input) {
+      // find appropriate discount
+      let discount = overwrite
+        ? discounts[0]
+        : discounts?.find((e) => e.id == variant.discountId);
+      if (!discount && variant.discountId) {
+        discount = await this.findDiscount(
+          variant.discountId,
+          queryRunner,
+          false,
+        );
+        if (!discount) {
+          throw new Error(
+            'Discount not found for camp week, make sure the discount still exists',
+          );
+        }
+        discounts.push(discount);
+      }
+
+      const basePrice = variant.price;
+      const baseMealPrice = update.withMeal ? mealPrice : null;
+
+      let priceDiscount: Decimal = null;
+      let mealDiscount: Decimal = null;
+      if (discount && discount.percentage) {
+        if (discount.percentage) {
+          priceDiscount = min([
+            discount.percentage.multipliedBy(basePrice),
+            discount.maximumDiscount,
+          ]);
+
+          mealDiscount = baseMealPrice
+            ? min([
+                discount.percentage.multipliedBy(baseMealPrice),
+                discount.maximumDiscount,
+              ])
+            : null;
+        }
+      }
+
+      // handle update
+      let newVariant: CampVariantRegistration = {
+        ...variant,
+        shirtSize: update.shirtSize,
+        discountId: discount.id,
+        price: basePrice,
+        variantDiscount: priceDiscount,
+        mealPrice: baseMealPrice,
+        mealDiscount: mealDiscount,
+      };
+
+      const updateVariant = await queryRunner.manager.save(
+        CampVariantRegistration,
+        newVariant,
+      );
+
+      if (!updateVariant) {
+        throw new Error('Failed to update camp variant registration');
+      }
+      updatedVariants.push(updateVariant);
+    }
+
+    return updatedVariants;
+  }
+
+  async getSumOfPaidAmounts(
+    campRegistrationId: number,
     queryRunner: QueryRunner,
-  ) {
-    /// get total of paid amount
+  ): Promise<Decimal> {
     const response = await queryRunner.manager
       .createQueryBuilder(RegistrationPayment, 'registrationPayment')
       .select('SUM(amount) as paidAmount')
-      .where({ status: PaymentStatus.paid, campRegistrationId: input.id })
+      .where({ status: PaymentStatus.paid, campRegistrationId })
       .getRawOne();
 
-    const paidAmount = new Decimal(`${response.paidAmount ?? 0}`);
+    return new Decimal(`${response.paidAmount ?? 0}`);
   }
 
-  async validateVacancies(
-    campVariantRegistrations: CreateCampVariantRegistrationInput[],
+  async updateMoneyDifference(
+    campRegistration: CampRegistration,
+    newTotalPrice: Decimal,
+    queryRunner: QueryRunner,
+    discount?: Discount,
+  ) {
+    /// get total of paid amount
+
+    const paidAmount = await this.getSumOfPaidAmounts(
+      campRegistration.id,
+      queryRunner,
+    );
+    const discountAmount = new Decimal(`${discount.amount ?? 0}`);
+    newTotalPrice = newTotalPrice.minus(discountAmount);
+    const difference = newTotalPrice.minus(paidAmount);
+
+    const updateCampRegistration = await queryRunner.manager.update(
+      CampRegistration,
+      { id: campRegistration.id },
+      {
+        discountId: discount?.id,
+        discountAmount: discountAmount.toFixed(moneyFixation),
+        amount: newTotalPrice.toFixed(moneyFixation),
+        paidAmount: paidAmount.toFixed(moneyFixation),
+      },
+    );
+
+    if (updateCampRegistration.affected !== 1) {
+      throw new Error('Failed to update camp registration');
+    }
+
+    await queryRunner.commitTransaction();
+    return {
+      success: true,
+      message: 'Camp registration updated successfully',
+      data: {
+        totalAmount: newTotalPrice?.toFixed(moneyFixation),
+        paidAmount: paidAmount?.toFixed(moneyFixation),
+        amountToBePaid: difference?.toFixed(moneyFixation),
+      },
+    };
+  }
+
+  /// delete variant and return vacancies
+  async deleteCampVariantRegistrations(
+    variantsToDelete: CampVariantRegistration[],
     queryRunner: QueryRunner,
   ) {
+    if (!variantsToDelete?.length) return;
+
+    const campVariantIds = Array.from(
+      new Set(variantsToDelete.map((e) => e.campVariantId)),
+    );
+
+    for (const cv of campVariantIds) {
+      const count = variantsToDelete.filter(
+        (e) => e.campVariantId == cv,
+      ).length;
+      const update = await queryRunner.manager.update(
+        CampVariant,
+        { id: cv },
+        {
+          remainingCapacity: () => `remainingCapacity + ${count}`,
+        },
+      );
+      if (update.affected !== 1) {
+        throw new Error('Failed to update camp variant registration');
+      }
+    }
+
+    const deletedVariants = await queryRunner.manager.delete(
+      CampVariantRegistration,
+      {
+        id: In(variantsToDelete.map((e) => e.id)),
+      },
+    );
+
+    if (deletedVariants.affected !== variantsToDelete.length) {
+      throw new Error('Failed to delete camp variant registrations');
+    }
+  }
+
+  /// validate if there are enough vacancies
+  async validateVacancies(
+    queryRunner: QueryRunner,
+    campVariantRegistrations?: CreateCampVariantRegistrationInput[],
+  ): Promise<Map<number, number> | null> {
+    if (!campVariantRegistrations?.length) return null;
     const campVariantVacancies = new Map<number, number>();
 
     for (const cvr of campVariantRegistrations) {
@@ -1369,6 +1732,19 @@ export class CampRegistrationService {
         relations: ['campVariantRegistrations', 'camp'],
       });
 
+      const amountToBePaid = campRegistration.amount
+        .minus(campRegistration.discountAmount)
+        .minus(campRegistration.paidAmount);
+
+      if (!input.paidAmount.eq(amountToBePaid)) {
+        throw new Error(
+          'Paid amount is not equal to the total amount to be paid',
+        );
+      }
+
+      const paymentMethod =
+        input.paymentMethod ?? campRegistration.paymentMethod;
+
       if (!campRegistration) {
         throw new Error('Camp registration not found or incomplete');
       }
@@ -1381,8 +1757,57 @@ export class CampRegistrationService {
         throw new Error('Refund policy consent is required');
       }
 
-      if (campRegistration.paymentMethod === PaymentMethod.fawry) {
+      if (paymentMethod === PaymentMethod.fawry) {
         throw new Error('Fawry payment is not supported');
+      }
+
+      const payments = await queryRunner.manager.find(RegistrationPayment, {
+        where: {
+          campRegistrationId: campRegistration.id,
+          status: PaymentStatus.pending,
+        },
+        lock: { mode: 'pessimistic_write' },
+      });
+
+      let payment: RegistrationPayment = undefined;
+
+      if (payments?.length > 1) {
+        throw new Error('Invalid number of payments, revisit implementation');
+      }
+
+      if (!payments?.length) {
+        if (
+          paymentMethod == PaymentMethod.instapay &&
+          (!input.receipt || !input.referenceNumber)
+        ) {
+          throw new Error(
+            'Receipt & reference number are required for Instapay payment',
+          );
+        }
+      } else {
+        payment = payments[0];
+
+        if (!payment.amount.eq(amountToBePaid)) {
+          throw new Error(
+            'Invoice amount is not equal to the total amount to be paid',
+          );
+        }
+      }
+
+      let receipt: string = undefined;
+
+      if (input.receipt) {
+        const response = await this.awsService.uploadSingleFileFromBase64({
+          base64File: input.receipt.base64,
+          fileName: input.receipt.name,
+          isPublic: true,
+        });
+
+        if (!response.success || !response.key) {
+          throw Error('Failed to upload receipt');
+        }
+
+        receipt = response.key;
       }
 
       const campVariantIds = Array.from(
@@ -1407,9 +1832,81 @@ export class CampRegistrationService {
           throw new Error(`Not enough vacancies for ${cv.name}`);
         }
         vacancies.set(cv.id, count);
-
-        throw new Error('Not implemented');
       }
+
+      /// handle payment
+
+      if (payment) {
+        const updatePayment = await queryRunner.manager.update(
+          RegistrationPayment,
+          { id: payment.id },
+          {
+            status: PaymentStatus.paid,
+            receipt,
+            referenceNumber: input.referenceNumber,
+          },
+        );
+
+        if (updatePayment.affected !== 1) {
+          throw new Error('Failed to update registration payment');
+        }
+      } else {
+        payment = await queryRunner.manager.save(RegistrationPayment, {
+          campRegistrationId: campRegistration.id,
+          amount: amountToBePaid.toFixed(moneyFixation),
+          paymentMethod,
+          userId,
+          receipt,
+          referenceNumber: input.referenceNumber,
+          status: PaymentStatus.paid,
+        });
+
+        if (!payment) {
+          throw Error('Failed to create payment record');
+        }
+      }
+
+      // find all paid amount
+      const paidAmount = await this.getSumOfPaidAmounts(
+        campRegistration.id,
+        queryRunner,
+      );
+
+      // handle campRegistration
+      const updateCampRegistration = await queryRunner.manager.update(
+        CampRegistration,
+        { id: campRegistration.id },
+        {
+          status: CampRegistrationStatus.accepted,
+          paymentMethod,
+          paidAmount,
+        },
+      );
+
+      if (updateCampRegistration.affected !== 1) {
+        throw new Error('Failed to update camp registration');
+      }
+
+      // deduct vacancies
+      for (const [key, value] of vacancies) {
+        const update = await queryRunner.manager.update(
+          CampVariant,
+          { id: key },
+          { remainingCapacity: () => `remainingCapacity - ${value}` },
+        );
+        if (update.affected !== 1) {
+          const campVariant = campVariants.find((e) => e.id == key);
+          throw Error(
+            `Failed to deduct capacity from ${campVariant.name} (${campRegistration.id})`,
+          );
+        }
+      }
+
+      await queryRunner.commitTransaction();
+      return {
+        success: true,
+        message: 'Camp Registration confirmed & paid successfully',
+      };
     } catch (e) {
       await queryRunner.rollbackTransaction();
       console.log(e);
