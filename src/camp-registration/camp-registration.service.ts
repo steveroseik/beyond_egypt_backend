@@ -408,6 +408,10 @@ export class CampRegistrationService {
   ): Decimal {
     let totalPrice = new Decimal('0');
 
+    if (!campVariantRegistrations?.length) {
+      return totalPrice;
+    }
+
     for (const registration of campVariantRegistrations) {
       const totalRegistrationPrice = registration.price
         .plus(registration.mealPrice ?? 0)

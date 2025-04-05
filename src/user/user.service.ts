@@ -253,7 +253,7 @@ export class UserService {
             throw new Error('Some children not found');
           }
 
-          const deleted = await queryRunner.manager.delete(
+          const deleted = await queryRunner.manager.softDelete(
             Child,
             input.childrenToDelete,
           );

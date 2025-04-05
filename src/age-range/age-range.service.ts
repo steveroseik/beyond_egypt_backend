@@ -90,7 +90,7 @@ export class AgeRangeService {
   findAgeRangesByCampIds(keys: readonly number[]) {
     return this.repo
       .createQueryBuilder('ageRange')
-      .leftJoin('ageRange.camps', 'camp')
+      .leftJoinAndSelect('ageRange.camps', 'camp')
       .where('camp.id IN (:...keys)', { keys })
       .getMany();
   }

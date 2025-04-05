@@ -8,10 +8,16 @@ class AgeRangesByCampDataLoader {
     return new DataLoader<number, AgeRange[]>(
       async (keys: readonly number[]) => {
         const data = await service.findAgeRangesByCampIds(keys);
-        const grouped = _.groupBy(data, 'camp.id');
-        const result = keys.map((key) =>
-          grouped.hasOwnProperty(key) ? grouped[key] : [],
-        );
+        const grouped = new Map<number, AgeRange[]>();
+        data.forEach((item) => {
+          for (const camp of item.camps) {
+            if (!grouped.has(camp.id)) {
+              grouped.set(camp.id, []);
+            }
+            grouped.get(camp.id).push(item);
+          }
+        });
+        const result = keys.map((key) => grouped.get(key) ?? []);
         return result;
       },
     );

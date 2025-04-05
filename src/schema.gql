@@ -187,6 +187,8 @@ type CampRegistration {
   payments: [RegistrationPayment!]!
   camp: Camp!
   parent: User!
+  paid: Boolean!
+  amountDifference: Decimal
 }
 
 enum CampRegistrationStatus {
@@ -1018,7 +1020,10 @@ input Base64Image {
 
 input ConfirmCampRegistrationInput {
   id: Int!
+  paymentMethod: PaymentMethod
   receipt: Base64Image
+  referenceNumber: Int
+  paidAmount: Decimal!
 }
 
 input CreateChildReportInput {
