@@ -1733,8 +1733,8 @@ export class CampRegistrationService {
       });
 
       const amountToBePaid = campRegistration.amount
-        .minus(campRegistration.discountAmount)
-        .minus(campRegistration.paidAmount);
+        .minus(campRegistration.discountAmount ?? 0)
+        .minus(campRegistration.paidAmount ?? 0);
 
       if (!input.paidAmount.eq(amountToBePaid)) {
         throw new Error(
@@ -1744,6 +1744,15 @@ export class CampRegistrationService {
 
       const paymentMethod =
         input.paymentMethod ?? campRegistration.paymentMethod;
+
+      if (
+        input.paymentMethod == PaymentMethod.instapay &&
+        (!input.receipt || !input.referenceNumber)
+      ) {
+        throw new Error(
+          'Receipt & reference number are required for Instapay payment',
+        );
+      }
 
       if (!campRegistration) {
         throw new Error('Camp registration not found or incomplete');
@@ -1775,21 +1784,33 @@ export class CampRegistrationService {
         throw new Error('Invalid number of payments, revisit implementation');
       }
 
-      if (!payments?.length) {
-        if (
-          paymentMethod == PaymentMethod.instapay &&
-          (!input.receipt || !input.referenceNumber)
-        ) {
-          throw new Error(
-            'Receipt & reference number are required for Instapay payment',
+      if (payments?.length === 1) {
+        if (input.paymentMethod) {
+          const expirePayments = await queryRunner.manager.update(
+            RegistrationPayment,
+            { id: payments[0].id },
+            {
+              status: PaymentStatus.expired,
+            },
           );
+          if (expirePayments.affected !== 1) {
+            throw new Error('Failed to expire old payment');
+          }
+        } else {
+          if (payments[0].paymentMethod === PaymentMethod.fawry) {
+            throw new Error('Cannot confirm fawry payments');
+          }
+          payment = payments[0];
+          if (!payment.amount.eq(amountToBePaid)) {
+            throw new Error(
+              'Invoice amount is not equal to the total amount to be paid',
+            );
+          }
         }
       } else {
-        payment = payments[0];
-
-        if (!payment.amount.eq(amountToBePaid)) {
+        if (!input.paymentMethod) {
           throw new Error(
-            'Invoice amount is not equal to the total amount to be paid',
+            'Payment method is required, current registration is still idle',
           );
         }
       }

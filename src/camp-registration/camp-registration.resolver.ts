@@ -24,6 +24,7 @@ import { Camp } from 'src/camp/entities/camp.entity';
 import { User } from 'src/user/entities/user.entity';
 import { UpdateCampRegistrationInput } from './dto/update-camp-registration.input';
 import { ConfirmCampRegistrationInput } from './dto/confirm-camp-registration.input';
+import { GraphqlDecimal } from 'support/scalars';
 
 @Resolver(() => CampRegistration)
 export class CampRegistrationResolver {
@@ -158,6 +159,22 @@ export class CampRegistrationResolver {
     @Context() { loaders }: { loaders: DataloaderRegistry },
   ) {
     return loaders.UsersDataLoader.load(campRegistration.parentId);
+  }
+
+  @ResolveField(() => Boolean)
+  paid(@Parent() campRegistration: CampRegistration) {
+    const diff = campRegistration.amount
+      .minus(campRegistration.discountAmount ?? 0)
+      .minus(campRegistration.paidAmount ?? 0);
+
+    return diff.isLessThanOrEqualTo(0);
+  }
+
+  @ResolveField(() => GraphqlDecimal, { nullable: true })
+  amountDifference(@Parent() campRegistration: CampRegistration) {
+    return campRegistration.amount
+      .minus(campRegistration.discountAmount ?? 0)
+      .minus(campRegistration.paidAmount ?? 0);
   }
 
   @Mutation(() => GraphQLJSONObject, { nullable: true })
