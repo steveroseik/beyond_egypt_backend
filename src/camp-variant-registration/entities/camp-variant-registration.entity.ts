@@ -44,7 +44,14 @@ export class CampVariantRegistration {
     precision: 10,
     scale: 2,
     transformer: {
-      to: (value) => value,
+      to: (value) => {
+        try {
+          return value && value.toFixed(moneyFixation);
+        } catch (e) {
+          console.error('Error in price transformation:', e);
+          throw e;
+        }
+      },
       from: (value?: string) => value && new Decimal(value),
     },
   })
@@ -57,7 +64,7 @@ export class CampVariantRegistration {
     scale: 2,
     nullable: true,
     transformer: {
-      to: (value) => value,
+      to: (value) => value && value.toFixed(moneyFixation),
       from: (value?: string) => value && new Decimal(value),
     },
   })
@@ -74,7 +81,7 @@ export class CampVariantRegistration {
     scale: 2,
     nullable: true,
     transformer: {
-      to: (value) => value,
+      to: (value) => value && value.toFixed(moneyFixation),
       from: (value?: string) => value && new Decimal(value),
     },
   })
@@ -87,7 +94,7 @@ export class CampVariantRegistration {
     scale: 2,
     nullable: true,
     transformer: {
-      to: (value) => value,
+      to: (value) => value && value.toFixed(moneyFixation),
       from: (value?: string) => value && new Decimal(value),
     },
   })

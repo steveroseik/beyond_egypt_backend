@@ -134,9 +134,6 @@ export class CampResolver {
     @Parent() parent: Camp,
     @Context() { loaders }: { loaders: DataloaderRegistry },
   ) {
-    console.log('ageRanges', parent.ageRanges);
-    console.table(parent);
-    console.log('parentId', parent.id);
     return parent.ageRanges?.length
       ? parent.ageRanges
       : loaders.AgeRangesByCampDataLoader.load(parent.id);

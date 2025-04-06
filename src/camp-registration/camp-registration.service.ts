@@ -40,6 +40,7 @@ import { generateCampRegistrationEmail } from 'src/mail/templates/camp-registrat
 import { UpdateCampRegistrationInput } from './dto/update-camp-registration.input';
 import { UpdateCampVariantRegistrationInput } from 'src/camp-variant-registration/dto/update-camp-variant-registration.input';
 import { ConfirmCampRegistrationInput } from './dto/confirm-camp-registration.input';
+import { emit } from 'process';
 dotenv.config();
 
 @Injectable()
@@ -285,7 +286,7 @@ export class CampRegistrationService {
       }
     }
 
-    const inserts: CampVariantRegistration[] = !campVariantRegistrations?.length
+    let inserts: CampVariantRegistration[] = !campVariantRegistrations?.length
       ? []
       : await queryRunner.manager.save(
           CampVariantRegistration,
@@ -318,10 +319,10 @@ export class CampRegistrationService {
               ...e,
               campRegistrationId: campRegistration.id,
               discountId: discount?.id ?? null,
-              mealPrice: baseMealPrice?.toFixed(moneyFixation),
-              price: basePrice.toFixed(moneyFixation),
-              variantDiscount: priceDiscount?.toFixed(moneyFixation),
-              mealDiscount: mealDiscount?.toFixed(moneyFixation),
+              mealPrice: baseMealPrice,
+              price: basePrice,
+              variantDiscount: priceDiscount,
+              mealDiscount: mealDiscount,
             };
           }),
         );

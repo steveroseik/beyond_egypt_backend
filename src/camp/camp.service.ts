@@ -350,9 +350,11 @@ export class CampService {
               CampVariant,
               { id: variant.id, campId: input.id },
               {
+                name: variant.name,
+
                 price: variant.price?.toFixed(2),
                 capacity: variant.capacity,
-                remainingCapacity: variant.capacity,
+                remainingCapacity: variant.remainingCapacity,
                 startDate: variant.startDate,
                 endDate: variant.endDate,
               },
