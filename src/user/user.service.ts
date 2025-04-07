@@ -522,6 +522,8 @@ export class UserService {
         user.type,
       );
 
+      user.id = firebaseData.uid;
+
       return {
         success: true,
         message: 'User registered successfully',

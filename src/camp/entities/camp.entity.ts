@@ -104,7 +104,7 @@ export class Camp {
   locationId: number;
 
   @Column('int', { name: 'discountId', nullable: true })
-  @Field()
+  @Field({ nullable: true })
   discountId?: number;
 
   @CreateDateColumn({

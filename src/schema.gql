@@ -258,7 +258,7 @@ type Camp {
   isPrivate: Boolean!
   defaultCapacity: Int
   locationId: Int!
-  discountId: Int!
+  discountId: Int
   createdAt: DateTime!
   lastModified: DateTime!
   deletedAt: DateTime
