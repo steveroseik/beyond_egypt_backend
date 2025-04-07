@@ -398,7 +398,15 @@ export class CampService {
   }
 
   remove(id: number) {
-    return this.repo.softDelete(id);
+    try {
+      // const camp = await this.repo.find({});
+    } catch (e) {
+      console.log(e);
+      return {
+        success: false,
+        message: e,
+      };
+    }
   }
 
   async paginate(input: PaginateCampsInput) {

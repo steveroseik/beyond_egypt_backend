@@ -1929,7 +1929,7 @@ export class CampRegistrationService {
         {
           status: CampRegistrationStatus.accepted,
           paymentMethod,
-          paidAmount,
+          paidAmount: paidAmount?.toFixed(moneyFixation),
         },
       );
 

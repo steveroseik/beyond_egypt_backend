@@ -454,8 +454,79 @@ export class UserService {
     return paginator.paginate(queryBuilder);
   }
 
-  remove(id: string) {
-    return this.repo.delete(id);
+  async remove(id: string) {
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      const user = await this.repo.findOne({
+        where: { id },
+        relations: [
+          'children',
+          'parentAdditionals',
+          'campRegistrations',
+          'campRegistrations.campVariantRegistrations',
+        ],
+      });
+
+      if (!user) throw Error('User not found');
+
+      const deleted = await queryRunner.manager.softDelete(User, { id });
+
+      if (deleted.affected !== 1) {
+        throw Error('Failed to remove user');
+      }
+
+      if (user.children?.length) {
+        const deleteChildren = await queryRunner.manager.softDelete(Child, {
+          parentId: id,
+        });
+
+        if (deleteChildren.affected !== user.children.length) {
+          throw Error(`Failed to delete parent's chilldren`);
+        }
+      }
+
+      if (user.parentAdditionals?.length) {
+        const deleteAdditionals = await queryRunner.manager.softDelete(
+          ParentAdditional,
+          {
+            userId: id,
+          },
+        );
+
+        if (deleteAdditionals.affected !== user.parentAdditionals.length) {
+          throw Error(`Failed to delete parent's chilldren`);
+        }
+      }
+
+      if (user.campRegistrations?.length) {
+        const deleteChildren = await queryRunner.manager.softDelete(Child, {
+          parentId: id,
+        });
+
+        if (deleteChildren.affected !== user.children.length) {
+          throw Error(`Failed to delete parent's chilldren`);
+        }
+      }
+
+      await queryRunner.commitTransaction();
+
+      return {
+        success: true,
+        message: 'User removed successfully',
+      };
+    } catch (e) {
+      await queryRunner.rollbackTransaction();
+      console.log(e);
+      return {
+        success: false,
+        message: e,
+      };
+    } finally {
+      await queryRunner.release();
+    }
   }
 
   async createEmployee(input: CreateEmployeeInput) {
