@@ -398,7 +398,7 @@ export class CampService {
   }
 
   remove(id: number) {
-    return `This action removes a #${id} camp`;
+    return this.repo.softDelete(id);
   }
 
   async paginate(input: PaginateCampsInput) {

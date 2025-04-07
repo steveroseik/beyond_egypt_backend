@@ -753,19 +753,19 @@ export class CampRegistrationService {
   async paginateCampRegistrations(input: PaginateCampRegistrationsInput) {
     const queryBuilder = this.repo.createQueryBuilder('campRegistration');
 
-    if (input.parentIds) {
+    if (input.parentIds?.length) {
       queryBuilder.andWhere('campRegistration.parentId IN (:...parentIds)', {
         parentIds: input.parentIds,
       });
     }
 
-    if (input.campIds) {
+    if (input.campIds?.length) {
       queryBuilder.andWhere('campRegistration.campId IN (:...campIds)', {
         campIds: input.campIds,
       });
     }
 
-    if (input.statuses) {
+    if (input.statuses?.length) {
       queryBuilder.andWhere('campRegistration.status IN (:...statuses)', {
         statuses: input.statuses,
       });
