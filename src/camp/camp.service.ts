@@ -14,6 +14,7 @@ import { CreateCampVariantInput } from 'src/camp-variant/dto/create-camp-variant
 import { CampRegistration } from 'src/camp-registration/entities/camp-registration.entity';
 import { CampRegistrationStatus } from 'support/enums';
 import { moneyFixation } from 'support/constants';
+import * as moment from 'moment-timezone';
 
 @Injectable()
 export class CampService {
@@ -397,15 +398,61 @@ export class CampService {
     }
   }
 
-  remove(id: number) {
+  async remove(id: number) {
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
     try {
-      // const camp = await this.repo.find({});
+      const camp = await this.repo.findOne({
+        where: { id },
+        relations: ['campVariants', 'campRegistrations'],
+      });
+
+      if (!camp) throw Error('Camp does not exist');
+
+      if (camp.campRegistrations?.length) {
+        for (const variant of camp.campVariants) {
+          const now = moment.tz('Africa/Cairo');
+          if (now.diff(variant.endDate) < 0) {
+            throw Error(
+              `Cannot delete camp, some weeks are still running ${variant.name}`,
+            );
+          }
+        }
+      }
+
+      const deleteCamp = await queryRunner.manager.softDelete(Camp, { id });
+
+      if (deleteCamp.affected !== 1) {
+        throw Error('Failed to delete camp');
+      }
+
+      if (camp.campVariants?.length) {
+        const deleteCampVariants = await queryRunner.manager.softDelete(
+          CampVariant,
+          { campId: id },
+        );
+
+        if (deleteCampVariants.affected !== camp.campVariants.length) {
+          throw Error('Failed to delete all camp Variants');
+        }
+      }
+
+      await queryRunner.commitTransaction();
+      return {
+        success: true,
+        message: 'Deleted Camp',
+      };
     } catch (e) {
+      await queryRunner.rollbackTransaction();
       console.log(e);
       return {
         success: false,
         message: e,
       };
+    } finally {
+      await queryRunner.release();
     }
   }
 

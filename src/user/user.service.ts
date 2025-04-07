@@ -22,6 +22,9 @@ import { FindInactiveUserInput } from './dto/find-inactive-user.input';
 import { ChildService } from 'src/child/child.service';
 import { ParentAdditionalService } from 'src/parent-additional/parent-additional.service';
 import { MailService } from 'src/mail/mail.service';
+import { CampRegistration } from 'src/camp-registration/entities/camp-registration.entity';
+import { CampVariantsRegistrationPage } from 'src/camp-variant-registration/entities/camp-variant-registration-page.entity';
+import { CampVariantRegistration } from 'src/camp-variant-registration/entities/camp-variant-registration.entity';
 
 @Injectable()
 export class UserService {
@@ -502,12 +505,31 @@ export class UserService {
       }
 
       if (user.campRegistrations?.length) {
-        const deleteChildren = await queryRunner.manager.softDelete(Child, {
-          parentId: id,
-        });
+        const deleteRegistrations = await queryRunner.manager.softDelete(
+          CampRegistration,
+          {
+            parentId: id,
+          },
+        );
 
-        if (deleteChildren.affected !== user.children.length) {
+        if (deleteRegistrations.affected !== user.campRegistrations.length) {
           throw Error(`Failed to delete parent's chilldren`);
+        }
+
+        const campVariantRegIds = user.campRegistrations
+          .map((e) => e.campVariantRegistrations)
+          .flat()
+          .map((e) => e.id);
+
+        const deleteRegistrationVariants = await queryRunner.manager.softDelete(
+          CampVariantRegistration,
+          {
+            campRegistrationId: In(campVariantRegIds),
+          },
+        );
+
+        if (campVariantRegIds.length !== deleteRegistrationVariants.affected) {
+          throw Error('Failed to completely delete user camp registrations');
         }
       }
 
