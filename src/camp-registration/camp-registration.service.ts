@@ -40,7 +40,7 @@ import { generateCampRegistrationEmail } from 'src/mail/templates/camp-registrat
 import { UpdateCampRegistrationInput } from './dto/update-camp-registration.input';
 import { UpdateCampVariantRegistrationInput } from 'src/camp-variant-registration/dto/update-camp-variant-registration.input';
 import { ConfirmCampRegistrationInput } from './dto/confirm-camp-registration.input';
-import { emit } from 'process';
+
 dotenv.config();
 
 @Injectable()
@@ -237,7 +237,11 @@ export class CampRegistrationService {
     discount?: Discount;
     overwriteExisting?: boolean;
   }): Promise<Decimal | null> {
-    if (!campVariantRegistrations?.length && !existingRegistrations?.length) {
+    if (
+      !campVariantRegistrations?.length &&
+      !existingRegistrations?.length &&
+      !updatedRegistrations?.length
+    ) {
       console.log('Failed to find data to calculate within');
       return null;
     }
@@ -599,6 +603,8 @@ export class CampRegistrationService {
         {
           oneDayPrice: input.oneDayPrice,
           paymentMethod: input.paymentMethod,
+          behaviorConsent: input.behaviorConsent,
+          refundPolicyConsent: input.refundPolicyConsent,
           amount: total.toFixed(moneyFixation),
           paidAmount: '0',
           discountId: null,
@@ -1339,6 +1345,10 @@ export class CampRegistrationService {
       //delete variants
       await this.deleteCampVariantRegistrations(variantsToDelete, queryRunner);
 
+      console.table(variantsToInsert);
+      console.table(existingVariants);
+      console.table(updatedVariants);
+
       // insert new variants and get total price
       const newTotalPrice = await this.handleCampVariantRegistrations({
         campVariantRegistrations: variantsToInsert,
@@ -1349,7 +1359,10 @@ export class CampRegistrationService {
         overwriteExisting: false,
       });
 
-      return await this.updateMoneyDifference(
+      console.log('NewTT', newTotalPrice);
+
+      return await this.updateMoneyDifferenceAndOther(
+        input,
         campRegistration,
         newTotalPrice,
         queryRunner,
@@ -1386,7 +1399,8 @@ export class CampRegistrationService {
         overwriteExisting: false,
       });
 
-      return await this.updateMoneyDifference(
+      return await this.updateMoneyDifferenceAndOther(
+        input,
         campRegistration,
         newTotalPrice,
         queryRunner,
@@ -1439,7 +1453,8 @@ export class CampRegistrationService {
           overwriteExisting: false,
         });
 
-        return await this.updateMoneyDifference(
+        return await this.updateMoneyDifferenceAndOther(
+          input,
           campRegistration,
           newTotalPrice,
           queryRunner,
@@ -1487,7 +1502,8 @@ export class CampRegistrationService {
       overwriteExisting: true,
     });
 
-    return await this.updateMoneyDifference(
+    return await this.updateMoneyDifferenceAndOther(
+      input,
       campRegistration,
       newTotalPrice,
       queryRunner,
@@ -1559,7 +1575,7 @@ export class CampRegistrationService {
       let newVariant: CampVariantRegistration = {
         ...variant,
         shirtSize: update.shirtSize,
-        discountId: discount.id,
+        discountId: discount?.id ?? null,
         price: basePrice,
         variantDiscount: priceDiscount,
         mealPrice: baseMealPrice,
@@ -1593,7 +1609,8 @@ export class CampRegistrationService {
     return new Decimal(`${response.paidAmount ?? 0}`);
   }
 
-  async updateMoneyDifference(
+  async updateMoneyDifferenceAndOther(
+    input: UpdateCampRegistrationInput,
     campRegistration: CampRegistration,
     newTotalPrice: Decimal,
     queryRunner: QueryRunner,
@@ -1605,15 +1622,22 @@ export class CampRegistrationService {
       campRegistration.id,
       queryRunner,
     );
-    const discountAmount = new Decimal(`${discount.amount ?? 0}`);
-    newTotalPrice = newTotalPrice.minus(discountAmount);
+    const discountAmount = new Decimal(`${discount?.amount ?? 0}`);
+    newTotalPrice = newTotalPrice?.minus(discountAmount);
     const difference = newTotalPrice.minus(paidAmount);
+
+    const newStatus = difference.isPositive()
+      ? CampRegistrationStatus.pending
+      : CampRegistrationStatus.accepted;
 
     const updateCampRegistration = await queryRunner.manager.update(
       CampRegistration,
       { id: campRegistration.id },
       {
+        refundPolicyConsent: input.refundPolicyConsent,
+        behaviorConsent: input.behaviorConsent,
         discountId: discount?.id,
+        status: newStatus,
         discountAmount: discountAmount.toFixed(moneyFixation),
         amount: newTotalPrice.toFixed(moneyFixation),
         paidAmount: paidAmount.toFixed(moneyFixation),
@@ -1929,6 +1953,9 @@ export class CampRegistrationService {
       }
 
       await queryRunner.commitTransaction();
+
+      this.mailService.sendCampRegistrationConfirmation(campRegistration.id);
+
       return {
         success: true,
         message: 'Camp Registration confirmed & paid successfully',
@@ -2021,8 +2048,9 @@ export class CampRegistrationService {
 
   async test() {
     const campRegistration = await this.repo.findOne({
-      where: { id: 4 },
+      where: { status: CampRegistrationStatus.accepted },
       relations: [
+        'camp',
         'campVariantRegistrations',
         'parent',
         'campVariantRegistrations.child',
@@ -2034,16 +2062,15 @@ export class CampRegistrationService {
       throw new Error('Camp registration not found');
     }
 
-    const htmlContent = generateCampRegistrationEmail({
+    const data = await generateCampRegistrationEmail({
       registration: campRegistration,
-      qrCodeUrl:
-        'https://beyond-egypt.s3.amazonaws.com/91895637-f3ee-4cb5-8a28-f6d78c362219.png',
     });
     const response = await this.mailService.sendMail({
       to: 'steveroseik@gmail.com',
       subject: 'New Camp Registration',
       text: 'Helloo',
-      html: htmlContent,
+      html: data.content,
+      attachments: [data.attachment],
     });
 
     return response;

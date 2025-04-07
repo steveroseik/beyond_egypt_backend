@@ -1,13 +1,18 @@
 import { CampRegistration } from 'src/camp-registration/entities/camp-registration.entity';
+import { generateQRCodeBase64 } from 'support/qr-code/qr.generate';
+import { Decimal } from 'support/scalars';
 
-export function generateCampRegistrationEmail({
+export async function generateCampRegistrationEmail({
   registration,
-  qrCodeUrl,
 }: {
   registration: CampRegistration;
-  qrCodeUrl: string; // can be a data URL or hosted image
-}): string {
-  const formatMoney = (val?: any) => (val ? `${val.toFixed(2)} EGP` : '-');
+}): Promise<{ content: string; attachment: any }> {
+  console.table(registration);
+  const formatMoney = (val?: Decimal) => (val ? `${val.toFixed(2)} EGP` : '-');
+
+  const generatedQRCode = await generateQRCodeBase64(registration.parent.id);
+
+  console.log('QRG', generatedQRCode);
 
   const tableRows = registration.campVariantRegistrations
     .map((r) => {
@@ -40,7 +45,13 @@ export function generateCampRegistrationEmail({
   const discount = formatMoney(registration.discountAmount);
   const parentName = registration.parent?.name || 'Parent';
 
-  return `
+  const attachment = {
+    filename: 'camp-qr.png',
+    content: generatedQRCode,
+    cid: 'camp_qr_code', // must match the `cid:` in HTML
+  };
+
+  const content = `
     <!DOCTYPE html>
     <html>
     <head>
@@ -61,7 +72,7 @@ export function generateCampRegistrationEmail({
       <div class="container">
         <h1>🏕️ Camp Registration Confirmed</h1>
         <p>Dear ${parentName},</p>
-        <p>Thank you for registering your children for our camp! Please find the summary of your registration below:</p>
+        <p>Thank you for registering your children for ${registration.camp.name}! Please find the summary of your registration below:</p>
 
         <table>
           <thead>
@@ -88,7 +99,7 @@ export function generateCampRegistrationEmail({
 
         <div class="qr">
           <p>Please present the QR code below at the camp entrance for access:</p>
-          <img src="${qrCodeUrl}" alt="QR Code" />
+          <img src="cid:camp_qr_code" alt="QR Code" />
         </div>
 
         <p>We can't wait to welcome your children to camp!</p>
@@ -97,4 +108,9 @@ export function generateCampRegistrationEmail({
     </body>
     </html>
   `;
+
+  return {
+    content,
+    attachment,
+  };
 }

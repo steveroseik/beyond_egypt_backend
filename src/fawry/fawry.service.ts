@@ -19,12 +19,16 @@ import { PaymentStatusResponse } from './models/payment-status.payload';
 import * as dotenv from 'dotenv';
 import { generateQueryParams } from 'support/query-params.generator';
 import { CampRegistration } from 'src/camp-registration/entities/camp-registration.entity';
+import { MailService } from 'src/mail/mail.service';
 
 dotenv.config();
 
 @Injectable()
 export class FawryService {
-  constructor(private dataSource: DataSource) {}
+  constructor(
+    private dataSource: DataSource,
+    private mailService: MailService,
+  ) {}
 
   async handleReturn(query: FawryReturnDto, res: Response) {
     const queryRunner = this.dataSource.createQueryRunner();
@@ -214,6 +218,10 @@ export class FawryService {
         { paymentId: payment.id },
       );
     }
+
+    this.mailService.sendCampRegistrationConfirmation(
+      payment.campRegistrationId,
+    );
 
     return res.redirect(
       `${process.env.FRONTEND_URL}/payment-success?paymentId=${payment.id}`,

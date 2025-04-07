@@ -5,6 +5,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { RegistrationPayment } from './entities/registration-payment.entity';
 import { DataSource, Repository } from 'typeorm';
 import { PaginateRegistrationPaymentsInput } from './dto/paginate-registration-payments.input';
+import { buildPaginator } from 'typeorm-cursor-pagination';
 
 @Injectable()
 export class RegistrationPaymentHistoryService {
@@ -79,6 +80,18 @@ export class RegistrationPaymentHistoryService {
           },
         );
       }
+
+      const paginator = buildPaginator({
+        entity: RegistrationPayment,
+        paginationKeys: ['createdAt', 'id'],
+        alias: 'registrationPayment',
+        query: {
+          ...input,
+          order: input.isAsc ? 'ASC' : 'DESC',
+        },
+      });
+
+      return paginator.paginate(queryBuilder);
     } catch (e) {
       console.log(e);
       return {

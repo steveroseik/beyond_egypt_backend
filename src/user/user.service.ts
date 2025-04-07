@@ -21,6 +21,7 @@ import { RegisterUserInput } from './dto/register-user.input';
 import { FindInactiveUserInput } from './dto/find-inactive-user.input';
 import { ChildService } from 'src/child/child.service';
 import { ParentAdditionalService } from 'src/parent-additional/parent-additional.service';
+import { MailService } from 'src/mail/mail.service';
 
 @Injectable()
 export class UserService {
@@ -30,6 +31,7 @@ export class UserService {
     private readonly authService: AuthService,
     private readonly dataSource: DataSource,
     private readonly childService: ChildService,
+    private readonly mailService: MailService,
   ) {}
 
   async create(
@@ -64,6 +66,8 @@ export class UserService {
     await this.createParent(input, queryRunner);
 
     await queryRunner.commitTransaction();
+
+    this.mailService.sendActivationEmail(input.id);
 
     return {
       success: true,
@@ -466,6 +470,8 @@ export class UserService {
       if (createEmployee.raw.affectedRows !== 1) {
         throw new Error('Failed to create employee');
       }
+
+      this.mailService.sendActivationEmail(tempId);
 
       return {
         success: true,
