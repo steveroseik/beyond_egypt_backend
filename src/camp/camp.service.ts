@@ -65,7 +65,7 @@ export class CampService {
 
       const camp = await queryRunner.manager.insert(Camp, {
         ...input,
-        defaultPrice: input.defaultPrice.toFixed(2),
+        defaultPrice: input.defaultPrice?.toFixed(2),
         mealPrice: input.mealPrice?.toFixed(2),
       });
       if (camp.raw.affectedRows !== 1) {
@@ -138,7 +138,10 @@ export class CampService {
 
     const newCampVariants = await queryRunner.manager.insert(
       CampVariant,
-      campVariants,
+      campVariants.map((variant) => ({
+        ...variant,
+        remainingCapacity: variant.remainingCapacity ?? variant.capacity,
+      })),
     );
     if (newCampVariants.identifiers.length !== input.variants.length) {
       throw new Error('Failed to insert camp variants');

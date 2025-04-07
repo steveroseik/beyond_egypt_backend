@@ -426,6 +426,11 @@ type RegistrationHistory {
   lastModified: DateTime!
 }
 
+type RegistrationPaymentsPage {
+  cursor: GraphqlCursor!
+  data: [RegistrationPayment!]!
+}
+
 type Settings {
   id: Int!
   sizeChartFileId: Int
@@ -506,6 +511,7 @@ type Query {
   eventFile(id: Int!): EventFile!
   registrationHistory(id: Int!): RegistrationHistory!
   registrationPaymentHistory(id: Int!): RegistrationPayment!
+  paginateRegistrationPayments(input: PaginateRegistrationPaymentsInput!): RegistrationPaymentsPage!
   settings: [Settings!]!
   setting(id: Int!): Settings!
   findOneSchool(id: Int!): School
@@ -518,6 +524,7 @@ input PaginateMealsInput {
   limit: Int = 20
   afterCursor: String
   beforeCursor: String
+  search: String
 }
 
 input PaginateLocationsInput {
@@ -533,6 +540,7 @@ input PaginateChildrenInput {
   limit: Int = 20
   afterCursor: String
   beforeCursor: String
+  search: String
   parentId: String
   name: String
   campId: Int
@@ -543,6 +551,7 @@ input PaginateCampVariantRegistrationsInput {
   limit: Int = 20
   afterCursor: String
   beforeCursor: String
+  search: String
   campIds: [Int!]
   campVariantIds: [Int!]
   childIds: [Int!]
@@ -616,6 +625,7 @@ input PaginateCampRegistrationsInput {
   limit: Int = 20
   afterCursor: String
   beforeCursor: String
+  search: String
   campIds: [Int!]
   parentIds: [String!]
   statuses: [CampRegistrationStatus!]
@@ -630,11 +640,24 @@ input PaginateDiscountsInput {
   active: Boolean
 }
 
+input PaginateRegistrationPaymentsInput {
+  isAsc: Boolean! = false
+  limit: Int = 20
+  afterCursor: String
+  beforeCursor: String
+  search: String
+  userId: String
+  campRegistrationId: Int
+  paymentMethods: [PaymentMethod!]
+  statuses: [PaymentStatus!]
+}
+
 input PaginateSchoolsInput {
   isAsc: Boolean! = false
   limit: Int = 20
   afterCursor: String
   beforeCursor: String
+  search: String
   name: String
 }
 
@@ -743,7 +766,8 @@ input UpdateFileInput {
 input CreateCampVariantInput {
   name: String
   price: Decimal
-  capacity: Int!
+  capacity: Int
+  remainingCapacity: Int
   startDate: DateTime!
   endDate: DateTime!
 }
@@ -752,6 +776,7 @@ input UpdateCampVariantInput {
   name: String
   price: Decimal
   capacity: Int
+  remainingCapacity: Int
   startDate: DateTime
   endDate: DateTime
   id: Int!

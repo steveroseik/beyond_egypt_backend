@@ -12,6 +12,8 @@ import { RegistrationPayment } from './entities/registration-payment.entity';
 import { CreateRegistrationPaymentHistoryInput } from './dto/create-registration-payment.input';
 import { UpdateRegistrationPaymentHistoryInput } from './dto/update-registration-payment.input';
 import * as dotenv from 'dotenv';
+import { RegistrationPaymentsPage } from './entities/registration-payments-page.entity';
+import { PaginateRegistrationPaymentsInput } from './dto/paginate-registration-payments.input';
 dotenv.config();
 
 @Resolver(() => RegistrationPayment)
@@ -38,6 +40,13 @@ export class RegistrationPaymentHistoryResolver {
   @Query(() => RegistrationPayment, { name: 'registrationPaymentHistory' })
   findOne(@Args('id', { type: () => Int }) id: number) {
     return this.registrationPaymentHistoryService.findOne(id);
+  }
+
+  @Query(() => RegistrationPaymentsPage)
+  paginateRegistrationPayments(
+    @Args('input') input: PaginateRegistrationPaymentsInput,
+  ) {
+    return this.registrationPaymentHistoryService.paginate(input);
   }
 
   @Mutation(() => RegistrationPayment)

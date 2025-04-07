@@ -12,9 +12,10 @@ export class CreateCampVariantInput {
   @Field(() => GraphqlDecimal, { nullable: true })
   price?: Decimal;
 
-  @Field()
+  @Field({ nullable: true })
   capacity: number;
 
+  @Field({ nullable: true })
   remainingCapacity?: number;
 
   @Field()

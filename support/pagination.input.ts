@@ -13,4 +13,7 @@ export class PaginationInput {
 
   @Field({ nullable: true })
   beforeCursor?: string;
+
+  @Field({ nullable: true })
+  search?: string;
 }
