@@ -278,6 +278,13 @@ export class CampRegistrationService {
       lock: { mode: 'pessimistic_write' },
     });
 
+    const now = moment.tz('Africa/Cairo');
+    for (const cv of campVariants) {
+      if (now.diff(cv.startDate) >= 0) {
+        throw new Error(`${cv.name} has already started, you can't register`);
+      }
+    }
+
     if (!oneDayPrice) {
       if (campVariants.length !== campVariantIds.length) {
         throw new Error('Invalid camp variant reference');
