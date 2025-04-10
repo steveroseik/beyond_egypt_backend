@@ -11,4 +11,7 @@ export class PaginateCampsInput extends PaginationInput {
 
   @Field(() => [Int], { nullable: true })
   locationIds?: number[];
+
+  @Field({ nullable: true })
+  isPrivate?: boolean;
 }

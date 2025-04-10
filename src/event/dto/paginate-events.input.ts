@@ -5,4 +5,7 @@ import { PaginationInput } from 'support/pagination.input';
 export class PaginateEventsInput extends PaginationInput {
   @Field({ nullable: true })
   search?: string;
+
+  @Field({ nullable: true })
+  isPrivate: boolean;
 }

@@ -569,6 +569,7 @@ input PaginateCampsInput {
   search: String
   eventIds: [Int!]
   locationIds: [Int!]
+  isPrivate: Boolean
 }
 
 input PaginateEventsInput {
@@ -577,6 +578,7 @@ input PaginateEventsInput {
   afterCursor: String
   beforeCursor: String
   search: String
+  isPrivate: Boolean
 }
 
 input PaginateAgeRangesInput {

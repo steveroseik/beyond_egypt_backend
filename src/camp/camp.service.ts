@@ -483,6 +483,12 @@ export class CampService {
       );
     }
 
+    if (input.isPrivate === true || input.isPrivate === false) {
+      queryBuilder.andWhere('camp.isPrivate = :isPrivate', {
+        isPrivate: input.isPrivate,
+      });
+    }
+
     const paginator = buildPaginator({
       entity: Camp,
       alias: 'camp',

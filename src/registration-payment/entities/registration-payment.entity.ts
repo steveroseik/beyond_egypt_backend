@@ -27,6 +27,7 @@ export class RegistrationPayment {
 
   @Column('int', {
     name: 'referenceNumber',
+    unsigned: true,
     nullable: true,
   })
   @Field({ nullable: true })

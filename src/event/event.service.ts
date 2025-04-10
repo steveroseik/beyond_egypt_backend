@@ -208,6 +208,14 @@ export class EventService {
       });
     }
 
+    if (input.isPrivate === false) {
+      queryBuilder
+        .innerJoinAndSelect('event.camps', 'camps')
+        .andWhere('camps.isPrivate = :isPrivate', {
+          isPrivate: input.isPrivate,
+        });
+    }
+
     const paginator = buildPaginator({
       entity: Event,
       alias: 'event',
