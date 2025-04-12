@@ -261,7 +261,7 @@ export class UserService {
 
       if (input.phone || input.district || input.name) {
         const updated = await this.repo.update(input.id, {
-          phone: input.phone ?? user.phone,
+          phone: input.phone,
           district: input.district,
           name: input.name,
           emergencyPhone: input.emergencyPhone ?? user.emergencyPhone,
