@@ -98,8 +98,15 @@ export class AuthService {
 
       if (!user) throw Error('User not found');
 
-      if (tokenPayload.isAdmin && user.type === UserType.parent)
-        throw Error('Unauthorized, only admins can sign in');
+      if (tokenPayload.isAdmin) {
+        if (user.type === UserType.parent) {
+          throw Error('Unauthorized, only admins can sign in');
+        }
+      } else {
+        if (user.type === UserType.admin) {
+          throw Error('Unauthorized, only parents can sign in');
+        }
+      }
 
       const accessToken = this.generateAccessToken(user.id, user.type);
 
