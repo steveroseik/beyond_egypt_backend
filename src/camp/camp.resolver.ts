@@ -56,7 +56,7 @@ export class CampResolver {
     return this.campService.update(input);
   }
 
-  @Mutation(() => Camp)
+  @Mutation(() => GraphQLJSONObject)
   removeCamp(@Args('id', { type: () => Int }) id: number) {
     return this.campService.remove(id);
   }

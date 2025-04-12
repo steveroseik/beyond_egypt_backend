@@ -688,7 +688,7 @@ type Mutation {
   removeCampVariantRegistration(id: Int!): CampVariantRegistration!
   createCamp(input: CreateCampInput!): JSONObject!
   updateCamp(input: UpdateCampInput!): JSONObject!
-  removeCamp(id: Int!): Camp!
+  removeCamp(id: Int!): JSONObject!
   createEvent(input: CreateEventInput!): JSONObject!
   updateEvent(input: UpdateEventInput!): JSONObject!
   removeEvent(input: RemoveEventInput!): JSONObject!
