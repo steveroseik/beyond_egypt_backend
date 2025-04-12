@@ -131,10 +131,6 @@ export class UserService {
       throw new Error('Parent must have at least one child');
     }
 
-    if (!input.phone) {
-      throw new Error('Parent must have a phone number');
-    }
-
     if (!input.emergencyPhone) {
       throw new Error('Emergency phone number is required');
     }
