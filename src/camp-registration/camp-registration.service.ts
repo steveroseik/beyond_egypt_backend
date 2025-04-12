@@ -980,6 +980,7 @@ export class CampRegistrationService {
         {
           refundPolicyConsent: input.refundPolicyConsent,
           behaviorConsent: input.behaviorConsent,
+          paymentMethod: input.paymentMethod,
         },
       );
     }
@@ -1164,6 +1165,7 @@ export class CampRegistrationService {
         id: campRegistration.id,
       },
       {
+        paymentMethod,
         status: CampRegistrationStatus.pending,
       },
     );
