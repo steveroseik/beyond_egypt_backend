@@ -124,7 +124,7 @@ export class AuthService {
         const response = await this.isEmailValid(email);
         return {
           userState: response,
-          message: 'Failed to sign in',
+          message: e ?? 'Failed to sign in',
         };
       }
 
