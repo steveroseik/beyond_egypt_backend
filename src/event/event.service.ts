@@ -2,13 +2,15 @@ import { Injectable } from '@nestjs/common';
 import { CreateEventInput } from './dto/create-event.input';
 import { UpdateEventInput } from './dto/update-event.input';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, In, Repository } from 'typeorm';
+import { DataSource, In, QueryRunner, Repository } from 'typeorm';
 import { PaginateEventsInput } from './dto/paginate-events.input';
 import { buildPaginator } from 'typeorm-cursor-pagination';
 import { Event } from './entities/event.entity';
 import { RemoveEventInput } from './dto/remove-event.input';
 import { Camp } from 'src/camp/entities/camp.entity';
-
+import { CampService } from 'src/camp/camp.service';
+import { CampVariant } from 'src/camp-variant/entities/camp-variant.entity';
+import * as moment from 'moment-timezone';
 @Injectable()
 export class EventService {
   constructor(
@@ -143,59 +145,73 @@ export class EventService {
   }
 
   async remove(input: RemoveEventInput) {
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
     try {
-      if (input.removeCamps) {
-        const response = await this.eventRepository.delete(input.id);
+      const removeEvent = await this.eventRepository.softDelete(input.id);
 
-        if (response.affected === 0) {
-          throw new Error('No event was deleted');
-        }
-        return {
-          success: true,
-          message: 'Events removed successfully',
-        };
-      } else {
-        const campsRelated = await this.dataSource.manager.find(Camp, {
-          where: {
-            eventId: input.id,
-          },
-        });
-
-        if (campsRelated.length > 0) {
-          throw new Error('Event has related camps');
-        }
-
-        const updateCamps = await this.dataSource.manager.update(
-          Camp,
-          {
-            id: In(campsRelated.map((e) => e.id)),
-          },
-          {
-            eventId: null,
-          },
-        );
-
-        if (updateCamps.affected !== campsRelated.length) {
-          throw new Error('Failed to update all camps');
-        }
-
-        const response = await this.eventRepository.delete(input.id);
-
-        if (response.affected === 0) {
-          throw new Error('No event was deleted');
-        }
-
-        return {
-          success: true,
-          message: 'Events removed successfully and camps unlinked',
-        };
+      if (removeEvent.affected === 0) {
+        throw new Error('No event was deleted');
       }
+
+      await this.removeCamps(queryRunner, input);
+
+      return {
+        success: true,
+        message: 'Events removed successfully and camps unlinked',
+      };
     } catch (e) {
+      await queryRunner.rollbackTransaction();
       console.log(e);
       return {
         success: false,
         message: 'Error while removing event',
       };
+    } finally {
+      await queryRunner.release();
+    }
+  }
+
+  async removeCamps(queryRunner: QueryRunner, input: RemoveEventInput) {
+    const camps = await queryRunner.manager.find(Camp, {
+      where: { eventId: input.id },
+      relations: ['campVariants', 'campRegistrations'],
+    });
+
+    if (!camps?.length) return;
+
+    for (const camp of camps) {
+      if (camp.campRegistrations?.length) {
+        for (const variant of camp.campVariants) {
+          const now = moment.tz('Africa/Cairo');
+          if (now.diff(variant.endDate) < 0) {
+            throw Error(
+              `Cannot delete camp, some weeks are still running ${variant.name}`,
+            );
+          }
+        }
+      }
+
+      const deleteCamp = await queryRunner.manager.softDelete(Camp, {
+        id: camp.id,
+      });
+
+      if (deleteCamp.affected !== 1) {
+        throw Error('Failed to delete camp');
+      }
+
+      if (camp.campVariants?.length) {
+        const deleteCampVariants = await queryRunner.manager.softDelete(
+          CampVariant,
+          { campId: camp.id },
+        );
+
+        if (deleteCampVariants.affected !== camp.campVariants.length) {
+          throw Error('Failed to delete all camp Variants');
+        }
+      }
     }
   }
 
