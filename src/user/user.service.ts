@@ -135,10 +135,21 @@ export class UserService {
       throw new Error('Parent must have a phone number');
     }
 
+    if (!input.emergencyPhone) {
+      throw new Error('Emergency phone number is required');
+    }
+
+    if (input.emergencyPhone === input.phone) {
+      throw new Error(
+        'Emergency phone number cannot be same as primary phone number',
+      );
+    }
+
     const parent = await queryRunner.manager.insert(User, {
       id: input.id,
       name: input.name,
       email: input.email,
+      emergencyPhone: input.emergencyPhone,
       phone: input.phone,
       type: input.type,
       district: input.district,
@@ -237,11 +248,23 @@ export class UserService {
         throw new Error('User not found');
       }
 
+      if (user.type === UserType.parent) {
+        const phone = input.phone ?? user.phone;
+        const emergencyPhone = input.emergencyPhone ?? user.emergencyPhone;
+
+        if (emergencyPhone === phone) {
+          throw new Error(
+            'Emergency phone number cannot be same as primary phone number',
+          );
+        }
+      }
+
       if (input.phone || input.district || input.name) {
         const updated = await this.repo.update(input.id, {
-          phone: input.phone,
+          phone: input.phone ?? user.phone,
           district: input.district,
           name: input.name,
+          emergencyPhone: input.emergencyPhone ?? user.emergencyPhone,
         });
 
         if (updated.affected !== 1) {

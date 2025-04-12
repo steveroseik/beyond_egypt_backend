@@ -44,6 +44,10 @@ export class User {
   @Field({ nullable: true })
   district?: string;
 
+  @Column('varchar', { name: 'emergencyContact', nullable: true, length: 20 })
+  @Field({ nullable: true })
+  emergencyPhone?: string;
+
   @CreateDateColumn({
     name: 'createdAt',
     precision: 3,

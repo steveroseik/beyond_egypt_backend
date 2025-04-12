@@ -32,6 +32,9 @@ export class UpdateUserInput {
   phone?: string;
 
   @Field({ nullable: true })
+  emergencyPhone?: string;
+
+  @Field({ nullable: true })
   district?: string;
 
   @Field(() => [UpdateChildInput], { nullable: true })

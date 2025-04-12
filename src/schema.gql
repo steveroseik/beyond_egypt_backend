@@ -63,6 +63,7 @@ type User {
   email: String!
   phone: String
   district: String
+  emergencyPhone: String
   createdAt: DateTime!
   lastModified: DateTime!
   deletedAt: DateTime
@@ -961,6 +962,7 @@ input CreateUserInput {
   type: UserType!
   email: String!
   phone: String
+  emergencyPhone: String
   district: String
   parentAdditional: [CreateParentAdditionalInput!]
   children: [CreateChildInput!]
@@ -974,6 +976,7 @@ input UpdateUserInput {
   parentAdditionalToAdd: [CreateParentAdditionalInput!] = []
   name: String
   phone: String
+  emergencyPhone: String
   district: String
   childrenToUpdate: [UpdateChildInput!]
   parentAdditionalToUpdate: [UpdateParentAdditionalInput!]
