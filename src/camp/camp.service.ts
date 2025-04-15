@@ -264,18 +264,20 @@ export class CampService {
       const fileIds = await this.handleFiles(input, queryRunner);
       const ageRangeIds = await this.handleAgeRanges(input, queryRunner);
 
+      console.log('input', input);
+
       if (
         input.defaultPrice ||
         input.mealPrice ||
         input.defaultCapacity ||
         input.name ||
         input.description ||
-        input.thumbnailId ||
-        input.isPrivate ||
+        input.isPrivate !== undefined ||
+        input.thumbnailId !== undefined ||
         input.hasShirts ||
-        input.eventId ||
-        input.locationId ||
-        input.discountId
+        input.eventId !== undefined ||
+        input.locationId !== undefined ||
+        input.discountId !== undefined
       ) {
         const camp = await queryRunner.manager.update(
           Camp,
