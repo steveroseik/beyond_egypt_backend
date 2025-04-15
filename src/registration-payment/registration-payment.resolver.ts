@@ -6,6 +6,7 @@ import {
   Int,
   Parent,
   ResolveField,
+  Context,
 } from '@nestjs/graphql';
 import { RegistrationPaymentHistoryService } from './registration-payment.service';
 import { RegistrationPayment } from './entities/registration-payment.entity';
@@ -14,6 +15,8 @@ import { UpdateRegistrationPaymentHistoryInput } from './dto/update-registration
 import * as dotenv from 'dotenv';
 import { RegistrationPaymentsPage } from './entities/registration-payments-page.entity';
 import { PaginateRegistrationPaymentsInput } from './dto/paginate-registration-payments.input';
+import { User } from 'src/user/entities/user.entity';
+import { DataloaderRegistry } from 'src/dataloaders/dataloaderRegistry';
 dotenv.config();
 
 @Resolver(() => RegistrationPayment)
@@ -72,5 +75,13 @@ export class RegistrationPaymentHistoryResolver {
     return payment.receipt
       ? `https://${process.env.S3_BUCKET_NAME}.s3.amazonaws.com/${payment.receipt}`
       : null;
+  }
+
+  @ResolveField(() => User, { nullable: true })
+  user(
+    @Parent() parent: RegistrationPayment,
+    @Context() { loaders }: { loaders: DataloaderRegistry },
+  ) {
+    return parent.userId ? loaders.UsersDataLoader.load(parent.userId) : null;
   }
 }
