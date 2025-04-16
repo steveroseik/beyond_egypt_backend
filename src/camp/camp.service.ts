@@ -131,7 +131,7 @@ export class CampService {
         capacity: variant.capacity ?? input.defaultCapacity,
         price:
           variant.price?.toFixed(2) ??
-          input.defaultPrice.toFixed(moneyFixation),
+          input.defaultPrice?.toFixed(moneyFixation),
         campId,
         remainingCapacity: variant.capacity,
       };
@@ -264,7 +264,13 @@ export class CampService {
       const fileIds = await this.handleFiles(input, queryRunner);
       const ageRangeIds = await this.handleAgeRanges(input, queryRunner);
 
-      console.log('input', input);
+      const camp = await this.repo.findOne({
+        where: { id: input.id },
+      });
+
+      if (!camp) {
+        throw new Error('Camp does not exist');
+      }
 
       if (
         input.defaultPrice ||
@@ -340,7 +346,38 @@ export class CampService {
       }
 
       if (input.variants?.length) {
-        await this.handleCampVariants(input, queryRunner, input.id);
+        const defaultPrice = input.defaultPrice ?? camp.defaultPrice;
+        const defaultCapacity = input.defaultCapacity ?? camp.defaultCapacity;
+
+        if (!defaultCapacity) {
+          for (const variant of input.variants) {
+            if (!variant.capacity) {
+              throw new Error(
+                'Camp must have a default capacity or each week must have a capacity',
+              );
+            }
+          }
+        }
+
+        if (!defaultPrice) {
+          for (const variant of input.variants) {
+            if (!variant.price) {
+              throw new Error(
+                'Camp must have a default price or each week must have a price',
+              );
+            }
+          }
+        }
+
+        await this.handleCampVariants(
+          {
+            ...input,
+            defaultPrice,
+            defaultCapacity,
+          },
+          queryRunner,
+          input.id,
+        );
       }
 
       if (input.variantsToUpdate?.length) {
