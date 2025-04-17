@@ -44,6 +44,7 @@ export enum CampRegistrationStatus {
   rejected = 'rejected',
   cancelled = 'cancelled',
   modified = 'modified',
+  refunded = 'refunded',
 }
 
 registerEnumType(CampRegistrationStatus, {

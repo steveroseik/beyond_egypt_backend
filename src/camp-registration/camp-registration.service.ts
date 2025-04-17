@@ -1140,24 +1140,24 @@ export class CampRegistrationService {
       referenceNumber: input.referenceNumber,
     });
 
-    const reservations: CreateRegistrationReserveInput[] = [];
-    campVariantVacancies.forEach((value, key) => {
-      reservations.push({
-        campRegistrationId: campRegistration.id,
-        campVariantId: key,
-        count: value,
-        paymentId: payment.id,
-        userId,
-      });
-    });
+    // const reservations: CreateRegistrationReserveInput[] = [];
+    // campVariantVacancies.forEach((value, key) => {
+    //   reservations.push({
+    //     campRegistrationId: campRegistration.id,
+    //     campVariantId: key,
+    //     count: value,
+    //     paymentId: payment.id,
+    //     userId,
+    //   });
+    // });
 
-    const reserve = await queryRunner.manager.insert(
-      RegistrationReserve,
-      reservations,
-    );
+    // const reserve = await queryRunner.manager.insert(
+    //   RegistrationReserve,
+    //   reservations,
+    // );
 
-    if (reserve.raw.affectedRows !== reservations.length)
-      throw Error('Failed to reserve registrations');
+    // if (reserve.raw.affectedRows !== reservations.length)
+    //   throw Error('Failed to reserve registrations');
 
     const updateCampRegistration = await queryRunner.manager.update(
       CampRegistration,
@@ -1306,6 +1306,16 @@ export class CampRegistrationService {
       );
     });
 
+    if (
+      !existingVariants.length &&
+      !variantsToInsert.length &&
+      !variantsToUpdate.length
+    ) {
+      throw new Error(
+        'Cannot remove all weeks, you can cancel registration instead',
+      );
+    }
+
     let oldDiscount: Discount = undefined;
     let newDiscount: Discount = null;
 
@@ -1354,10 +1364,6 @@ export class CampRegistrationService {
       //delete variants
       await this.deleteCampVariantRegistrations(variantsToDelete, queryRunner);
 
-      console.table(variantsToInsert);
-      console.table(existingVariants);
-      console.table(updatedVariants);
-
       // insert new variants and get total price
       const newTotalPrice = await this.handleCampVariantRegistrations({
         campVariantRegistrations: variantsToInsert,
@@ -1367,8 +1373,6 @@ export class CampRegistrationService {
         updatedRegistrations: updatedVariants,
         overwriteExisting: false,
       });
-
-      console.log('NewTT', newTotalPrice);
 
       return await this.updateMoneyDifferenceAndOther(
         input,
