@@ -146,8 +146,7 @@ export class CampResolver {
     @Context() { loaders }: { loaders: DataloaderRegistry },
   ) {
     return parent.discountId
-      ? (parent.discountId ??
-          loaders.DiscountsDataLoader.load(parent.discountId))
+      ? (parent.discount ?? loaders.DiscountsDataLoader.load(parent.discountId))
       : null;
   }
 }

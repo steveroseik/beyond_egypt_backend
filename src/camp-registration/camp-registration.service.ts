@@ -788,7 +788,7 @@ export class CampRegistrationService {
     try {
       const campRegistration = await this.repo.findOne({
         where: { id: input.campRegistrationId },
-        relations: ['campVariantRegistrations', 'payments', 'camp'],
+        relations: ['campVariantRegistrations', 'camp'],
       });
 
       if (!campRegistration) {
@@ -868,6 +868,41 @@ export class CampRegistrationService {
     if (discount) {
       if (campRegistration.discountId !== discount.id) {
         /// apply discount on registration
+        const totalAmount = await this.handleCampVariantRegistrations({
+          queryRunner,
+          discount,
+          campRegistration,
+          existingRegistrations: campRegistration.campVariantRegistrations,
+        });
+
+        let discountAmount: Decimal = undefined;
+
+        if (discount?.amount) {
+          discountAmount = min([totalAmount, discount.amount]);
+        }
+
+        const updated = await queryRunner.manager.update(
+          CampRegistration,
+          { id: campRegistration.id },
+          {
+            discountId: discount.id,
+            discountAmount: discountAmount?.toFixed(moneyFixation),
+            amount: totalAmount?.toFixed(moneyFixation),
+          },
+        );
+
+        if (updated.affected !== 1) {
+          throw new Error('Failed to update camp registration');
+        }
+
+        await queryRunner.manager.update(
+          RegistrationPayment,
+          {
+            campRegistrationId: campRegistration.id,
+            status: PaymentStatus.pending,
+          },
+          { status: PaymentStatus.expired },
+        );
       }
     }
 
