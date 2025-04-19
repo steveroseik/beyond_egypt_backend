@@ -131,7 +131,6 @@ export class Camp {
   deletedAt?: Date;
 
   @ManyToMany(() => AgeRange, (ageRange) => ageRange.camps, {
-    cascade: true,
     onDelete: 'CASCADE',
   })
   @JoinTable({

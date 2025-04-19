@@ -55,7 +55,10 @@ export class AgeRange {
   @Field({ nullable: true })
   deletedAt?: Date;
 
-  @ManyToMany(() => Camp, (camp) => camp.ageRanges, { nullable: true })
+  @ManyToMany(() => Camp, (camp) => camp.ageRanges, {
+    nullable: true,
+    onDelete: 'CASCADE',
+  })
   @Field(() => [Camp], { nullable: true })
   camps?: Camp[];
 }
