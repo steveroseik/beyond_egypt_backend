@@ -3,6 +3,7 @@ import BigNumber from 'bignumber.js';
 import { AgeRange } from 'src/age-range/entities/age-range.entity';
 import { CampRegistration } from 'src/camp-registration/entities/camp-registration.entity';
 import { CampVariant } from 'src/camp-variant/entities/camp-variant.entity';
+import { Discount } from 'src/discount/entities/discount.entity';
 import { Event } from 'src/event/entities/event.entity';
 import { File } from 'src/file/entities/file.entity';
 import { Location } from 'src/location/entities/location.entity';
@@ -22,6 +23,7 @@ import {
   OneToMany,
   JoinColumn,
   ManyToOne,
+  OneToOne,
 } from 'typeorm';
 
 @Entity('camp', { schema: 'beyond_egypt' })
@@ -202,4 +204,14 @@ export class Camp {
   )
   @Field(() => [CampRegistration], { nullable: true })
   campRegistrations: CampRegistration[];
+
+  @ManyToOne(() => Discount, (discount) => discount.camps, {
+    onDelete: 'SET NULL',
+    onUpdate: 'CASCADE',
+    nullable: true,
+    cascade: true,
+  })
+  @JoinColumn({ name: 'discountId', referencedColumnName: 'id' })
+  @Field(() => Discount, { nullable: true })
+  discount?: Discount;
 }

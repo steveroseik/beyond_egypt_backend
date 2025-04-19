@@ -151,6 +151,7 @@ type RegistrationPayment {
   expirationDate: DateTime
   createdAt: DateTime!
   campRegistration: CampRegistration!
+  user: User
 }
 
 enum PaymentMethod {
@@ -199,6 +200,22 @@ enum CampRegistrationStatus {
   rejected
   cancelled
   modified
+  refunded
+}
+
+type Discount {
+  id: Int!
+  name: String!
+  code: String
+  percentage: Decimal
+  maximumDiscount: Decimal
+  amount: Decimal
+  startDate: DateTime!
+  endDate: DateTime!
+  createdAt: DateTime!
+  lastModified: DateTime!
+  deletedAt: DateTime
+  camps: [Camp!]
 }
 
 type File {
@@ -269,6 +286,7 @@ type Camp {
   location: Location!
   event: Event
   campRegistrations: [CampRegistration!]
+  discount: Discount
   thumbnail: File!
   parentCampRegistration(parentId: String): CampRegistration
 }
@@ -313,20 +331,6 @@ type RegistrationReserve {
   userId: String!
   expirationDate: DateTime
   createdAt: DateTime!
-}
-
-type Discount {
-  id: Int!
-  name: String!
-  code: String
-  percentage: Decimal
-  maximumDiscount: Decimal
-  amount: Decimal
-  startDate: DateTime!
-  endDate: DateTime!
-  createdAt: DateTime!
-  lastModified: DateTime!
-  deletedAt: DateTime
 }
 
 type CampRegistrationPage {
@@ -503,12 +507,12 @@ type Query {
   findInactiveUser(input: FindInactiveUserInput!): User
   findOneUser(id: String!): User!
   paginateUsers(input: PaginateUsersInput!): UsersPage!
+  findOneDiscount(id: Int!): Discount
+  paginateDiscounts(input: PaginateDiscountsInput!): DiscountsPage!
   findOneCampRegistration(id: Int!): CampRegistration
   paginateCampRegistrations(input: PaginateCampRegistrationsInput!): CampRegistrationPage!
   childReport(id: Int!): ChildReport!
   childReportHistory(id: Int!): ChildReportHistory!
-  findOneDiscount(id: Int!): Discount
-  paginateDiscounts(input: PaginateDiscountsInput!): DiscountsPage!
   eventFile(id: Int!): EventFile!
   registrationHistory(id: Int!): RegistrationHistory!
   registrationPaymentHistory(id: Int!): RegistrationPayment!
@@ -623,6 +627,15 @@ enum UsersOrderField {
   lastModified
 }
 
+input PaginateDiscountsInput {
+  isAsc: Boolean! = false
+  limit: Int = 20
+  afterCursor: String
+  beforeCursor: String
+  search: String
+  active: Boolean
+}
+
 input PaginateCampRegistrationsInput {
   isAsc: Boolean! = false
   limit: Int = 20
@@ -632,15 +645,6 @@ input PaginateCampRegistrationsInput {
   campIds: [Int!]
   parentIds: [String!]
   statuses: [CampRegistrationStatus!]
-}
-
-input PaginateDiscountsInput {
-  isAsc: Boolean! = false
-  limit: Int = 20
-  afterCursor: String
-  beforeCursor: String
-  search: String
-  active: Boolean
 }
 
 input PaginateRegistrationPaymentsInput {
@@ -706,6 +710,9 @@ type Mutation {
   removeUser(id: String!): User!
   tempLogin(input: TempSignInInput!): JSONObject!
   signIn(input: TokenRequestInput!): UserAuthResponse!
+  createDiscount(input: CreateDiscountInput!): JSONObject!
+  updateDiscount(input: UpdateDiscountInput!): JSONObject!
+  removeDiscount(ids: [Int!]!): JSONObject!
   createCampRegistration(input: CreateCampRegistrationInput!): JSONObject!
   completeCampRegistration(input: CompleteCampRegistrationInput!): JSONObject!
   removeCampRegistration(id: Int!): CampRegistration!
@@ -719,9 +726,6 @@ type Mutation {
   createChildReportHistory(createChildReportHistoryInput: CreateChildReportHistoryInput!): ChildReportHistory!
   updateChildReportHistory(updateChildReportHistoryInput: UpdateChildReportHistoryInput!): ChildReportHistory!
   removeChildReportHistory(id: Int!): ChildReportHistory!
-  createDiscount(input: CreateDiscountInput!): JSONObject!
-  updateDiscount(input: UpdateDiscountInput!): JSONObject!
-  removeDiscount(ids: [Int!]!): JSONObject!
   createEventFile(createEventFileInput: CreateEventFileInput!): EventFile!
   updateEventFile(updateEventFileInput: UpdateEventFileInput!): EventFile!
   removeEventFile(id: Int!): EventFile!
@@ -1004,6 +1008,27 @@ input TokenRequestInput {
   isAdmin: Boolean = false
 }
 
+input CreateDiscountInput {
+  name: String!
+  code: String
+  percentage: Decimal
+  maximumDiscount: Decimal
+  amount: Decimal
+  startDate: DateTime!
+  endDate: DateTime!
+}
+
+input UpdateDiscountInput {
+  name: String
+  code: String
+  percentage: Decimal
+  maximumDiscount: Decimal
+  amount: Decimal
+  startDate: DateTime
+  endDate: DateTime
+  id: Int!
+}
+
 input CreateCampRegistrationInput {
   parentId: String!
   campId: Int!
@@ -1041,6 +1066,7 @@ input ProcessCampRegistrationInput {
   referenceNumber: Int
   refundPolicyConsent: Boolean
   behaviorConsent: Boolean
+  discountId: Int
 }
 
 input Base64Image {
@@ -1075,27 +1101,6 @@ input CreateChildReportHistoryInput {
 input UpdateChildReportHistoryInput {
   """Example field (placeholder)"""
   exampleField: Int
-  id: Int!
-}
-
-input CreateDiscountInput {
-  name: String!
-  code: String
-  percentage: Decimal
-  maximumDiscount: Decimal
-  amount: Decimal
-  startDate: DateTime!
-  endDate: DateTime!
-}
-
-input UpdateDiscountInput {
-  name: String
-  code: String
-  percentage: Decimal
-  maximumDiscount: Decimal
-  amount: Decimal
-  startDate: DateTime
-  endDate: DateTime
   id: Int!
 }
 

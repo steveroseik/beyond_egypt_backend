@@ -28,6 +28,8 @@ import { AllergyService } from 'src/allergy/allergy.service';
 import AllergiesByChildDataLoader from './loaders/allergiesByChild.loader';
 import { UserService } from 'src/user/user.service';
 import { UsersDataLoader } from './loaders/users.loader';
+import { DiscountsDataLoader } from './loaders/discounts.loader';
+import { DiscountService } from 'src/discount/discount.service';
 
 export class DataloaderRegistry {
   private cache: Record<string, any> = {};
@@ -45,6 +47,7 @@ export class DataloaderRegistry {
     private ageRangeService: AgeRangeService,
     private allergyService: AllergyService,
     private userService: UserService,
+    private discountService: DiscountService,
   ) {}
 
   /**
@@ -155,6 +158,12 @@ export class DataloaderRegistry {
   public get UsersDataLoader() {
     return this.get('UsersDataLoader', () =>
       UsersDataLoader.create(this.userService),
+    );
+  }
+
+  public get DiscountsDataLoader() {
+    return this.get('DiscountsDataLoader', () =>
+      DiscountsDataLoader.create(this.discountService),
     );
   }
   /**

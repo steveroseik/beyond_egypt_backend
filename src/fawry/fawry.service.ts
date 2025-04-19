@@ -20,6 +20,7 @@ import * as dotenv from 'dotenv';
 import { generateQueryParams } from 'support/query-params.generator';
 import { CampRegistration } from 'src/camp-registration/entities/camp-registration.entity';
 import { MailService } from 'src/mail/mail.service';
+import { Camp } from 'src/camp/entities/camp.entity';
 
 dotenv.config();
 
@@ -205,7 +206,7 @@ export class FawryService {
     const updateCampRegistration = await queryRunner.manager.update(
       CampRegistration,
       { id: payment.campRegistrationId },
-      { status: CampRegistrationStatus.accepted, amount: null },
+      { status: CampRegistrationStatus.accepted, paidAmount: payment.amount },
     );
 
     if (payment.status != PaymentStatus.expired) {
@@ -217,6 +218,8 @@ export class FawryService {
         RegistrationReserve,
         { paymentId: payment.id },
       );
+    } else {
+      await this.deductVacancies(payment.campRegistrationId, queryRunner);
     }
 
     this.mailService.sendCampRegistrationConfirmation(
@@ -226,5 +229,46 @@ export class FawryService {
     return res.redirect(
       `${process.env.FRONTEND_URL}/payment-success?paymentId=${payment.id}`,
     );
+  }
+
+  async deductVacancies(campRegistrationId: number, queryRunner: QueryRunner) {
+    const camp = await queryRunner.manager.findOne(CampRegistration, {
+      where: { id: campRegistrationId },
+      relations: ['campVariantRegistrations'],
+    });
+
+    const variantIds = camp.campVariantRegistrations.map(
+      (variant) => variant.campVariantId,
+    );
+
+    const variantsVacancies: Map<number, number> = new Map();
+
+    const variants = await queryRunner.manager.find(CampVariant, {
+      where: { id: In(variantIds) },
+      lock: { mode: 'pessimistic_write' },
+    });
+
+    for (const variant of variants) {
+      const variantCount = camp.campVariantRegistrations.filter(
+        (v) => v.campVariantId === variant.id,
+      ).length;
+
+      if (variantCount) {
+        variantsVacancies.set(variant.id, variantCount);
+      }
+    }
+
+    for (const [variantId, count] of variantsVacancies.entries()) {
+      const update = await queryRunner.manager.update(
+        CampVariant,
+        { id: variantId },
+        {
+          remainingCapacity: () => `remainingCapacity - ${count}`,
+        },
+      );
+      if (update.affected !== 1) {
+        throw new Error('Failed to update camp variant capacity');
+      }
+    }
   }
 }

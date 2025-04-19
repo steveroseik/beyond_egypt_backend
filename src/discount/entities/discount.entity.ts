@@ -1,6 +1,7 @@
 import { ObjectType, Field, Int } from '@nestjs/graphql';
 import BigNumber from 'bignumber.js';
 import moment from 'moment-timezone';
+import { Camp } from 'src/camp/entities/camp.entity';
 import { RegistrationHistory } from 'src/registration-history/entities/registration-history.entity';
 import { moneyFixation } from 'support/constants';
 import { Decimal, GraphqlDecimal } from 'support/scalars';
@@ -10,6 +11,7 @@ import {
   DeleteDateColumn,
   Entity,
   ManyToMany,
+  OneToMany,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
@@ -107,6 +109,10 @@ export class Discount {
     const endDiff = now.diff(this.endDate, 'seconds');
     return startDiff >= 0 && endDiff <= 0;
   };
+
+  @OneToMany(() => Camp, (camp) => camp.discount, { nullable: true })
+  @Field(() => [Camp], { nullable: true })
+  camps?: Camp[];
 
   // @ManyToMany(
   //   () => RegistrationHistory,

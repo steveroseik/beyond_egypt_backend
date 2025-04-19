@@ -626,21 +626,6 @@ export class CampRegistrationService {
       // reset all payments
       await this.resetCampPaymentMethod(campRegistration, queryRunner);
 
-      if (
-        campRegistration.paymentMethod === PaymentMethod.cash ||
-        input.paymentMethod === PaymentMethod.cash
-      ) {
-        const payment = await queryRunner.manager.save(RegistrationPayment, {
-          campRegistrationId: campRegistration.id,
-          amount: total.toFixed(moneyFixation),
-          paymentMethod: PaymentMethod.cash,
-        });
-
-        if (!payment) {
-          throw new Error('Failed to create payment record');
-        }
-      }
-
       await queryRunner.commitTransaction();
 
       return {
@@ -815,7 +800,11 @@ export class CampRegistrationService {
       }
 
       if (campRegistration.status !== CampRegistrationStatus.idle) {
-        throw new Error('Camp registration already processed');
+        if (input.discountId) {
+          throw new Error(
+            'Discounts are not allowed for completed registrations',
+          );
+        }
       }
 
       if (
@@ -823,6 +812,19 @@ export class CampRegistrationService {
         input.refundPolicyConsent === false
       ) {
         throw new Error('Refund policy consent is required');
+      }
+
+      const paymentMethod =
+        input.paymentMethod ?? campRegistration.paymentMethod;
+
+      if (!paymentMethod) throw Error('Select a payment method first');
+
+      if (userType == UserType.admin) {
+        if (paymentMethod === PaymentMethod.fawry) {
+          throw Error(
+            'Admins cannot initiate fawry payments, only parents can',
+          );
+        }
       }
 
       //TODO: handle two scenarios
@@ -836,6 +838,7 @@ export class CampRegistrationService {
         campRegistration,
         queryRunner,
         userId,
+        paymentMethod,
         input,
       );
     } catch (e) {
@@ -854,11 +857,19 @@ export class CampRegistrationService {
     campRegistration: CampRegistration,
     queryRunner: QueryRunner,
     userId: string,
+    paymentMethod: PaymentMethod,
     input: ProcessCampRegistrationInput,
   ) {
-    const paymentMethod = input.paymentMethod ?? campRegistration.paymentMethod;
+    const discountId = input.discountId ?? campRegistration.discountId;
 
-    if (!paymentMethod) throw Error('Select a payment method first');
+    // validate discount
+    const discount = await this.findDiscount(input.discountId, queryRunner);
+
+    if (discount) {
+      if (campRegistration.discountId !== discount.id) {
+        /// apply discount on registration
+      }
+    }
 
     let successfulPayments: RegistrationPayment[] = [];
     let pendingPayments: RegistrationPayment[] = [];

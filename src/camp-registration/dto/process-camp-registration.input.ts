@@ -21,4 +21,7 @@ export class ProcessCampRegistrationInput {
 
   @Field({ nullable: true })
   behaviorConsent: boolean;
+
+  @Field({ nullable: true })
+  discountId?: number;
 }

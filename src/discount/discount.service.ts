@@ -3,7 +3,7 @@ import { CreateDiscountInput } from './dto/create-discount.input';
 import { UpdateDiscountInput } from './dto/update-discount.input';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Discount } from './entities/discount.entity';
-import { DataSource, Repository } from 'typeorm';
+import { DataSource, In, Repository } from 'typeorm';
 import { PaginateDiscountsInput } from './dto/paginate-discounts.input';
 import { buildPaginator } from 'typeorm-cursor-pagination';
 import { moneyFixation } from 'support/constants';
@@ -138,5 +138,17 @@ export class DiscountService {
     });
 
     return paginator.paginate(queryBuilder);
+  }
+
+  findDiscountsByCampIds(keys: readonly number[]) {
+    return this.repo
+      .createQueryBuilder('discount')
+      .innerJoinAndSelect('discount.camp', 'camp')
+      .where('discount.campId IN (:...keys)', { keys })
+      .getMany();
+  }
+
+  findAllByKeys(keys: readonly number[]) {
+    return this.repo.find({ where: { id: In(keys) } });
   }
 }
