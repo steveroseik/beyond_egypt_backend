@@ -130,7 +130,10 @@ export class Camp {
   @Field({ nullable: true })
   deletedAt?: Date;
 
-  @ManyToMany(() => AgeRange, (ageRange) => ageRange.camps)
+  @ManyToMany(() => AgeRange, (ageRange) => ageRange.camps, {
+    cascade: true,
+    onDelete: 'SET NULL',
+  })
   @JoinTable({
     name: 'camp-age-range',
     inverseJoinColumn: {
