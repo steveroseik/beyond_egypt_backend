@@ -865,47 +865,49 @@ export class CampRegistrationService {
   ) {
     const discountId = input.discountId ?? campRegistration.discountId;
 
-    // validate discount
-    const discount = await this.findDiscount(discountId, queryRunner);
+    if (discountId) {
+      // validate discount
+      const discount = await this.findDiscount(discountId, queryRunner);
 
-    if (discount) {
-      if (campRegistration.discountId !== discount.id) {
-        /// apply discount on registration
-        const totalAmount = await this.handleCampVariantRegistrations({
-          queryRunner,
-          discount,
-          campRegistration,
-          existingRegistrations: campRegistration.campVariantRegistrations,
-        });
+      if (discount) {
+        if (campRegistration.discountId !== discount.id) {
+          /// apply discount on registration
+          const totalAmount = await this.handleCampVariantRegistrations({
+            queryRunner,
+            discount,
+            campRegistration,
+            existingRegistrations: campRegistration.campVariantRegistrations,
+          });
 
-        let discountAmount: Decimal = undefined;
+          let discountAmount: Decimal = undefined;
 
-        if (discount?.amount) {
-          discountAmount = min([totalAmount, discount.amount]);
+          if (discount?.amount) {
+            discountAmount = min([totalAmount, discount.amount]);
+          }
+
+          const updated = await queryRunner.manager.update(
+            CampRegistration,
+            { id: campRegistration.id },
+            {
+              discountId: discount.id,
+              discountAmount: discountAmount?.toFixed(moneyFixation),
+              amount: totalAmount?.toFixed(moneyFixation),
+            },
+          );
+
+          if (updated.affected !== 1) {
+            throw new Error('Failed to update camp registration');
+          }
+
+          await queryRunner.manager.update(
+            RegistrationPayment,
+            {
+              campRegistrationId: campRegistration.id,
+              status: PaymentStatus.pending,
+            },
+            { status: PaymentStatus.expired },
+          );
         }
-
-        const updated = await queryRunner.manager.update(
-          CampRegistration,
-          { id: campRegistration.id },
-          {
-            discountId: discount.id,
-            discountAmount: discountAmount?.toFixed(moneyFixation),
-            amount: totalAmount?.toFixed(moneyFixation),
-          },
-        );
-
-        if (updated.affected !== 1) {
-          throw new Error('Failed to update camp registration');
-        }
-
-        await queryRunner.manager.update(
-          RegistrationPayment,
-          {
-            campRegistrationId: campRegistration.id,
-            status: PaymentStatus.pending,
-          },
-          { status: PaymentStatus.expired },
-        );
       }
     }
 
