@@ -721,6 +721,9 @@ export class CampRegistrationService {
     queryRunner: QueryRunner,
     validate: boolean = true,
   ): Promise<Discount> {
+    if (!id) {
+      throw new Error('Invalid discount request, missing id');
+    }
     const discount = await queryRunner.manager.findOne(Discount, {
       where: { id },
     });
@@ -863,7 +866,7 @@ export class CampRegistrationService {
     const discountId = input.discountId ?? campRegistration.discountId;
 
     // validate discount
-    const discount = await this.findDiscount(input.discountId, queryRunner);
+    const discount = await this.findDiscount(discountId, queryRunner);
 
     if (discount) {
       if (campRegistration.discountId !== discount.id) {
