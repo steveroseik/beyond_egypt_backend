@@ -11,12 +11,6 @@ export class CreateRegistrationReserveInput {
   @Field(() => Int)
   count: number;
 
-  @Field(() => Int)
-  paymentId: number;
-
-  @Field(() => String)
-  userId: string;
-
   @Field({ nullable: true })
   expirationDate?: Date;
 }

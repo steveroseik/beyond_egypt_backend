@@ -28,9 +28,9 @@ export class CampVariant {
   @Field()
   campId: number;
 
-  @Column('varchar', { name: 'name', nullable: true, length: 255 })
-  @Field({ nullable: true })
-  name?: string;
+  @Column('varchar', { name: 'name', length: 255 })
+  @Field()
+  name: string;
 
   @Column('decimal', {
     name: 'price',

@@ -25,14 +25,6 @@ export class RegistrationReserve {
   @Field(() => Int)
   count: number;
 
-  @Column('int', { name: 'paymentId' })
-  @Field(() => Int)
-  paymentId: number;
-
-  @Column('varchar', { name: 'userId' })
-  @Field(() => String)
-  userId: string;
-
   @Column('timestamp', {
     name: 'expirationDate',
     precision: 3,

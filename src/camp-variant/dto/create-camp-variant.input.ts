@@ -6,8 +6,8 @@ import { Decimal, GraphqlDecimal } from 'support/scalars';
 export class CreateCampVariantInput {
   campId: number;
 
-  @Field({ nullable: true })
-  name?: string;
+  @Field()
+  name: string;
 
   @Field(() => GraphqlDecimal, { nullable: true })
   price?: Decimal;

@@ -92,7 +92,8 @@ export class FawryService {
     );
 
     const reserves = await queryRunner.manager.find(RegistrationReserve, {
-      where: { paymentId: payment.id },
+      where: { campRegistrationId: payment.campRegistrationId },
+      lock: { mode: 'pessimistic_write' },
     });
 
     if (reserves.length) {
