@@ -141,6 +141,8 @@ enum ShirtSize {
 type RegistrationPayment {
   id: Int!
   referenceNumber: Int
+  fawryReferenceNumber: String
+  parentId: Int
   campRegistrationId: Int!
   paymentMethod: PaymentMethod!
   url: String
@@ -151,6 +153,8 @@ type RegistrationPayment {
   expirationDate: DateTime
   createdAt: DateTime!
   campRegistration: CampRegistration!
+  parentPayment: RegistrationPayment
+  childPayments: [RegistrationPayment!]
   user: User
 }
 
@@ -164,7 +168,6 @@ enum PaymentStatus {
   pending
   paid
   failed
-  refunded
   expired
 }
 
@@ -717,6 +720,7 @@ type Mutation {
   updateCampRegistration(input: UpdateCampRegistrationInput!): JSONObject!
   processCampRegistration(input: ProcessCampRegistrationInput!): JSONObject!
   confirmCampRegistration(input: ConfirmCampRegistrationInput!): JSONObject!
+  campRegistrationRefundOptions(input: CampRegistrationRefundOptionsInput!): JSONObject!
   sendTestEmail: JSONObject
   createChildReport(createChildReportInput: CreateChildReportInput!): ChildReport!
   updateChildReport(updateChildReportInput: UpdateChildReportInput!): ChildReport!
@@ -1078,6 +1082,10 @@ input ConfirmCampRegistrationInput {
   receipt: Base64Image
   referenceNumber: Int
   paidAmount: Decimal!
+}
+
+input CampRegistrationRefundOptionsInput {
+  CampRegistrationId: Int!
 }
 
 input CreateChildReportInput {

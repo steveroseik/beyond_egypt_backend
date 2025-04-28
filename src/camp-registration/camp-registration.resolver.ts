@@ -25,6 +25,7 @@ import { User } from 'src/user/entities/user.entity';
 import { UpdateCampRegistrationInput } from './dto/update-camp-registration.input';
 import { ConfirmCampRegistrationInput } from './dto/confirm-camp-registration.input';
 import { GraphqlDecimal } from 'support/scalars';
+import { CampRegistrationRefundOptionsInput } from './dto/camp-registration-refund-options.input';
 
 @Resolver(() => CampRegistration)
 export class CampRegistrationResolver {
@@ -132,6 +133,13 @@ export class CampRegistrationResolver {
       };
     }
     return this.campRegistrationService.confirmCampRegistration(input, userId);
+  }
+
+  @Mutation(() => GraphQLJSONObject)
+  campRegistrationRefundOptions(
+    @Args('input') input: CampRegistrationRefundOptionsInput,
+  ) {
+    return this.campRegistrationService.campRegistrationRefundOptions(input);
   }
 
   @ResolveField(() => [CampVariantRegistration], { nullable: true })

@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { CreateCampRegistrationInput } from './dto/create-camp-registration.input';
 import { CompleteCampRegistrationInput } from './dto/complete-camp-registration.input';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, In, QueryRunner, Repository } from 'typeorm';
+import { DataSource, In, MoreThan, QueryRunner, Repository } from 'typeorm';
 import { CampRegistration } from './entities/camp-registration.entity';
 import {
   CampRegistrationStatus,
@@ -40,6 +40,7 @@ import { generateCampRegistrationEmail } from 'src/mail/templates/camp-registrat
 import { UpdateCampRegistrationInput } from './dto/update-camp-registration.input';
 import { UpdateCampVariantRegistrationInput } from 'src/camp-variant-registration/dto/update-camp-variant-registration.input';
 import { ConfirmCampRegistrationInput } from './dto/confirm-camp-registration.input';
+import { CampRegistrationRefundOptionsInput } from './dto/camp-registration-refund-options.input';
 
 dotenv.config();
 
@@ -1956,7 +1957,7 @@ export class CampRegistrationService {
     newTotalPrice = newTotalPrice?.minus(discountAmount);
     const difference = newTotalPrice.minus(paidAmount);
 
-    const newStatus = difference.isNegative()
+    const newStatus = difference.isLessThanOrEqualTo(0)
       ? CampRegistrationStatus.accepted
       : CampRegistrationStatus.pending;
 
@@ -2037,9 +2038,6 @@ export class CampRegistrationService {
   ): Promise<Map<number, number> | null> {
     if (!campVariantRegistrations?.length) return null;
     const campVariantVacancies = new Map<number, number>();
-
-    console.log('campVariantRegistrations in VALIDATION');
-    console.table(campVariantRegistrations);
 
     for (const cvr of campVariantRegistrations) {
       // validate if there are no duplicate registrations
@@ -2305,6 +2303,121 @@ export class CampRegistrationService {
         success: true,
         message: 'Camp Registration confirmed & paid successfully',
       };
+    } catch (e) {
+      await queryRunner.rollbackTransaction();
+      console.log(e);
+      return {
+        success: false,
+        message: e.message,
+      };
+    } finally {
+      queryRunner.release();
+    }
+  }
+
+  async campRegistrationRefundOptions(
+    input: CampRegistrationRefundOptionsInput,
+  ) {
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      const campRegistration = await queryRunner.manager.findOne(
+        CampRegistration,
+        {
+          where: { id: input.CampRegistrationId },
+          relations: ['campVariantRegistrations', 'camp'],
+        },
+      );
+
+      if (!campRegistration) {
+        throw new Error('Camp registration not found or incomplete');
+      }
+
+      const amountToBeRefunded = (
+        campRegistration.amount ?? new Decimal('0')
+      ).minus(campRegistration.paidAmount ?? 0);
+
+      if (amountToBeRefunded.isGreaterThanOrEqualTo(0)) {
+        throw new Error('Registration has no amount to be refunded');
+      }
+
+      const payments = await queryRunner.manager.find(RegistrationPayment, {
+        where: {
+          campRegistrationId: campRegistration.id,
+          status: PaymentStatus.paid,
+          amount: MoreThan(0),
+        },
+        relations: ['childPayments'],
+        lock: { mode: 'pessimistic_write' },
+      });
+
+      const validPayments: {
+        payment: RegistrationPayment;
+        amount: Decimal;
+      }[] = [];
+
+      if (payments?.length) {
+        for (const payment of payments) {
+          if (payment.childPayments?.length) {
+            const childPaymentsTotal = payment.childPayments.reduce(
+              (acc, childPayment) =>
+                childPayment.amount.isNegative()
+                  ? acc.plus(childPayment.amount)
+                  : 0,
+              new Decimal('0'),
+            );
+            const difference = payment.amount.minus(childPaymentsTotal);
+            if (difference.isGreaterThan(0)) {
+              validPayments.push({ payment, amount: difference });
+            }
+          } else {
+            validPayments.push({ payment, amount: payment.amount });
+          }
+        }
+      }
+
+      validPayments.sort((a, b) => {
+        if (a.payment.paymentMethod === b.payment.paymentMethod) {
+          return a.amount.isLessThan(b.amount) ? -1 : 1;
+        } else {
+          if (a.payment.paymentMethod === PaymentMethod.fawry) {
+            return 1;
+          } else {
+            return -1;
+          }
+        }
+      });
+
+      let remRefund = amountToBeRefunded;
+      const refundOptions: {
+        amount: Decimal;
+        paymentId?: number;
+        paymentMethod?: PaymentMethod;
+      }[] = [];
+
+      do {
+        const payment = validPayments.pop();
+        if (!payment) {
+          if (remRefund.isGreaterThan(0)) {
+            throw new Error('Not enough payments to refund');
+          }
+        }
+
+        // asjdhkjashdkjhaskdjhkjhkj
+        const amount = payment.amount.isLessThan(remRefund)
+          ? payment.amount
+          : remRefund;
+
+        refundOptions.push({
+          amount,
+          paymentId: payment.payment.id,
+          paymentMethod: PaymentMethod.fawry,
+        });
+
+        remRefund = remRefund.minus(amount);
+      } while (remRefund.isEqualTo(0));
     } catch (e) {
       await queryRunner.rollbackTransaction();
       console.log(e);

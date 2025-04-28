@@ -55,7 +55,6 @@ export enum PaymentStatus {
   pending = 'pending',
   paid = 'paid',
   failed = 'failed',
-  refunded = 'refunded',
   expired = 'expired',
 }
 

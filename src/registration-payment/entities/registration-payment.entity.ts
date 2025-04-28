@@ -14,6 +14,7 @@ import {
   Entity,
   JoinColumn,
   ManyToOne,
+  OneToMany,
   PrimaryGeneratedColumn,
   Unique,
 } from 'typeorm';
@@ -32,6 +33,14 @@ export class RegistrationPayment {
   })
   @Field({ nullable: true })
   referenceNumber?: number;
+
+  @Column('varchar', { name: 'fawryReferenceNumber', nullable: true })
+  @Field({ nullable: true })
+  fawryReferenceNumber?: string;
+
+  @Column('int', { name: 'parentId', nullable: true })
+  @Field({ nullable: true })
+  parentId?: number;
 
   @Column('int', { name: 'campRegistrationId' })
   @Field()
@@ -97,4 +106,17 @@ export class RegistrationPayment {
   @JoinColumn({ name: 'campRegistrationId', referencedColumnName: 'id' })
   @Field(() => CampRegistration)
   campRegistration: CampRegistration;
+
+  @ManyToOne(() => RegistrationPayment, (payment) => payment.childPayments, {
+    nullable: true,
+    onDelete: 'CASCADE',
+    onUpdate: 'CASCADE',
+  })
+  @JoinColumn({ name: 'parentId', referencedColumnName: 'id' })
+  @Field(() => RegistrationPayment, { nullable: true })
+  parentPayment?: RegistrationPayment;
+
+  @OneToMany(() => RegistrationPayment, (payment) => payment.parentPayment)
+  @Field(() => [RegistrationPayment], { nullable: true })
+  childPayments?: RegistrationPayment[];
 }

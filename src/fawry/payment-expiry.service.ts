@@ -76,7 +76,7 @@ export class PaymentExpiryService implements OnModuleInit {
       );
 
       const reserves = await queryRunner.manager.find(RegistrationReserve, {
-        where: { paymentId },
+        where: { campRegistrationId: payment.campRegistrationId },
       });
 
       if (reserves.length) {
