@@ -164,6 +164,12 @@ export class CampRegistrationService {
       throw new Error('Camp not found');
     }
 
+    if (camp.hasShirts) {
+      if (input.campVariantRegistrations?.some((e) => !e.shirtSize)) {
+        throw new Error('Shirt size is required');
+      }
+    }
+
     /// TODO: remove when getting meal price from variants
     const campRegistration = await queryRunner.manager.save(CampRegistration, {
       ...input,
@@ -510,6 +516,12 @@ export class CampRegistrationService {
   ) {
     if (!input.campVariantRegistrations?.length)
       throw new Error('Set at least one week for registration');
+
+    if (campRegistration.camp.hasShirts) {
+      if (input.campVariantRegistrations?.some((e) => !e.shirtSize)) {
+        throw new Error('Shirt size is required');
+      }
+    }
 
     const deleteOldVariants = await queryRunner.manager.delete(
       CampVariantRegistration,
@@ -1576,6 +1588,15 @@ export class CampRegistrationService {
       throw new Error(
         'Cannot remove all weeks, you can cancel registration instead',
       );
+    }
+
+    if (campRegistration.camp.hasShirts) {
+      if (variantsToInsert?.some((e) => !e.shirtSize)) {
+        throw new Error('Shirt size is required');
+      }
+      if (variantsToUpdate?.some((e) => !e.update.shirtSize)) {
+        throw new Error('Shirt size is required');
+      }
     }
 
     let oldDiscount: Discount = undefined;

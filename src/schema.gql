@@ -5,7 +5,7 @@
 type CampVariant {
   id: Int!
   campId: Int!
-  name: String
+  name: String!
   price: Decimal
   remainingCapacity: Int!
   capacity: Int!
@@ -327,8 +327,6 @@ type RegistrationReserve {
   campRegistrationId: Int!
   campVariantId: Int!
   count: Int!
-  paymentId: Int!
-  userId: String!
   expirationDate: DateTime
   createdAt: DateTime!
 }
@@ -771,7 +769,7 @@ input UpdateFileInput {
 }
 
 input CreateCampVariantInput {
-  name: String
+  name: String!
   price: Decimal
   capacity: Int
   remainingCapacity: Int
@@ -1171,8 +1169,6 @@ input CreateRegistrationReserveInput {
   campRegistrationId: Int!
   campVariantId: Int!
   count: Int!
-  paymentId: Int!
-  userId: String!
   expirationDate: DateTime
 }
 
@@ -1180,8 +1176,6 @@ input UpdateRegistrationReserveInput {
   campRegistrationId: Int
   campVariantId: Int
   count: Int
-  paymentId: Int
-  userId: String
   expirationDate: DateTime
   id: Int!
 }
