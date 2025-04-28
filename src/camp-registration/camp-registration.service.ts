@@ -298,7 +298,7 @@ export class CampRegistrationService {
     }
 
     if (!oneDayPrice) {
-      if (campVariants.length !== campVariantIds.length) {
+      if (campVariants.length < campVariantIds.length) {
         throw new Error('Invalid camp variant reference');
       }
 
