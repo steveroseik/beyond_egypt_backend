@@ -291,7 +291,9 @@ export class CampRegistrationService {
 
     for (const cv of campVariants) {
       if (now.diff(cv.startDate) >= 0) {
-        throw new Error(`${cv.name} has already started, you can't register`);
+        if (campVariantRegistrations.find((e) => e.campVariantId == cv.id)) {
+          throw new Error(`${cv.name} has already started, you can't register`);
+        }
       }
     }
 
