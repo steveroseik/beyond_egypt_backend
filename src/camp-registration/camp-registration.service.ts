@@ -1554,7 +1554,8 @@ export class CampRegistrationService {
         if (existing) {
           if (
             (variant.withMeal && !existing.mealPrice) ||
-            (!variant.withMeal && existing.mealPrice)
+            (!variant.withMeal && existing.mealPrice) ||
+            (variant.shirtSize && existing.shirtSize !== variant.shirtSize)
           ) {
             variantsToUpdate.push({
               variant: existing,
