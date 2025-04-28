@@ -1614,11 +1614,13 @@ export class CampRegistrationService {
         false,
       ));
 
-    campVariantIds = [
-      ...variantsToUpdate.map((e) => e.variant.campVariantId),
-      ...variantsToInsert.map((e) => e.campVariantId),
-      ...existingVariants.map((e) => e.campVariantId),
-    ];
+    campVariantIds = Array.from(
+      new Set([
+        ...variantsToUpdate.map((e) => e.variant.campVariantId),
+        ...variantsToInsert.map((e) => e.campVariantId),
+        ...existingVariants.map((e) => e.campVariantId),
+      ]),
+    );
 
     const campVariants = await queryRunner.manager.find(CampVariant, {
       where: { id: In(campVariantIds) },
