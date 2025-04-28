@@ -2038,6 +2038,9 @@ export class CampRegistrationService {
     if (!campVariantRegistrations?.length) return null;
     const campVariantVacancies = new Map<number, number>();
 
+    console.log('campVariantRegistrations in VALIDATION');
+    console.table(campVariantRegistrations);
+
     for (const cvr of campVariantRegistrations) {
       // validate if there are no duplicate registrations
       const existing = campVariantRegistrations.filter(
@@ -2067,7 +2070,7 @@ export class CampRegistrationService {
         lock: { mode: 'pessimistic_write' },
       }));
 
-    if (campVariants.length !== campVariantIds.length) {
+    if (campVariants.length < campVariantIds.length) {
       throw new Error('Invalid camp week reference');
     }
 
