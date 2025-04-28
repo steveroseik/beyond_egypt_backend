@@ -288,6 +288,7 @@ export class CampRegistrationService {
     });
 
     const now = moment.tz('Africa/Cairo');
+
     for (const cv of campVariants) {
       if (now.diff(cv.startDate) >= 0) {
         throw new Error(`${cv.name} has already started, you can't register`);
@@ -1621,6 +1622,18 @@ export class CampRegistrationService {
         ...existingVariants.map((e) => e.campVariantId),
       ]),
     );
+
+    console.log('campVariantIds', campVariantIds);
+    console.log('INSERTS');
+    console.table(variantsToInsert);
+    console.log('UPDATES');
+    console.table(variantsToUpdate);
+    console.log('EXISTING');
+    console.table(existingVariants);
+    console.log('DELETES');
+    console.table(variantsToDelete);
+    console.log('oldDiscount', oldDiscount);
+    console.log('newDiscount', newDiscount);
 
     const campVariants = await queryRunner.manager.find(CampVariant, {
       where: { id: In(campVariantIds) },
