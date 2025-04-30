@@ -26,6 +26,10 @@ export class Location {
   @Field(() => GraphqlPoint, { nullable: true })
   geoPoint: JSON;
 
+  @Column('varchar', { name: 'url', length: 255, nullable: true })
+  @Field({ nullable: true })
+  url?: string;
+
   @CreateDateColumn({
     name: 'createdAt',
     precision: 3,

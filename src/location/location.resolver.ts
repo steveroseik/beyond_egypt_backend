@@ -23,7 +23,12 @@ export class LocationResolver {
   }
 
   @Mutation(() => GraphQLJSONObject)
-  updateLocation(@Args('input') input: UpdateLocationsInput) {
+  updateLocations(@Args('input') input: UpdateLocationsInput) {
+    return this.locationService.updateLocations(input);
+  }
+
+  @Mutation(() => GraphQLJSONObject)
+  updateLocation(@Args('input') input: UpdateLocationInput) {
     return this.locationService.update(input);
   }
 

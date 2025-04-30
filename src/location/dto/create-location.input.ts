@@ -8,4 +8,7 @@ export class CreateLocationInput {
 
   @Field(() => GraphqlPoint, { nullable: true })
   location?: JSON;
+
+  @Field({ nullable: true })
+  url?: string;
 }

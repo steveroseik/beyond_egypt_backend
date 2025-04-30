@@ -261,6 +261,7 @@ type Location {
   id: Int!
   name: String!
   geoPoint: GraphqlPoint
+  url: String
   createdAt: DateTime!
   lastModified: DateTime!
   deletedAt: DateTime
@@ -680,7 +681,8 @@ type Mutation {
   updateCampVariant(updateCampVariantInput: UpdateCampVariantInput!): CampVariant!
   removeCampVariant(id: Int!): CampVariant!
   createLocation(input: CreateLocationInput!): JSONObject!
-  updateLocation(input: UpdateLocationsInput!): JSONObject!
+  updateLocations(input: UpdateLocationsInput!): JSONObject!
+  updateLocation(input: UpdateLocationInput!): JSONObject!
   removeLocation(ids: [Int!]!): Location!
   createParentAdditional(createParentAdditionalInput: CreateParentAdditionalInput!): ParentAdditional!
   updateParentAdditional(input: UpdateParentAdditionalInput!): JSONObject!
@@ -794,6 +796,7 @@ input UpdateCampVariantInput {
 input CreateLocationInput {
   name: String!
   location: GraphqlPoint
+  url: String
 }
 
 input UpdateLocationsInput {
@@ -803,6 +806,7 @@ input UpdateLocationsInput {
 input UpdateLocationInput {
   name: String
   location: GraphqlPoint
+  url: String
   id: Int!
 }
 

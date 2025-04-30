@@ -25,7 +25,7 @@ import { MailService } from 'src/mail/mail.service';
 import { CampRegistration } from 'src/camp-registration/entities/camp-registration.entity';
 import { CampVariantsRegistrationPage } from 'src/camp-variant-registration/entities/camp-variant-registration-page.entity';
 import { CampVariantRegistration } from 'src/camp-variant-registration/entities/camp-variant-registration.entity';
-
+import * as moment from 'moment-timezone';
 @Injectable()
 export class UserService {
   constructor(
@@ -489,10 +489,28 @@ export class UserService {
           'parentAdditionals',
           'campRegistrations',
           'campRegistrations.campVariantRegistrations',
+          'campRegistrations.campVariantRegistrations.campVariant',
         ],
       });
 
       if (!user) throw Error('User not found');
+
+      const now = moment.tz('Africa/Cairo');
+
+      console.table(user);
+
+      for (const campVariantRegistration of user.campRegistrations
+        .map((e) => e.campVariantRegistrations)
+        .flat()) {
+        console.table(campVariantRegistration);
+        if (now.diff(campVariantRegistration.campVariant.endDate) < 0) {
+          throw Error(
+            `Cannot delete user, some weeks are still running ${campVariantRegistration.campVariant.name}`,
+          );
+        }
+      }
+
+      throw Error('User cannot be deleted, please contact support');
 
       const deleted = await queryRunner.manager.softDelete(User, { id });
 

@@ -43,7 +43,30 @@ export class LocationService {
     return this.repo.findOne({ where: { id } });
   }
 
-  async update(input: UpdateLocationsInput) {
+  async update(input: UpdateLocationInput) {
+    try {
+      const update = await this.repo.update(input.id, input);
+      if (update.affected !== 1) {
+        return {
+          success: false,
+          message: 'Location was not updated',
+        };
+      } else {
+        return {
+          success: true,
+          message: 'Location updated successfully',
+        };
+      }
+    } catch (e) {
+      console.log(e);
+      return {
+        success: false,
+        message: e ?? 'Error while updating location',
+      };
+    }
+  }
+
+  async updateLocations(input: UpdateLocationsInput) {
     try {
       let failedToUpdateIds: number[] = [];
 
