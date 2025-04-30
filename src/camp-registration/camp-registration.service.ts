@@ -2471,6 +2471,8 @@ export class CampRegistrationService {
         remRefund = remRefund.minus(amount);
       } while (remRefund.isEqualTo(0));
 
+      await queryRunner.commitTransaction();
+
       return {
         success: true,
         message: 'Refund options retrieved successfully',
