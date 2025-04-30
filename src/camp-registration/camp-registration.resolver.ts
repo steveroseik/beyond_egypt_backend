@@ -135,7 +135,7 @@ export class CampRegistrationResolver {
     return this.campRegistrationService.confirmCampRegistration(input, userId);
   }
 
-  @Mutation(() => GraphQLJSONObject)
+  @Query(() => GraphQLJSONObject)
   campRegistrationRefundOptions(
     @Args('input') input: CampRegistrationRefundOptionsInput,
   ) {

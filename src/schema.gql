@@ -514,6 +514,7 @@ type Query {
   paginateDiscounts(input: PaginateDiscountsInput!): DiscountsPage!
   findOneCampRegistration(id: Int!): CampRegistration
   paginateCampRegistrations(input: PaginateCampRegistrationsInput!): CampRegistrationPage!
+  campRegistrationRefundOptions(input: CampRegistrationRefundOptionsInput!): JSONObject!
   childReport(id: Int!): ChildReport!
   childReportHistory(id: Int!): ChildReportHistory!
   eventFile(id: Int!): EventFile!
@@ -650,6 +651,10 @@ input PaginateCampRegistrationsInput {
   statuses: [CampRegistrationStatus!]
 }
 
+input CampRegistrationRefundOptionsInput {
+  CampRegistrationId: Int!
+}
+
 input PaginateRegistrationPaymentsInput {
   isAsc: Boolean! = false
   limit: Int = 20
@@ -723,7 +728,6 @@ type Mutation {
   updateCampRegistration(input: UpdateCampRegistrationInput!): JSONObject!
   processCampRegistration(input: ProcessCampRegistrationInput!): JSONObject!
   confirmCampRegistration(input: ConfirmCampRegistrationInput!): JSONObject!
-  campRegistrationRefundOptions(input: CampRegistrationRefundOptionsInput!): JSONObject!
   sendTestEmail: JSONObject
   createChildReport(createChildReportInput: CreateChildReportInput!): ChildReport!
   updateChildReport(updateChildReportInput: UpdateChildReportInput!): ChildReport!
@@ -1087,10 +1091,6 @@ input ConfirmCampRegistrationInput {
   receipt: Base64Image
   referenceNumber: Int
   paidAmount: Decimal!
-}
-
-input CampRegistrationRefundOptionsInput {
-  CampRegistrationId: Int!
 }
 
 input CreateChildReportInput {
