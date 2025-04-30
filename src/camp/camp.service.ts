@@ -488,7 +488,7 @@ export class CampService {
       console.log(e);
       return {
         success: false,
-        message: e,
+        message: e.message,
       };
     } finally {
       await queryRunner.release();

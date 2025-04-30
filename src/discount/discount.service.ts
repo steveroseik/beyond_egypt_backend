@@ -86,7 +86,7 @@ export class DiscountService {
       console.log(e);
       return {
         success: false,
-        message: e,
+        message: e.message ?? 'Error while updating discount',
       };
     }
   }
@@ -106,7 +106,7 @@ export class DiscountService {
       console.log(e);
       return {
         success: false,
-        message: e,
+        message: e.message ?? 'Error while deleting discount',
       };
     }
   }

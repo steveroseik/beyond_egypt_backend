@@ -94,7 +94,7 @@ export class UserResolver {
     return this.userService.register(createUserInput);
   }
 
-  @Mutation(() => User)
+  @Mutation(() => GraphQLJSONObject)
   removeUser(@Args('id') id: string) {
     return this.userService.remove(id);
   }

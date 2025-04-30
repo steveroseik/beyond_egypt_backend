@@ -710,7 +710,7 @@ type Mutation {
   updateUser(input: UpdateUserInput!): JSONObject!
   createEmployee(input: CreateEmployeeInput!): JSONObject!
   registerUser(input: RegisterUserInput!): CreateUserResponse!
-  removeUser(id: String!): User!
+  removeUser(id: String!): JSONObject!
   tempLogin(input: TempSignInInput!): JSONObject!
   signIn(input: TokenRequestInput!): UserAuthResponse!
   createDiscount(input: CreateDiscountInput!): JSONObject!
