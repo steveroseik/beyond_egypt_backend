@@ -183,6 +183,7 @@ type CampRegistration {
   status: CampRegistrationStatus!
   discountId: Int
   discountAmount: Decimal
+  penaltyFees: Decimal!
   behaviorConsent: Boolean!
   refundPolicyConsent: Boolean!
   createdAt: DateTime!

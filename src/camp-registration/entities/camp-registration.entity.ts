@@ -125,6 +125,19 @@ export class CampRegistration {
   @Field(() => GraphqlDecimal, { nullable: true })
   discountAmount?: Decimal;
 
+  @Column('decimal', {
+    name: 'penaltyFees',
+    precision: 10,
+    default: 0,
+    scale: 0,
+    transformer: {
+      to: (value) => value,
+      from: (value?: string) => value && new Decimal(value),
+    },
+  })
+  @Field(() => GraphqlDecimal)
+  penaltyFees: Decimal;
+
   @Column('bit', {
     name: 'behaviorConsent',
     default: false,
@@ -199,4 +212,11 @@ export class CampRegistration {
   @JoinColumn([{ name: 'parentId', referencedColumnName: 'id' }])
   @Field(() => User)
   parent: User;
+
+  amountDifference(): Decimal {
+    return (this.amount ?? new Decimal('0'))
+      .plus(this.penaltyFees ?? new Decimal('0'))
+      .minus(this.discountAmount ?? new Decimal('0'))
+      .minus(this.paidAmount ?? new Decimal('0'));
+  }
 }

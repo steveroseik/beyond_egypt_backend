@@ -926,9 +926,7 @@ export class CampRegistrationService {
 
     const discountId = input.discountId ?? campRegistration.discountId;
 
-    let amountTobePaid = campRegistration.amount.minus(
-      campRegistration.discountAmount ?? 0,
-    );
+    let amountTobePaid = campRegistration.amountDifference();
 
     if (discountId) {
       // validate discount
@@ -1490,11 +1488,7 @@ export class CampRegistrationService {
         CampRegistration,
         {
           where: { id: input.id },
-          relations: [
-            'camp',
-            'campVariantRegistrations',
-            'campVariantRegistrations',
-          ],
+          relations: ['camp', 'campVariantRegistrations'],
         },
       );
 
@@ -1624,20 +1618,21 @@ export class CampRegistrationService {
         ...variantsToUpdate.map((e) => e.variant.campVariantId),
         ...variantsToInsert.map((e) => e.campVariantId),
         ...existingVariants.map((e) => e.campVariantId),
+        ...variantsToDelete.map((e) => e.campVariantId),
       ]),
     );
 
-    console.log('campVariantIds', campVariantIds);
-    console.log('INSERTS');
-    console.table(variantsToInsert);
-    console.log('UPDATES');
-    console.table(variantsToUpdate);
-    console.log('EXISTING');
-    console.table(existingVariants);
-    console.log('DELETES');
-    console.table(variantsToDelete);
-    console.log('oldDiscount', oldDiscount);
-    console.log('newDiscount', newDiscount);
+    // console.log('campVariantIds', campVariantIds);
+    // console.log('INSERTS');
+    // console.table(variantsToInsert);
+    // console.log('UPDATES');
+    // console.table(variantsToUpdate);
+    // console.log('EXISTING');
+    // console.table(existingVariants);
+    // console.log('DELETES');
+    // console.table(variantsToDelete);
+    // console.log('oldDiscount', oldDiscount);
+    // console.log('newDiscount', newDiscount);
 
     const campVariants = await queryRunner.manager.find(CampVariant, {
       where: { id: In(campVariantIds) },
@@ -1702,6 +1697,7 @@ export class CampRegistrationService {
         input,
         campRegistration,
         newTotalPrice,
+        variantsToDelete,
         queryRunner,
       );
     }
@@ -1738,7 +1734,9 @@ export class CampRegistrationService {
         input,
         campRegistration,
         newTotalPrice,
+        variantsToDelete,
         queryRunner,
+        campVariants,
         oldDiscount,
       );
     }
@@ -1790,7 +1788,9 @@ export class CampRegistrationService {
           input,
           campRegistration,
           newTotalPrice,
+          variantsToDelete,
           queryRunner,
+          campVariants,
           newDiscount,
         );
       }
@@ -1837,7 +1837,9 @@ export class CampRegistrationService {
       input,
       campRegistration,
       newTotalPrice,
+      variantsToDelete,
       queryRunner,
+      campVariants,
       newDiscount,
     );
   }
@@ -1940,11 +1942,52 @@ export class CampRegistrationService {
     return new Decimal(`${response?.paidAmount ?? 0}`);
   }
 
+  calculateRefundPenalty(
+    difference: Decimal,
+    campVariants: CampVariant[],
+    variantsToDelete?: CampVariantRegistration[],
+  ): Decimal {
+    if (difference.isEqualTo(0) || !variantsToDelete?.length)
+      return new Decimal('0');
+
+    let penaltyFees = new Decimal('0');
+
+    const now = moment().tz('Africa/Cairo');
+
+    for (const variant of variantsToDelete) {
+      const campVariant = campVariants.find(
+        (e) => e.id == variant.campVariantId,
+      );
+      if (!campVariant) {
+        throw new Error('Invalid camp week reference (910)');
+      }
+
+      const weekPrice = variant.price
+        .plus(variant.mealPrice ?? new Decimal('0'))
+        .minus(variant.variantDiscount ?? new Decimal('0'))
+        .minus(variant.mealDiscount ?? new Decimal('0'));
+
+      const differenceInDays = now.diff(campVariant.startDate, 'days');
+
+      if (!now.isBefore(campVariant.startDate) || differenceInDays <= 7) {
+        penaltyFees = weekPrice;
+      } else if (differenceInDays <= 14) {
+        penaltyFees = weekPrice.multipliedBy(0.5);
+      } else if (differenceInDays <= 21) {
+        penaltyFees = weekPrice.multipliedBy(0.75);
+      }
+    }
+
+    return penaltyFees;
+  }
+
   async updateMoneyDifferenceAndOther(
     input: UpdateCampRegistrationInput,
     campRegistration: CampRegistration,
     newTotalPrice: Decimal,
+    variantsToDelete: CampVariantRegistration[],
     queryRunner: QueryRunner,
+    campVariants?: CampVariant[],
     discount?: Discount,
   ) {
     /// get total of paid amount
@@ -1953,9 +1996,17 @@ export class CampRegistrationService {
       campRegistration.id,
       queryRunner,
     );
-    const discountAmount = new Decimal(`${discount?.amount ?? 0}`);
-    newTotalPrice = newTotalPrice?.minus(discountAmount);
+
+    const discountAmount = discount?.amount ?? new Decimal('0');
+
+    newTotalPrice = newTotalPrice?.minus(discountAmount); /// for camps with discount
     const difference = newTotalPrice.minus(paidAmount);
+
+    const additionalPenaltyFees = this.calculateRefundPenalty(
+      difference,
+      campVariants,
+      variantsToDelete,
+    );
 
     const newStatus = difference.isLessThanOrEqualTo(0)
       ? CampRegistrationStatus.accepted
@@ -1972,6 +2023,8 @@ export class CampRegistrationService {
         discountAmount: discountAmount.toFixed(moneyFixation),
         amount: newTotalPrice.toFixed(moneyFixation),
         paidAmount: paidAmount.toFixed(moneyFixation),
+        penaltyFees: () =>
+          `penaltyFees + ${additionalPenaltyFees?.toFixed(moneyFixation) ?? 0}`,
       },
     );
 
@@ -2095,9 +2148,7 @@ export class CampRegistrationService {
         relations: ['campVariantRegistrations', 'camp'],
       });
 
-      const amountToBePaid = campRegistration.amount
-        .minus(campRegistration.discountAmount ?? 0)
-        .minus(campRegistration.paidAmount ?? 0);
+      const amountToBePaid = campRegistration.amountDifference();
 
       if (!input.paidAmount.eq(amountToBePaid)) {
         throw new Error(
@@ -2327,7 +2378,11 @@ export class CampRegistrationService {
         CampRegistration,
         {
           where: { id: input.CampRegistrationId },
-          relations: ['campVariantRegistrations', 'camp'],
+          relations: [
+            'campVariantRegistrations',
+            'camp',
+            'campVariantRegistrations.campVariant',
+          ],
         },
       );
 
@@ -2335,9 +2390,7 @@ export class CampRegistrationService {
         throw new Error('Camp registration not found or incomplete');
       }
 
-      const amountToBeRefunded = (
-        campRegistration.amount ?? new Decimal('0')
-      ).minus(campRegistration.paidAmount ?? 0);
+      const amountToBeRefunded = campRegistration.amountDifference();
 
       if (amountToBeRefunded.isGreaterThanOrEqualTo(0)) {
         throw new Error('Registration has no amount to be refunded');
@@ -2405,8 +2458,6 @@ export class CampRegistrationService {
           }
         }
 
-        // TODO: ASAP asjdhkjashdkjhaskdjhkjhkj;
-
         const amount = payment.amount.isLessThan(remRefund)
           ? payment.amount
           : remRefund;
@@ -2414,11 +2465,20 @@ export class CampRegistrationService {
         refundOptions.push({
           amount,
           paymentId: payment.payment.id,
-          paymentMethod: PaymentMethod.fawry,
+          paymentMethod: payment.payment.paymentMethod,
         });
 
         remRefund = remRefund.minus(amount);
       } while (remRefund.isEqualTo(0));
+
+      return {
+        success: true,
+        message: 'Refund options retrieved successfully',
+        data: {
+          amountToBeRefunded: amountToBeRefunded.toFixed(moneyFixation),
+          refundOptions,
+        },
+      };
     } catch (e) {
       await queryRunner.rollbackTransaction();
       console.log(e);

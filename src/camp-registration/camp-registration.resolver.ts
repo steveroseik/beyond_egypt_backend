@@ -175,14 +175,12 @@ export class CampRegistrationResolver {
       .minus(campRegistration.discountAmount ?? 0)
       .minus(campRegistration.paidAmount ?? 0);
 
-    return diff.isLessThanOrEqualTo(0);
+    return campRegistration.amountDifference().isLessThanOrEqualTo(0);
   }
 
   @ResolveField(() => GraphqlDecimal, { nullable: true })
   amountDifference(@Parent() campRegistration: CampRegistration) {
-    return campRegistration.amount
-      .minus(campRegistration.discountAmount ?? 0)
-      .minus(campRegistration.paidAmount ?? 0);
+    return campRegistration.amountDifference();
   }
 
   @Mutation(() => GraphQLJSONObject, { nullable: true })
