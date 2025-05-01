@@ -665,6 +665,7 @@ input PaginateRegistrationPaymentsInput {
   campRegistrationId: Int
   paymentMethods: [PaymentMethod!]
   statuses: [PaymentStatus!]
+  amountFilter: String
 }
 
 input PaginateSchoolsInput {

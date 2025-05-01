@@ -116,6 +116,15 @@ registerEnumType(UserType, {
   name: 'UserType',
 });
 
+export enum PaymentAmountFilter {
+  greaterThanZero = 'greaterThanZerp',
+  lessThanZero = 'lessThanZero',
+}
+
+registerEnumType(PaymentAmountFilter, {
+  name: 'PaymentAmountFilter',
+});
+
 export enum FileExtensions {
   // Video extensions
   mp4 = 'mp4',

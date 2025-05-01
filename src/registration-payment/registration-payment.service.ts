@@ -6,6 +6,7 @@ import { RegistrationPayment } from './entities/registration-payment.entity';
 import { DataSource, Repository } from 'typeorm';
 import { PaginateRegistrationPaymentsInput } from './dto/paginate-registration-payments.input';
 import { buildPaginator } from 'typeorm-cursor-pagination';
+import { PaymentAmountFilter } from 'support/enums';
 
 @Injectable()
 export class RegistrationPaymentHistoryService {
@@ -70,6 +71,14 @@ export class RegistrationPaymentHistoryService {
         queryBuilder.andWhere('registrationPayment.status IN (:...statuses)', {
           statuses: input.statuses,
         });
+      }
+
+      if (input.amountFilter) {
+        if (input.amountFilter == PaymentAmountFilter.greaterThanZero) {
+          queryBuilder.andWhere('registrationPayment.amount > 0');
+        } else {
+          queryBuilder.andWhere('registrationPayment.amount < 0');
+        }
       }
 
       if (input.search) {
