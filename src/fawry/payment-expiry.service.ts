@@ -102,7 +102,9 @@ export class PaymentExpiryService implements OnModuleInit {
           }
         }
 
-        await queryRunner.manager.delete(RegistrationReserve, { paymentId });
+        await queryRunner.manager.delete(RegistrationReserve, {
+          campRegistrationId: payment.campRegistrationId,
+        });
       }
 
       await queryRunner.commitTransaction();
