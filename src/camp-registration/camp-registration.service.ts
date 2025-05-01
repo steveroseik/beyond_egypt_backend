@@ -22,7 +22,10 @@ import { ProcessCampRegistrationInput } from './dto/process-camp-registration.in
 import { PaymentPayload } from 'src/fawry/models/payment.payload';
 import { RegistrationPayment } from 'src/registration-payment/entities/registration-payment.entity';
 import * as moment from 'moment-timezone';
-import { generateFawryPaymentUrl } from 'src/fawry/generate/payment.generate';
+import {
+  generateFawryPaymentUrl,
+  requestRefund,
+} from 'src/fawry/generate/payment.generate';
 import { RegistrationReserve } from 'src/registration-reserve/entities/registration-reserve.entity';
 import { CreateRegistrationReserveInput } from 'src/registration-reserve/dto/create-registration-reserve.input';
 
@@ -41,6 +44,16 @@ import { UpdateCampRegistrationInput } from './dto/update-camp-registration.inpu
 import { UpdateCampVariantRegistrationInput } from 'src/camp-variant-registration/dto/update-camp-variant-registration.input';
 import { ConfirmCampRegistrationInput } from './dto/confirm-camp-registration.input';
 import { CampRegistrationRefundOptionsInput } from './dto/camp-registration-refund-options.input';
+import { EncryptionService } from 'src/encryption/encryption.service';
+import { v4 as uuid } from 'uuid';
+import { ProcessCampRegistrationRefundInput } from './dto/process-camp-registration-refund.input';
+import {
+  parseRefundPayload,
+  RefundOption,
+  RefundPayload,
+} from 'src/encryption/paylaods/refund.payload';
+import { getSumOfPaidAmounts } from 'support/helpers/calculate-sum-of-paid';
+import { CompleteRegistrationRefundInput } from './dto/complete-registration-refund.input';
 
 dotenv.config();
 
@@ -52,6 +65,7 @@ export class CampRegistrationService {
     private dataSource: DataSource,
     private awsService: AwsBucketService,
     private mailService: MailService,
+    private encryptionService: EncryptionService,
   ) {}
 
   async create(
@@ -1929,19 +1943,6 @@ export class CampRegistrationService {
     return updatedVariants;
   }
 
-  async getSumOfPaidAmounts(
-    campRegistrationId: number,
-    queryRunner: QueryRunner,
-  ): Promise<Decimal> {
-    const response = await queryRunner.manager
-      .createQueryBuilder(RegistrationPayment, 'registrationPayment')
-      .select('SUM(amount) as paidAmount')
-      .where({ status: PaymentStatus.paid, campRegistrationId })
-      .getRawOne();
-
-    return new Decimal(`${response?.paidAmount ?? 0}`);
-  }
-
   calculateRefundPenalty(
     difference: Decimal,
     campVariants: CampVariant[],
@@ -1992,7 +1993,7 @@ export class CampRegistrationService {
   ) {
     /// get total of paid amount
 
-    const paidAmount = await this.getSumOfPaidAmounts(
+    const paidAmount = await getSumOfPaidAmounts(
       campRegistration.id,
       queryRunner,
     );
@@ -2305,7 +2306,7 @@ export class CampRegistrationService {
       }
 
       // find all paid amount
-      const paidAmount = await this.getSumOfPaidAmounts(
+      const paidAmount = await getSumOfPaidAmounts(
         campRegistration.id,
         queryRunner,
       );
@@ -2344,6 +2345,17 @@ export class CampRegistrationService {
             `Failed to deduct capacity from ${campVariant.name} (${campRegistration.id})`,
           );
         }
+      }
+
+      // delete reservations
+      const deleteReservations = await queryRunner.manager.delete(
+        RegistrationReserve,
+        {
+          campRegistrationId: campRegistration.id,
+        },
+      );
+      if (deleteReservations.affected !== reservations.length) {
+        throw new Error('Failed to delete old reservations');
       }
 
       await queryRunner.commitTransaction();
@@ -2444,14 +2456,11 @@ export class CampRegistrationService {
       });
 
       let remRefund = amountToBeRefunded;
-      const refundOptions: {
-        amount: Decimal;
-        paymentId?: number;
-        paymentMethod?: PaymentMethod;
-      }[] = [];
+      const refundOptions: RefundOption[] = [];
 
       do {
         const payment = validPayments.pop();
+
         if (!payment) {
           if (remRefund.isGreaterThan(0)) {
             throw new Error('Not enough payments to refund');
@@ -2462,24 +2471,235 @@ export class CampRegistrationService {
           ? payment.amount
           : remRefund;
 
+        console.log('amount: ', amount);
+
         refundOptions.push({
           amount,
           paymentId: payment.payment.id,
+          fawryReferenceNumber: payment.payment.fawryReferenceNumber ?? null,
           paymentMethod: payment.payment.paymentMethod,
         });
 
         remRefund = remRefund.minus(amount);
-      } while (remRefund.isEqualTo(0));
+      } while (!remRefund.isEqualTo(0));
+
+      const payload = {
+        campRegistrationId: campRegistration.id,
+        amountToBeRefunded,
+        refundOptions,
+        nonce: uuid(),
+        iat: campRegistration.lastModified,
+      };
+
+      const encryptedPayload = this.encryptionService.encrypt(payload);
 
       await queryRunner.commitTransaction();
-
       return {
         success: true,
         message: 'Refund options retrieved successfully',
         data: {
           amountToBeRefunded: amountToBeRefunded.toFixed(moneyFixation),
           refundOptions,
+          key: encryptedPayload,
         },
+      };
+    } catch (e) {
+      await queryRunner.rollbackTransaction();
+      console.log(e);
+      return {
+        success: false,
+        message: e.message,
+      };
+    } finally {
+      queryRunner.release();
+    }
+  }
+
+  async processCampRegistrationRefund(
+    input: ProcessCampRegistrationRefundInput,
+  ) {
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      const decryptedPayload: RefundPayload = parseRefundPayload(
+        this.encryptionService.decrypt(input.key),
+      );
+      if (
+        !decryptedPayload ||
+        !decryptedPayload.campRegistrationId ||
+        !decryptedPayload.refundOptions ||
+        !decryptedPayload.nonce ||
+        !decryptedPayload.amountToBeRefunded ||
+        !decryptedPayload.iat
+      ) {
+        throw new Error('Invalid request');
+      }
+
+      const campRegistration = await queryRunner.manager.findOne(
+        CampRegistration,
+        {
+          where: { id: decryptedPayload.campRegistrationId },
+          lock: { mode: 'pessimistic_write' },
+        },
+      );
+
+      if (!campRegistration) {
+        throw new Error('Camp registration not found');
+      }
+
+      if (
+        campRegistration.lastModified.getTime() -
+          decryptedPayload.iat.getTime() !==
+        0
+      ) {
+        throw new Error('Expired refund request');
+      }
+
+      for (const option of decryptedPayload.refundOptions) {
+        if (option.paymentMethod === PaymentMethod.fawry) {
+          if (!option.fawryReferenceNumber) {
+            throw new Error(
+              `Malformed fawry refund request ${option.paymentId}`,
+            );
+          }
+          const refundResponse = await requestRefund({
+            refundAmount: option.amount.toFixed(moneyFixation),
+            fawryReferenceNumber: option.fawryReferenceNumber,
+          });
+
+          if (refundResponse?.statusCode !== 200) {
+            throw new Error(
+              `Failed to process fawry refund request ${option.paymentId} (${refundResponse?.statusCode ?? -100}) - ${refundResponse?.statusDescription ?? 'Unknown error'}`,
+            );
+          }
+        }
+
+        const payment = await queryRunner.manager.insert(RegistrationPayment, {
+          campRegistrationId: campRegistration.id,
+          amount: option.amount,
+          paymentMethod: option.paymentMethod,
+          status:
+            option.paymentMethod === PaymentMethod.fawry
+              ? PaymentStatus.paid
+              : PaymentStatus.pending,
+          parentId: option.paymentId,
+        });
+
+        if (!payment) {
+          throw new Error(
+            `Failed to log refund payment ${option.paymentId} (${option.amount})`,
+          );
+        }
+      }
+
+      const paidAmount = await getSumOfPaidAmounts(
+        campRegistration.id,
+        queryRunner,
+      );
+
+      const updateCampRegistration = await queryRunner.manager.update(
+        CampRegistration,
+        { id: campRegistration.id },
+        {
+          paidAmount: paidAmount.toFixed(moneyFixation),
+        },
+      );
+
+      if (updateCampRegistration.affected !== 1) {
+        throw new Error('Failed to update camp registration');
+      }
+
+      await queryRunner.commitTransaction();
+      return {
+        success: true,
+        message: 'Refund processed successfully',
+        data: decryptedPayload,
+      };
+    } catch (e) {
+      await queryRunner.rollbackTransaction();
+      console.log(e);
+      return {
+        success: false,
+        message: e.message ?? 'Invalid payload',
+      };
+    } finally {
+      queryRunner.release();
+    }
+  }
+
+  async completeRegistrationRefund(input: CompleteRegistrationRefundInput) {
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      const payment = await queryRunner.manager.findOne(RegistrationPayment, {
+        where: { id: input.paymentId },
+        lock: { mode: 'pessimistic_write' },
+      });
+
+      if (!payment) {
+        throw new Error('Payment not found');
+      }
+
+      if (payment.status !== PaymentStatus.pending) {
+        throw new Error('Payment already processed');
+      }
+
+      if (
+        ![PaymentMethod.cash, PaymentMethod.instapay].includes(
+          payment.paymentMethod,
+        )
+      ) {
+        throw new Error('Invalid payment method');
+      }
+
+      const uploadedImage = await this.awsService.uploadSingleFileFromBase64({
+        base64File: input.receipt.base64,
+        fileName: input.receipt.name,
+        isPublic: true,
+      });
+
+      if (!uploadedImage.success || !uploadedImage.key) {
+        throw new Error('Failed to upload receipt');
+      }
+
+      const update = await queryRunner.manager.update(
+        RegistrationPayment,
+        { id: payment.id },
+        {
+          receipt: uploadedImage.key,
+          status: PaymentStatus.paid,
+        },
+      );
+
+      if (update.affected !== 1) {
+        throw new Error('Failed to update payment status');
+      }
+
+      const paidAmount = await getSumOfPaidAmounts(
+        payment.campRegistrationId,
+        queryRunner,
+      );
+
+      const updateCampRegistration = await queryRunner.manager.update(
+        CampRegistration,
+        { id: payment.campRegistrationId },
+        {
+          paidAmount: paidAmount.toFixed(moneyFixation),
+        },
+      );
+
+      if (updateCampRegistration.affected !== 1) {
+        throw new Error('Failed to update camp registration');
+      }
+
+      await queryRunner.commitTransaction();
+      return {
+        success: true,
+        message: 'Refund completed successfully',
       };
     } catch (e) {
       await queryRunner.rollbackTransaction();

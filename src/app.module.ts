@@ -40,6 +40,8 @@ import { AwsBucketModule } from './aws-bucket/aws-bucket.module';
 import { RegistrationReserveModule } from './registration-reserve/registration-reserve.module';
 import { FawryModule } from './fawry/fawry.module';
 import { MailModule } from './mail/mail.module';
+import { EncryptionService } from './encryption/encryption.service';
+import { EncryptionModule } from './encryption/encryption.module';
 
 @Module({
   imports: [
@@ -126,12 +128,14 @@ import { MailModule } from './mail/mail.module';
     RegistrationReserveModule,
     FawryModule,
     MailModule,
+    EncryptionModule,
   ],
   controllers: [AppController],
   providers: [
     AppService,
     DataloaderRegistryFactory,
     { provide: APP_GUARD, useClass: AccessTokenGuard },
+    EncryptionService,
   ],
 })
 export class AppModule {}

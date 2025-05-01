@@ -196,6 +196,7 @@ export class FawryService {
       RegistrationPayment,
       { id: payment.id },
       {
+        fawryReferenceNumber: query.referenceNumber,
         status: PaymentStatus.paid,
       },
     );
@@ -207,7 +208,10 @@ export class FawryService {
     const updateCampRegistration = await queryRunner.manager.update(
       CampRegistration,
       { id: payment.campRegistrationId },
-      { status: CampRegistrationStatus.accepted, paidAmount: payment.amount },
+      {
+        status: CampRegistrationStatus.accepted,
+        paidAmount: () => `paidAmount + ${payment.amount}`,
+      },
     );
 
     if (payment.status != PaymentStatus.expired) {
@@ -215,10 +219,9 @@ export class FawryService {
         throw new Error('Failed to update camp registration status');
       }
 
-      const releaseReserves = await queryRunner.manager.delete(
-        RegistrationReserve,
-        { paymentId: payment.id },
-      );
+      await queryRunner.manager.delete(RegistrationReserve, {
+        paymentId: payment.id,
+      });
     } else {
       await this.deductVacancies(payment.campRegistrationId, queryRunner);
     }
@@ -233,36 +236,25 @@ export class FawryService {
   }
 
   async deductVacancies(campRegistrationId: number, queryRunner: QueryRunner) {
-    const camp = await queryRunner.manager.findOne(CampRegistration, {
-      where: { id: campRegistrationId },
-      relations: ['campVariantRegistrations'],
+    const reserves = await queryRunner.manager.find(RegistrationReserve, {
+      where: { campRegistrationId },
     });
 
-    const variantIds = camp.campVariantRegistrations.map(
-      (variant) => variant.campVariantId,
-    );
+    if (!reserves?.length) {
+      return;
+    }
 
-    const variantsVacancies: Map<number, number> = new Map();
+    const variantIds = reserves.map((e) => e.campVariantId);
 
-    const variants = await queryRunner.manager.find(CampVariant, {
+    await queryRunner.manager.find(CampVariant, {
       where: { id: In(variantIds) },
       lock: { mode: 'pessimistic_write' },
     });
 
-    for (const variant of variants) {
-      const variantCount = camp.campVariantRegistrations.filter(
-        (v) => v.campVariantId === variant.id,
-      ).length;
-
-      if (variantCount) {
-        variantsVacancies.set(variant.id, variantCount);
-      }
-    }
-
-    for (const [variantId, count] of variantsVacancies.entries()) {
+    for (const { campVariantId, count } of reserves) {
       const update = await queryRunner.manager.update(
         CampVariant,
-        { id: variantId },
+        { id: campVariantId },
         {
           remainingCapacity: () => `remainingCapacity - ${count}`,
         },
@@ -270,6 +262,17 @@ export class FawryService {
       if (update.affected !== 1) {
         throw new Error('Failed to update camp variant capacity');
       }
+    }
+
+    // Delete the reserves after deducting vacancies
+    const deleteReserves = await queryRunner.manager.delete(
+      RegistrationReserve,
+      {
+        campRegistrationId,
+      },
+    );
+    if (deleteReserves.affected !== reserves.length) {
+      throw new Error('Failed to delete all camp reserves');
     }
   }
 }

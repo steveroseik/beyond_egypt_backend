@@ -26,6 +26,8 @@ import { UpdateCampRegistrationInput } from './dto/update-camp-registration.inpu
 import { ConfirmCampRegistrationInput } from './dto/confirm-camp-registration.input';
 import { GraphqlDecimal } from 'support/scalars';
 import { CampRegistrationRefundOptionsInput } from './dto/camp-registration-refund-options.input';
+import { ProcessCampRegistrationRefundInput } from './dto/process-camp-registration-refund.input';
+import { CompleteRegistrationRefundInput } from './dto/complete-registration-refund.input';
 
 @Resolver(() => CampRegistration)
 export class CampRegistrationResolver {
@@ -140,6 +142,28 @@ export class CampRegistrationResolver {
     @Args('input') input: CampRegistrationRefundOptionsInput,
   ) {
     return this.campRegistrationService.campRegistrationRefundOptions(input);
+  }
+
+  @Mutation(() => GraphQLJSONObject)
+  processCampRegistrationRefund(
+    @Args('input') input: ProcessCampRegistrationRefundInput,
+    @CurrentUser('id') userId: string,
+    @CurrentUser('type') type: UserType,
+  ) {
+    if (type === UserType.parent) {
+      return {
+        success: false,
+        message: 'You are not authorized to perform this action',
+      };
+    }
+    return this.campRegistrationService.processCampRegistrationRefund(input);
+  }
+
+  @Mutation(() => GraphQLJSONObject)
+  completeRegistrationRefund(
+    @Args('input') input: CompleteRegistrationRefundInput,
+  ) {
+    return this.campRegistrationService.completeRegistrationRefund(input);
   }
 
   @ResolveField(() => [CampVariantRegistration], { nullable: true })

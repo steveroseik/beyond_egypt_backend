@@ -62,7 +62,8 @@
     "rxjs": "^7.8.1",
     "short-unique-id": "^5.2.0",
     "typeorm": "^0.3.20",
-    "typeorm-cursor-pagination": "^0.10.1"
+    "typeorm-cursor-pagination": "^0.10.1",
+    "uuid": "^11.1.0"
   },
   "devDependencies": {
     "@nestjs/cli": "^11.0.2",

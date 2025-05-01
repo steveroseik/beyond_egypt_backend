@@ -728,6 +728,8 @@ type Mutation {
   updateCampRegistration(input: UpdateCampRegistrationInput!): JSONObject!
   processCampRegistration(input: ProcessCampRegistrationInput!): JSONObject!
   confirmCampRegistration(input: ConfirmCampRegistrationInput!): JSONObject!
+  processCampRegistrationRefund(input: ProcessCampRegistrationRefundInput!): JSONObject!
+  completeRegistrationRefund(input: CompleteRegistrationRefundInput!): JSONObject!
   sendTestEmail: JSONObject
   createChildReport(createChildReportInput: CreateChildReportInput!): ChildReport!
   updateChildReport(updateChildReportInput: UpdateChildReportInput!): ChildReport!
@@ -1091,6 +1093,17 @@ input ConfirmCampRegistrationInput {
   receipt: Base64Image
   referenceNumber: Int
   paidAmount: Decimal!
+}
+
+input ProcessCampRegistrationRefundInput {
+  campRegistrationId: Int!
+  key: String!
+}
+
+input CompleteRegistrationRefundInput {
+  campRegistrationId: Int!
+  paymentId: Int!
+  receipt: Base64Image!
 }
 
 input CreateChildReportInput {

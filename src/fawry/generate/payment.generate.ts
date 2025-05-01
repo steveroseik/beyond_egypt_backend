@@ -1,9 +1,14 @@
 import * as crypto from 'crypto';
-import { PayAtFawryPayload, PaymentPayload } from '../models/payment.payload';
+import {
+  FawryRefundPayload,
+  PayAtFawryPayload,
+  PaymentPayload,
+} from '../models/payment.payload';
 import * as dotenv from 'dotenv';
 import axios from 'axios';
 import { PaymentStatusResponse } from '../models/payment-status.payload';
 import { generateQueryParams } from 'support/query-params.generator';
+import { RefundRequestStatus } from '../models/refund-request-status.payload';
 dotenv.config();
 
 /**
@@ -258,5 +263,59 @@ export async function requestPaymentStatus(
       );
     }
     throw new Error(`Failure in requesting payment status: ${error.message}`);
+  }
+}
+
+export function generateRefundSignature(payload: FawryRefundPayload): string {
+  const { fawryReferenceNumber, refundAmount, refundReason } = payload;
+  const dataToSign =
+    process.env.FAWRY_MERCHANT_ID +
+    fawryReferenceNumber +
+    refundAmount +
+    (refundReason ? refundReason : '') +
+    process.env.FAWRY_SECURE_KEY;
+
+  const signature = crypto
+    .createHash('sha256')
+    .update(dataToSign)
+    .digest('hex');
+  return signature;
+}
+
+export async function requestRefund(
+  payload: FawryRefundPayload,
+): Promise<RefundRequestStatus> {
+  const signature = generateRefundSignature(payload);
+
+  const params = {
+    merchantCode: process.env.FAWRY_MERCHANT_ID,
+    referenceNumber: payload.fawryReferenceNumber,
+    refundAmount: payload.refundAmount,
+    reason: payload.refundReason,
+    signature,
+  };
+
+  const endpoint = `https://atfawry.fawrystaging.com/ECommerceWeb/Fawry/payments/refund`;
+
+  try {
+    const response = await axios.post(endpoint, params, {
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    return response.data;
+  } catch (error: any) {
+    if (axios.isAxiosError(error) && error.response) {
+      console.error('Fawry API error details:', error.response.data);
+      throw new Error(
+        `Failure in requesting refund: ${
+          error.response.data.description ||
+          error.response.statusText ||
+          error.message
+        }`,
+      );
+    }
+    throw new Error(`Failure in requesting refund: ${error.message}`);
   }
 }

@@ -32,3 +32,9 @@ export interface PayAtFawryPayload {
   paymentMethod: string;
   description: string;
 }
+
+export interface FawryRefundPayload {
+  fawryReferenceNumber: string;
+  refundAmount: string;
+  refundReason?: string;
+}
