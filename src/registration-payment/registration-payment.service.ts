@@ -46,9 +46,14 @@ export class RegistrationPaymentHistoryService {
       const queryBuilder = this.repo.createQueryBuilder('registrationPayment');
 
       if (input.userId) {
-        queryBuilder.andWhere('campRegistration.userId = :userId', {
-          userId: input.userId,
-        });
+        queryBuilder
+          .innerJoinAndSelect(
+            'registrationPayment.campRegistration',
+            'campRegistration',
+          )
+          .andWhere('campRegistration.userId = :userId', {
+            userId: input.userId,
+          });
       }
 
       if (input.campRegistrationId) {

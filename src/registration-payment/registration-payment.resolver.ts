@@ -17,6 +17,7 @@ import { RegistrationPaymentsPage } from './entities/registration-payments-page.
 import { PaginateRegistrationPaymentsInput } from './dto/paginate-registration-payments.input';
 import { User } from 'src/user/entities/user.entity';
 import { DataloaderRegistry } from 'src/dataloaders/dataloaderRegistry';
+import { CampRegistration } from 'src/camp-registration/entities/camp-registration.entity';
 dotenv.config();
 
 @Resolver(() => RegistrationPayment)
@@ -83,5 +84,16 @@ export class RegistrationPaymentHistoryResolver {
     @Context() { loaders }: { loaders: DataloaderRegistry },
   ) {
     return parent.userId ? loaders.UsersDataLoader.load(parent.userId) : null;
+  }
+
+  @ResolveField(() => CampRegistration)
+  campRegistration(
+    @Parent() parent: RegistrationPayment,
+    @Context() { loaders }: { loaders: DataloaderRegistry },
+  ) {
+    return parent.campRegistrationId
+      ? (parent.campRegistration ??
+          loaders.CampRegistrationDataLoader.load(parent.campRegistrationId))
+      : null;
   }
 }

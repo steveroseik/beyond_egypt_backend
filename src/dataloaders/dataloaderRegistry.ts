@@ -30,6 +30,8 @@ import { UserService } from 'src/user/user.service';
 import { UsersDataLoader } from './loaders/users.loader';
 import { DiscountsDataLoader } from './loaders/discounts.loader';
 import { DiscountService } from 'src/discount/discount.service';
+import { CampRegistrationDataLoader } from './loaders/campRegistration.loader';
+import { CampRegistrationService } from 'src/camp-registration/camp-registration.service';
 
 export class DataloaderRegistry {
   private cache: Record<string, any> = {};
@@ -48,6 +50,7 @@ export class DataloaderRegistry {
     private allergyService: AllergyService,
     private userService: UserService,
     private discountService: DiscountService,
+    private campRegistrationService: CampRegistrationService,
   ) {}
 
   /**
@@ -164,6 +167,12 @@ export class DataloaderRegistry {
   public get DiscountsDataLoader() {
     return this.get('DiscountsDataLoader', () =>
       DiscountsDataLoader.create(this.discountService),
+    );
+  }
+
+  public get CampRegistrationDataLoader() {
+    return this.get('CampRegistrationDataLoader', () =>
+      CampRegistrationDataLoader.create(this.campRegistrationService),
     );
   }
   /**

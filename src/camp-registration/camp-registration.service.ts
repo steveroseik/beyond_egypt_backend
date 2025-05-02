@@ -68,6 +68,12 @@ export class CampRegistrationService {
     private encryptionService: EncryptionService,
   ) {}
 
+  findAllByKeys(keys: readonly number[]) {
+    return this.repo.find({
+      where: { id: In(keys) },
+    });
+  }
+
   async create(
     input: CreateCampRegistrationInput,
     type: UserType,
