@@ -2473,11 +2473,10 @@ export class CampRegistrationService {
           }
         }
 
-        const amount = payment.amount.isLessThan(remRefund)
+        console.log('PAYNMNT: ', payment);
+        const amount = payment?.amount.isLessThan(remRefund)
           ? payment.amount
           : remRefund;
-
-        console.log('amount: ', amount);
 
         refundOptions.push({
           amount,
