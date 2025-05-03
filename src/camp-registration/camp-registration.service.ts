@@ -2473,9 +2473,10 @@ export class CampRegistrationService {
           }
         }
 
+        console.log('Remaining refund: ', remRefund.toFixed(2));
         console.log('PAYNMNT: ', payment);
         const amount = payment?.amount.isLessThan(remRefund)
-          ? payment.amount
+          ? payment?.amount
           : remRefund;
 
         refundOptions.push({
@@ -2486,7 +2487,7 @@ export class CampRegistrationService {
         });
 
         remRefund = remRefund.minus(amount);
-      } while (!remRefund.isEqualTo(0));
+      } while (remRefund.isGreaterThan(0));
 
       const payload = {
         campRegistrationId: campRegistration.id,
