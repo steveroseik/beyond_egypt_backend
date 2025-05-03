@@ -2431,7 +2431,9 @@ export class CampRegistrationService {
 
       if (payments?.length) {
         for (const payment of payments) {
+          // if has child payments
           if (payment.childPayments?.length) {
+            // calculate total in negative
             const childPaymentsTotal = payment.childPayments.reduce(
               (acc, childPayment) =>
                 childPayment.amount.isNegative()
@@ -2439,7 +2441,8 @@ export class CampRegistrationService {
                   : 0,
               new Decimal('0'),
             );
-            const difference = payment.amount.minus(childPaymentsTotal);
+            // subtract and get difference
+            const difference = payment.amount.plus(childPaymentsTotal);
             if (difference.isGreaterThan(0)) {
               validPayments.push({ payment, amount: difference });
             }
@@ -2468,14 +2471,15 @@ export class CampRegistrationService {
         const payment = validPayments.pop();
 
         if (!payment) {
-          if (remRefund.isGreaterThan(0)) {
+          if (remRefund.isLessThan(0)) {
             throw new Error('Not enough payments to refund');
           }
         }
 
         console.log('Remaining refund: ', remRefund.toFixed(2));
         console.log('PAYNMNT: ', payment);
-        const amount = payment?.amount.isLessThan(remRefund)
+
+        const amount = payment?.amount.isLessThan(remRefund.multipliedBy(-1))
           ? payment?.amount
           : remRefund;
 
@@ -2486,8 +2490,8 @@ export class CampRegistrationService {
           paymentMethod: payment.payment.paymentMethod,
         });
 
-        remRefund = remRefund.minus(amount);
-      } while (remRefund.isGreaterThan(0));
+        remRefund = remRefund.plus(amount);
+      } while (remRefund.isLessThan(0));
 
       const payload = {
         campRegistrationId: campRegistration.id,
