@@ -439,6 +439,11 @@ type RegistrationAttendance {
   createdAt: DateTime!
   lastModified: DateTime!
   deletedAt: DateTime
+  campRegistration: CampRegistration
+  campVariantRegistration: CampVariantRegistration
+  child: Child
+  enterAuditor: User
+  leaveAuditor: User
 }
 
 type RegistrationAttendancePage {
