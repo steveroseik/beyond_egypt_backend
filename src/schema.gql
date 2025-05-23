@@ -427,6 +427,25 @@ The `JSONObject` scalar type represents JSON objects as specified by [ECMA-404](
 """
 scalar JSONObject
 
+type RegistrationAttendance {
+  id: Int!
+  campRegistrationId: Int!
+  campVariantId: Int!
+  childId: Int!
+  enterTime: DateTime!
+  leaveTime: DateTime
+  enterAuditorId: String!
+  leaveAuditorId: String
+  createdAt: DateTime!
+  lastModified: DateTime!
+  deletedAt: DateTime
+}
+
+type RegistrationAttendancePage {
+  cursor: GraphqlCursor!
+  data: [RegistrationAttendance!]!
+}
+
 type RegistrationHistory {
   campRegistrationId: Int!
   status: CampRegistrationStatus!
@@ -518,6 +537,7 @@ type Query {
   childReport(id: Int!): ChildReport!
   childReportHistory(id: Int!): ChildReportHistory!
   eventFile(id: Int!): EventFile!
+  paginateRegistrationAttendance(input: PaginateRegistrationAttendanceInput!): RegistrationAttendancePage!
   registrationHistory(id: Int!): RegistrationHistory!
   registrationPaymentHistory(id: Int!): RegistrationPayment!
   paginateRegistrationPayments(input: PaginateRegistrationPaymentsInput!): RegistrationPaymentsPage!
@@ -653,6 +673,14 @@ input PaginateCampRegistrationsInput {
 
 input CampRegistrationRefundOptionsInput {
   CampRegistrationId: Int!
+}
+
+input PaginateRegistrationAttendanceInput {
+  isAsc: Boolean! = false
+  limit: Int = 20
+  afterCursor: String
+  beforeCursor: String
+  search: String
 }
 
 input PaginateRegistrationPaymentsInput {

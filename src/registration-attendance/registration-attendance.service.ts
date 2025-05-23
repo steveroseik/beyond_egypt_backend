@@ -5,6 +5,8 @@ import { Repository } from 'typeorm';
 import { RegistrationAttendance } from './entities/registration-attendance.entity';
 import { CampRegistration } from 'src/camp-registration/entities/camp-registration.entity';
 import { AttendanceResponse } from './dto/attendance-response.type';
+import { PaginateRegistrationAttendanceInput } from './dto/paginate-registration-attendance.input';
+import { buildPaginator } from 'typeorm-cursor-pagination';
 
 @Injectable()
 export class RegistrationAttendanceService {
@@ -129,5 +131,21 @@ export class RegistrationAttendanceService {
         leaveTime: null,
       },
     });
+  }
+
+  paginate(input: PaginateRegistrationAttendanceInput) {
+    const queryBuilder = this.repo.createQueryBuilder('registrationAttendance');
+
+    const paginator = buildPaginator({
+      entity: RegistrationAttendance,
+      paginationKeys: ['createdAt', 'id'],
+      alias: 'registrationAttendance',
+      query: {
+        ...input,
+        order: input.isAsc ? 'ASC' : 'DESC',
+      },
+    });
+
+    return paginator.paginate(queryBuilder);
   }
 }

@@ -1885,6 +1885,10 @@ export class CampRegistrationService {
     let updatedVariants: CampVariantRegistration[] = [];
 
     for (const { variant, update } of input) {
+      //TODO: should apply this in the discount only for old variants...
+      // should validate each discount first before aaplying
+
+      variant.discountId;
       // find appropriate discount
       let discount = overwrite
         ? discounts[0]

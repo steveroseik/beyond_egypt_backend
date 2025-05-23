@@ -10,6 +10,8 @@ import { AttendanceResponse } from './dto/attendance-response.type';
 import { CurrentUser } from 'src/auth/decorators/currentUserDecorator';
 import { UserType } from 'support/enums';
 import { GraphQLJSONObject } from 'graphql-type-json';
+import { RegistrationAttendancePage } from './entities/registration-attendance-page.entity';
+import { PaginateRegistrationAttendanceInput } from './dto/paginate-registration-attendance.input';
 
 @Resolver(() => RegistrationAttendance)
 // @UseGuards(GqlAuthGuard)
@@ -70,5 +72,12 @@ export class RegistrationAttendanceResolver {
     }
 
     return this.service.leave(id, userId);
+  }
+
+  @Query(() => RegistrationAttendancePage)
+  paginateRegistrationAttendance(
+    @Args('input') input: PaginateRegistrationAttendanceInput,
+  ) {
+    return this.service.paginate(input);
   }
 }
