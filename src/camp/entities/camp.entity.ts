@@ -33,11 +33,11 @@ export class Camp {
   @Field()
   id: number;
 
-  @Column('varchar', { name: 'name', length: 255 })
+  @Column('varchar', { name: 'name', length: 100 })
   @Field()
   name: string;
 
-  @Column('varchar', { name: 'description', nullable: true, length: 255 })
+  @Column('varchar', { name: 'description', nullable: true, length: 2000 })
   @Field({ nullable: true })
   description?: string;
 

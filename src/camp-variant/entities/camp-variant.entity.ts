@@ -28,7 +28,7 @@ export class CampVariant {
   @Field()
   campId: number;
 
-  @Column('varchar', { name: 'name', length: 255 })
+  @Column('varchar', { name: 'name', length: 100 })
   @Field()
   name: string;
 
