@@ -182,7 +182,9 @@ export class CampRegistrationResolver {
     @Parent() campRegistration: CampRegistration,
     @Context() { loaders }: { loaders: DataloaderRegistry },
   ) {
-    return loaders.CampsDataLoader.load(campRegistration.campId);
+    return loaders
+      .CampsDataLoader({ withDelete: true })
+      .load(campRegistration.campId);
   }
 
   @ResolveField(() => User)

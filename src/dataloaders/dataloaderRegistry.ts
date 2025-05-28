@@ -32,6 +32,7 @@ import { DiscountsDataLoader } from './loaders/discounts.loader';
 import { DiscountService } from 'src/discount/discount.service';
 import { CampRegistrationDataLoader } from './loaders/campRegistration.loader';
 import { CampRegistrationService } from 'src/camp-registration/camp-registration.service';
+import { CampsWithDeleteDataLoader } from './loaders/campsWithDelete.loader';
 
 export class DataloaderRegistry {
   private cache: Record<string, any> = {};
@@ -134,10 +135,14 @@ export class DataloaderRegistry {
     );
   }
 
-  public get CampsDataLoader() {
-    return this.get('CampsDataLoader', () =>
-      CampsDataLoader.create(this.campService),
-    );
+  public CampsDataLoader({ withDelete = false }: { withDelete: boolean }) {
+    return withDelete
+      ? this.get('CampsDataLoader', () =>
+          CampsWithDeleteDataLoader.create(this.campService),
+        )
+      : this.get('CampsDataLoader', () =>
+          CampsDataLoader.create(this.campService),
+        );
   }
 
   public get EventsDataLoader() {

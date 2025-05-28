@@ -248,8 +248,8 @@ export class CampService {
     ];
   }
 
-  findAllByKeys(keys: readonly number[]) {
-    return this.repo.find({ where: { id: In(keys) } });
+  findAllByKeys(keys: readonly number[], withDeleted: boolean = false) {
+    return this.repo.find({ where: { id: In(keys) }, withDeleted });
   }
 
   findOne(id: number) {
