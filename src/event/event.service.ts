@@ -158,6 +158,7 @@ export class EventService {
 
       await this.removeCamps(queryRunner, input);
 
+      await queryRunner.commitTransaction();
       return {
         success: true,
         message: 'Events removed successfully and camps unlinked',

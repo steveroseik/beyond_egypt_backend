@@ -147,7 +147,6 @@ export class CampService {
     if (newCampVariants.identifiers.length !== input.variants.length) {
       throw new Error('Failed to insert camp variants');
     }
-    return;
   }
 
   // async handleMeals(input: CreateCampInput, queryRunner: QueryRunner) {
@@ -310,36 +309,33 @@ export class CampService {
       }
 
       if (fileIds?.length) {
-        await this.repo
-          .createQueryBuilder('camp')
+        await queryRunner.manager
+          .createQueryBuilder(Camp, 'camp')
           .relation(Camp, 'files')
           .of(input.id)
           .add(fileIds);
       }
 
       if (ageRangeIds?.length) {
-        await this.repo
-          .createQueryBuilder('camp')
+        await queryRunner.manager
+          .createQueryBuilder(Camp, 'camp')
           .relation(Camp, 'ageRanges')
           .of(input.id)
           .add(ageRangeIds);
       }
 
       if (input.ageRangeIdsToDelete?.length) {
-        await this.repo
-          .createQueryBuilder('camp')
+        await queryRunner.manager
+          .createQueryBuilder(Camp, 'camp')
           .relation(Camp, 'ageRanges')
           .of(input.id)
           .remove(input.ageRangeIdsToDelete);
       }
 
       if (input.variantIdsToDelete?.length) {
-        const deleteVariants = await this.dataSource.manager.delete(
-          CampVariant,
-          {
-            id: In(input.variantIdsToDelete),
-          },
-        );
+        const deleteVariants = await queryRunner.manager.delete(CampVariant, {
+          id: In(input.variantIdsToDelete),
+        });
         if (deleteVariants.affected !== input.variantIdsToDelete.length) {
           throw new Error('Failed to delete camp variants');
         }
