@@ -44,7 +44,7 @@ export class FawryService {
       }
       const payment = await queryRunner.manager.findOne(RegistrationPayment, {
         where: {
-          referenceNumber: query.merchantRefNumber,
+          referenceNumber: `${query.merchantRefNumber}`,
         },
         relations: ['campRegistration'],
         lock: { mode: 'pessimistic_write' },

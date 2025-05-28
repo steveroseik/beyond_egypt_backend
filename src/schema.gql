@@ -140,7 +140,7 @@ enum ShirtSize {
 
 type RegistrationPayment {
   id: Int!
-  referenceNumber: Int
+  referenceNumber: String
   fawryReferenceNumber: String
   parentId: Int
   campRegistrationId: Int!
@@ -1110,7 +1110,7 @@ input ProcessCampRegistrationInput {
   campRegistrationId: Int!
   paymentMethod: PaymentMethod
   receipt: Base64Image
-  referenceNumber: Int
+  referenceNumber: String
   refundPolicyConsent: Boolean
   behaviorConsent: Boolean
   discountId: Int
@@ -1125,7 +1125,7 @@ input ConfirmCampRegistrationInput {
   id: Int!
   paymentMethod: PaymentMethod
   receipt: Base64Image
-  referenceNumber: Int
+  referenceNumber: String
   paidAmount: Decimal!
 }
 

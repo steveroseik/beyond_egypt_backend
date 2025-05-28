@@ -15,7 +15,7 @@ export class ConfirmCampRegistrationInput {
   receipt?: Base64Image;
 
   @Field({ nullable: true })
-  referenceNumber?: number;
+  referenceNumber?: string;
 
   @Field(() => GraphqlDecimal)
   paidAmount: Decimal;

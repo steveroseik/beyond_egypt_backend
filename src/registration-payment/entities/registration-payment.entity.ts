@@ -26,13 +26,13 @@ export class RegistrationPayment {
   @Field()
   id: number;
 
-  @Column('int', {
+  @Column('varchar', {
     name: 'referenceNumber',
-    unsigned: true,
+    length: 70,
     nullable: true,
   })
   @Field({ nullable: true })
-  referenceNumber?: number;
+  referenceNumber?: string;
 
   @Column('varchar', { name: 'fawryReferenceNumber', nullable: true })
   @Field({ nullable: true })

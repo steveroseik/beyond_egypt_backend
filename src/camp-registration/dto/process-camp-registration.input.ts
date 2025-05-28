@@ -14,7 +14,7 @@ export class ProcessCampRegistrationInput {
   receipt?: Base64Image;
 
   @Field({ nullable: true })
-  referenceNumber?: number;
+  referenceNumber?: string;
 
   @Field({ nullable: true })
   refundPolicyConsent: boolean;
