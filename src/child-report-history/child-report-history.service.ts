@@ -5,6 +5,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
 import { ChildReportHistory } from './entities/child-report-history.entity';
 import { ChildReport } from 'src/child-report/entities/child-report.entity';
+import { PaginateChildReportHistoryInput } from './dto/paginate-child-report-history.input';
+import { buildPaginator } from 'typeorm-cursor-pagination';
 
 @Injectable()
 export class ChildReportHistoryService {
@@ -54,6 +56,52 @@ export class ChildReportHistoryService {
     } finally {
       await queryRunner.release();
     }
+  }
+
+  async paginate(input: PaginateChildReportHistoryInput) {
+    const queryBuilder = this.repo
+      .createQueryBuilder('childReportHistory')
+      .where('childReportHistory.childReportId = :childReportId', {
+        childReportId: input.childReportId,
+      });
+
+    const paginator = buildPaginator({
+      entity: ChildReportHistory,
+      alias: 'childReportHistory',
+      paginationKeys: ['createdAt', 'id'],
+      query: {
+        ...input,
+        order: input.isAsc ? 'ASC' : 'DESC',
+      },
+    });
+  }
+
+  async findLatestByChildReportIds(
+    keys: readonly number[],
+  ): Promise<ChildReportHistory[]> {
+    if (!keys.length) return [];
+
+    // Fetch the latest ChildReportHistory for each childReportId in a single query
+    const subQuery = this.repo
+      .createQueryBuilder('h')
+      .select([
+        'h.childReportId AS "childReportId"',
+        'MAX(h.createdAt) AS "maxCreatedAt"',
+      ])
+      .where('h.childReportId IN (:...keys)', { keys })
+      .groupBy('h.childReportId');
+
+    const latestHistories = await this.repo
+      .createQueryBuilder('childReportHistory')
+      .innerJoin(
+        '(' + subQuery.getQuery() + ')',
+        'latest',
+        'childReportHistory.childReportId = latest."childReportId" AND childReportHistory.createdAt = latest."maxCreatedAt"',
+      )
+      .setParameters(subQuery.getParameters())
+      .getMany();
+
+    return latestHistories;
   }
 
   findAll() {

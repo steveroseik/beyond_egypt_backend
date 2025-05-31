@@ -5,6 +5,9 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { ChildReport } from './entities/child-report.entity';
 import { DataSource, Repository } from 'typeorm';
 import { ChildReportHistory } from 'src/child-report-history/entities/child-report-history.entity';
+import { PaginateChildReportsInput } from './dto/paginate-child-reports.input';
+import { UserType } from 'support/enums';
+import { buildPaginator } from 'typeorm-cursor-pagination';
 
 @Injectable()
 export class ChildReportService {
@@ -99,5 +102,54 @@ export class ChildReportService {
       success: true,
       message: 'Child report deleted successfully',
     };
+  }
+
+  paginate(
+    input: PaginateChildReportsInput,
+    userType: UserType,
+    userId: string,
+  ) {
+    let parentId: string = undefined;
+    if (userType === UserType.parent) {
+      parentId = userId;
+    }
+
+    const queryBuilder = this.repo.createQueryBuilder('childReport');
+
+    if (parentId) {
+      queryBuilder
+        .innerJoin('childReport.child', 'child')
+        .where('child.parentId = :parentId', { parentId });
+    }
+
+    if (input.childId) {
+      queryBuilder.andWhere('childReport.childId = :childId', {
+        childId: input.childId,
+      });
+    }
+
+    if (input.status) {
+      queryBuilder.andWhere('childReport.status = :status', {
+        status: input.status,
+      });
+    }
+
+    if (input.campVariantId) {
+      queryBuilder.andWhere('childReport.campVariantId = :campVariantId', {
+        campVariantId: input.campVariantId,
+      });
+    }
+
+    const paginator = buildPaginator({
+      entity: ChildReport,
+      alias: 'childReport',
+      paginationKeys: ['createdAt', 'id'],
+      query: {
+        ...input,
+        order: input.isAsc ? 'ASC' : 'DESC',
+      },
+    });
+
+    return paginator.paginate(queryBuilder);
   }
 }

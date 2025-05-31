@@ -69,7 +69,7 @@ export class ChildReport {
   deletedAt?: Date;
 
   @OneToMany(() => ChildReportHistory, (history) => history.childReport)
-  @Field(() => [ChildReportHistory])
+  // @Field(() => [ChildReportHistory])
   history: ChildReportHistory[];
 
   @ManyToOne(() => Child, (child) => child.reports, {

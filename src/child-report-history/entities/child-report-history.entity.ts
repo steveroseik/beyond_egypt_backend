@@ -15,6 +15,10 @@ import {
 @Entity('child-report-history', { schema: 'beyond_egypt' })
 export class ChildReportHistory {
   @PrimaryColumn()
+  @Field(() => Int)
+  id: number;
+
+  @Column()
   @Field()
   childReportId: number;
 

@@ -3,6 +3,7 @@
 # ------------------------------------------------------
 
 type ChildReportHistory {
+  id: Int!
   childReportId: Int!
   reportTime: DateTime!
   gameName: String
@@ -121,9 +122,9 @@ type ChildReport {
   createdAt: DateTime!
   lastModified: DateTime!
   deletedAt: DateTime
-  history: [ChildReportHistory!]!
   child: Child!
   campVariant: CampVariant!
+  latestReportHistory: ChildReportHistory
 }
 
 enum ChildReportType {
@@ -143,8 +144,6 @@ type CampVariant {
   lastModified: DateTime!
   deletedAt: DateTime
   camp: Camp!
-  campVariantRegistrations: [CampVariantRegistration!]
-  childReports: [ChildReport!]
 }
 
 type CampVariantRegistration {
@@ -389,6 +388,16 @@ type ChildPage {
   data: [Child!]!
 }
 
+type ChildReportPage {
+  cursor: GraphqlCursor!
+  data: [ChildReport!]!
+}
+
+type ChildReportHistoryPage {
+  cursor: GraphqlCursor!
+  data: [ChildReportHistory!]!
+}
+
 type DiscountsPage {
   cursor: GraphqlCursor!
   data: [Discount!]!
@@ -546,8 +555,10 @@ type Query {
   findOneCampRegistration(id: Int!): CampRegistration
   paginateCampRegistrations(input: PaginateCampRegistrationsInput!): CampRegistrationPage!
   campRegistrationRefundOptions(input: CampRegistrationRefundOptionsInput!): JSONObject!
-  childReport(id: Int!): ChildReport!
   childReportHistory(id: Int!): ChildReportHistory!
+  paginateChildReportHistory(input: PaginateChildReportHistoryInput!): ChildReportHistoryPage!
+  childReport(id: Int!): ChildReport!
+  paginateChildReports(input: PaginateChildReportsInput!): ChildReportPage!
   eventFile(id: Int!): EventFile!
   paginateRegistrationAttendance(input: PaginateRegistrationAttendanceInput!): RegistrationAttendancePage!
   registrationHistory(id: Int!): RegistrationHistory!
@@ -687,6 +698,32 @@ input CampRegistrationRefundOptionsInput {
   CampRegistrationId: Int!
 }
 
+input PaginateChildReportHistoryInput {
+  isAsc: Boolean! = false
+  limit: Int = 20
+  afterCursor: String
+  beforeCursor: String
+  search: String
+  childReportId: Int!
+}
+
+input PaginateChildReportsInput {
+  isAsc: Boolean! = false
+  limit: Int = 20
+  afterCursor: String
+  beforeCursor: String
+  search: String
+
+  """Filter by child ID"""
+  childId: Int
+
+  """Filter by camp variant ID"""
+  campVariantId: Int
+
+  """Filter by report status"""
+  status: String
+}
+
 input PaginateRegistrationAttendanceInput {
   isAsc: Boolean! = false
   limit: Int = 20
@@ -772,13 +809,13 @@ type Mutation {
   processCampRegistrationRefund(input: ProcessCampRegistrationRefundInput!): JSONObject!
   completeRegistrationRefund(input: CompleteRegistrationRefundInput!): JSONObject!
   sendTestEmail: JSONObject
+  createChildReportHistory(input: CreateChildReportHistoryInput!): ChildReportHistory!
+  updateChildReportHistory(updateChildReportHistoryInput: UpdateChildReportHistoryInput!): ChildReportHistory!
+  removeChildReportHistory(id: Int!): ChildReportHistory!
   createChildReport(input: CreateChildReportInput!): JSONObject!
   updateChildReport(input: UpdateChildReportInput!): JSONObject!
   closeChildReport(id: Int!): JSONObject!
   removeChildReport(id: Int!): JSONObject!
-  createChildReportHistory(input: CreateChildReportHistoryInput!): ChildReportHistory!
-  updateChildReportHistory(updateChildReportHistoryInput: UpdateChildReportHistoryInput!): ChildReportHistory!
-  removeChildReportHistory(id: Int!): ChildReportHistory!
   createEventFile(createEventFileInput: CreateEventFileInput!): EventFile!
   updateEventFile(updateEventFileInput: UpdateEventFileInput!): EventFile!
   removeEventFile(id: Int!): EventFile!
@@ -1148,6 +1185,47 @@ input CompleteRegistrationRefundInput {
   receipt: Base64Image!
 }
 
+input CreateChildReportHistoryInput {
+  """ID of the child report"""
+  childReportId: Int!
+
+  """Time of the report"""
+  reportTime: DateTime!
+
+  """Name of the game"""
+  gameName: String
+
+  """Details of the report"""
+  details: String!
+
+  """Actions taken in response to the report"""
+  actionsTaken: String!
+
+  """Status of the report"""
+  status: ChildReportStatus!
+}
+
+input UpdateChildReportHistoryInput {
+  """ID of the child report"""
+  childReportId: Int
+
+  """Time of the report"""
+  reportTime: DateTime
+
+  """Name of the game"""
+  gameName: String
+
+  """Details of the report"""
+  details: String
+
+  """Actions taken in response to the report"""
+  actionsTaken: String
+
+  """Status of the report"""
+  status: ChildReportStatus
+  id: Int!
+}
+
 input CreateChildReportInput {
   """ID of the child"""
   childId: Int!
@@ -1196,47 +1274,6 @@ input UpdateChildReportInput {
   """Status of the report"""
   status: ChildReportStatus = new
   details: CreateChildReportHistoryWithoutIdInput
-  id: Int!
-}
-
-input CreateChildReportHistoryInput {
-  """ID of the child report"""
-  childReportId: Int!
-
-  """Time of the report"""
-  reportTime: DateTime!
-
-  """Name of the game"""
-  gameName: String
-
-  """Details of the report"""
-  details: String!
-
-  """Actions taken in response to the report"""
-  actionsTaken: String!
-
-  """Status of the report"""
-  status: ChildReportStatus!
-}
-
-input UpdateChildReportHistoryInput {
-  """ID of the child report"""
-  childReportId: Int
-
-  """Time of the report"""
-  reportTime: DateTime
-
-  """Name of the game"""
-  gameName: String
-
-  """Details of the report"""
-  details: String
-
-  """Actions taken in response to the report"""
-  actionsTaken: String
-
-  """Status of the report"""
-  status: ChildReportStatus
   id: Int!
 }
 

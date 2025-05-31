@@ -97,13 +97,13 @@ export class CampVariant {
     (campVariantRegistration) => campVariantRegistration.campVariant,
     { nullable: true },
   )
-  @Field(() => [CampVariantRegistration], { nullable: true })
+  // @Field(() => [CampVariantRegistration], { nullable: true })
   campVariantRegistrations?: CampVariantRegistration[];
 
   @OneToMany(() => ChildReport, (childReport) => childReport.campVariant, {
     nullable: true,
   })
-  @Field(() => [ChildReport], { nullable: true })
+  // @Field(() => [ChildReport], { nullable: true })
   childReports?: ChildReport[];
 
   // @AfterInsert()s

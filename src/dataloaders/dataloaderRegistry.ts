@@ -33,6 +33,8 @@ import { DiscountService } from 'src/discount/discount.service';
 import { CampRegistrationDataLoader } from './loaders/campRegistration.loader';
 import { CampRegistrationService } from 'src/camp-registration/camp-registration.service';
 import { CampsWithDeleteDataLoader } from './loaders/campsWithDelete.loader';
+import { LatestChildReportHistoryLoader } from './loaders/childReportHistory.loader';
+import { ChildReportHistoryService } from 'src/child-report-history/child-report-history.service';
 
 export class DataloaderRegistry {
   private cache: Record<string, any> = {};
@@ -52,6 +54,7 @@ export class DataloaderRegistry {
     private userService: UserService,
     private discountService: DiscountService,
     private campRegistrationService: CampRegistrationService,
+    private childReportHistoryService: ChildReportHistoryService,
   ) {}
 
   /**
@@ -180,6 +183,13 @@ export class DataloaderRegistry {
       CampRegistrationDataLoader.create(this.campRegistrationService),
     );
   }
+
+  public get latestChildReportHistoryDataLoader() {
+    return this.get('LatestChildReportHistoryDataLoader', () =>
+      LatestChildReportHistoryLoader.create(this.childReportHistoryService),
+    );
+  }
+
   /**
    * Just a pretty type-safe facade for invoking `this.get`.
    * Make more of your own as you wish.

@@ -1,10 +1,24 @@
-import { Resolver, Query, Mutation, Args, Int } from '@nestjs/graphql';
+import {
+  Resolver,
+  Query,
+  Mutation,
+  Args,
+  Int,
+  ResolveField,
+  Parent,
+  Context,
+} from '@nestjs/graphql';
 import { ChildReportService } from './child-report.service';
 import { ChildReport } from './entities/child-report.entity';
 import { CreateChildReportInput } from './dto/create-child-report.input';
 import { UpdateChildReportInput } from './dto/update-child-report.input';
 import { GraphQLJSONObject } from 'graphql-type-json';
-import { ChildReportStatus } from 'support/enums';
+import { ChildReportStatus, UserType } from 'support/enums';
+import { ChildReportPage } from './entities/child-report-page.entity';
+import { PaginateChildReportsInput } from './dto/paginate-child-reports.input';
+import { CurrentUser } from 'src/auth/decorators/currentUserDecorator';
+import { DataloaderRegistry } from 'src/dataloaders/dataloaderRegistry';
+import { ChildReportHistory } from 'src/child-report-history/entities/child-report-history.entity';
 
 @Resolver(() => ChildReport)
 export class ChildReportResolver {
@@ -44,5 +58,22 @@ export class ChildReportResolver {
   @Mutation(() => GraphQLJSONObject)
   removeChildReport(@Args('id', { type: () => Int }) id: number) {
     return this.childReportService.remove(id);
+  }
+
+  @Query(() => ChildReportPage)
+  paginateChildReports(
+    @Args('input') input: PaginateChildReportsInput,
+    @CurrentUser('type') userType: UserType,
+    @CurrentUser('id') userId: string,
+  ) {
+    return this.childReportService.paginate(input, userType, userId);
+  }
+
+  @ResolveField(() => ChildReportHistory, { nullable: true })
+  latestReportHistory(
+    @Parent() childReport: ChildReport,
+    @Context() { loaders }: { loaders: DataloaderRegistry },
+  ) {
+    return loaders.latestChildReportHistoryDataLoader.load(childReport.id);
   }
 }

@@ -3,6 +3,8 @@ import { ChildReportHistoryService } from './child-report-history.service';
 import { ChildReportHistory } from './entities/child-report-history.entity';
 import { CreateChildReportHistoryInput } from './dto/create-child-report-history.input';
 import { UpdateChildReportHistoryInput } from './dto/update-child-report-history.input';
+import { ChildReportHistoryPage } from './entities/child-report-history-page.entity';
+import { PaginateChildReportHistoryInput } from './dto/paginate-child-report-history.input';
 
 @Resolver(() => ChildReportHistory)
 export class ChildReportHistoryResolver {
@@ -41,5 +43,12 @@ export class ChildReportHistoryResolver {
   @Mutation(() => ChildReportHistory)
   removeChildReportHistory(@Args('id', { type: () => Int }) id: number) {
     return this.childReportHistoryService.remove(id);
+  }
+
+  @Query(() => ChildReportHistoryPage)
+  paginateChildReportHistory(
+    @Args('input') input: PaginateChildReportHistoryInput,
+  ) {
+    return this.childReportHistoryService.paginate(input);
   }
 }
