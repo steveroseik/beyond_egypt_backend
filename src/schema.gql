@@ -2,26 +2,28 @@
 # THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
 # ------------------------------------------------------
 
-type CampVariant {
-  id: Int!
-  campId: Int!
-  name: String!
-  price: Decimal
-  remainingCapacity: Int!
-  capacity: Int!
-  startDate: DateTime!
-  endDate: DateTime!
+type ChildReportHistory {
+  childReportId: Int!
+  reportTime: DateTime!
+  gameName: String
+  details: String!
+  actionsTaken: String!
+  status: ChildReportStatus!
+  reporterId: Int!
   createdAt: DateTime!
-  lastModified: DateTime!
-  deletedAt: DateTime
-  camp: Camp!
-  campVariantRegistrations: [CampVariantRegistration!]!
+  childReport: ChildReport!
 }
 
 """
 A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date-time format.
 """
 scalar DateTime
+
+enum ChildReportStatus {
+  new
+  followUp
+  closed
+}
 
 type Allergy {
   id: Int!
@@ -96,8 +98,9 @@ type Child {
   lastModified: DateTime!
   deletedAt: DateTime
   allergies: [Allergy!]!
-  campVariantRegistrations: [CampVariantRegistration!]!
+  campVariantRegistrations: [CampVariantRegistration!]
   user: User!
+  reports: [ChildReport!]
   file: File
 }
 
@@ -107,6 +110,41 @@ enum ParentRelation {
   grandParent
   uncle
   aunt
+}
+
+type ChildReport {
+  id: Int!
+  childId: Int!
+  campVariantId: Int!
+  type: ChildReportType!
+  status: ChildReportStatus!
+  createdAt: DateTime!
+  lastModified: DateTime!
+  deletedAt: DateTime
+  history: [ChildReportHistory!]!
+  child: Child!
+  campVariant: CampVariant!
+}
+
+enum ChildReportType {
+  incident
+}
+
+type CampVariant {
+  id: Int!
+  campId: Int!
+  name: String!
+  price: Decimal
+  remainingCapacity: Int!
+  capacity: Int!
+  startDate: DateTime!
+  endDate: DateTime!
+  createdAt: DateTime!
+  lastModified: DateTime!
+  deletedAt: DateTime
+  camp: Camp!
+  campVariantRegistrations: [CampVariantRegistration!]
+  childReports: [ChildReport!]
 }
 
 type CampVariantRegistration {
@@ -349,37 +387,6 @@ type CampVariantsRegistrationPage {
 type ChildPage {
   cursor: GraphqlCursor!
   data: [Child!]!
-}
-
-type ChildReport {
-  id: Int!
-  childId: Int!
-  campVariantId: Int!
-  type: ChildReportType!
-  status: ChildReportStatus!
-  createdAt: DateTime!
-  lastModified: DateTime!
-  deletedAt: DateTime
-}
-
-enum ChildReportType {
-  incident
-}
-
-enum ChildReportStatus {
-  new
-  followUp
-  closed
-}
-
-type ChildReportHistory {
-  childReportId: Int!
-  reportTime: DateTime!
-  gameName: String!
-  details: String!
-  actionsTaken: String!
-  status: ChildReportStatus!
-  userId: Int!
 }
 
 type DiscountsPage {
@@ -765,10 +772,11 @@ type Mutation {
   processCampRegistrationRefund(input: ProcessCampRegistrationRefundInput!): JSONObject!
   completeRegistrationRefund(input: CompleteRegistrationRefundInput!): JSONObject!
   sendTestEmail: JSONObject
-  createChildReport(createChildReportInput: CreateChildReportInput!): ChildReport!
-  updateChildReport(updateChildReportInput: UpdateChildReportInput!): ChildReport!
-  removeChildReport(id: Int!): ChildReport!
-  createChildReportHistory(createChildReportHistoryInput: CreateChildReportHistoryInput!): ChildReportHistory!
+  createChildReport(input: CreateChildReportInput!): JSONObject!
+  updateChildReport(input: UpdateChildReportInput!): JSONObject!
+  closeChildReport(id: Int!): JSONObject!
+  removeChildReport(id: Int!): JSONObject!
+  createChildReportHistory(input: CreateChildReportHistoryInput!): ChildReportHistory!
   updateChildReportHistory(updateChildReportHistoryInput: UpdateChildReportHistoryInput!): ChildReportHistory!
   removeChildReportHistory(id: Int!): ChildReportHistory!
   createEventFile(createEventFileInput: CreateEventFileInput!): EventFile!
@@ -1141,24 +1149,94 @@ input CompleteRegistrationRefundInput {
 }
 
 input CreateChildReportInput {
-  """Example field (placeholder)"""
-  exampleField: Int!
+  """ID of the child"""
+  childId: Int!
+
+  """ID of the camp variant"""
+  campVariantId: Int!
+
+  """Type of the report"""
+  type: ChildReportType = incident
+
+  """Status of the report"""
+  status: ChildReportStatus = new
+  details: CreateChildReportHistoryWithoutIdInput!
+}
+
+input CreateChildReportHistoryWithoutIdInput {
+  """ID of the child report"""
+  childReportId: Int
+
+  """Time of the report"""
+  reportTime: DateTime!
+
+  """Name of the game"""
+  gameName: String
+
+  """Details of the report"""
+  details: String!
+
+  """Actions taken in response to the report"""
+  actionsTaken: String!
+
+  """Status of the report"""
+  status: ChildReportStatus!
 }
 
 input UpdateChildReportInput {
-  """Example field (placeholder)"""
-  exampleField: Int
+  """ID of the child"""
+  childId: Int
+
+  """ID of the camp variant"""
+  campVariantId: Int
+
+  """Type of the report"""
+  type: ChildReportType = incident
+
+  """Status of the report"""
+  status: ChildReportStatus = new
+  details: CreateChildReportHistoryWithoutIdInput
   id: Int!
 }
 
 input CreateChildReportHistoryInput {
-  """Example field (placeholder)"""
-  exampleField: Int!
+  """ID of the child report"""
+  childReportId: Int!
+
+  """Time of the report"""
+  reportTime: DateTime!
+
+  """Name of the game"""
+  gameName: String
+
+  """Details of the report"""
+  details: String!
+
+  """Actions taken in response to the report"""
+  actionsTaken: String!
+
+  """Status of the report"""
+  status: ChildReportStatus!
 }
 
 input UpdateChildReportHistoryInput {
-  """Example field (placeholder)"""
-  exampleField: Int
+  """ID of the child report"""
+  childReportId: Int
+
+  """Time of the report"""
+  reportTime: DateTime
+
+  """Name of the game"""
+  gameName: String
+
+  """Details of the report"""
+  details: String
+
+  """Actions taken in response to the report"""
+  actionsTaken: String
+
+  """Status of the report"""
+  status: ChildReportStatus
   id: Int!
 }
 

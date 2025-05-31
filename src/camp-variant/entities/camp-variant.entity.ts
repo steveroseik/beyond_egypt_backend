@@ -2,6 +2,7 @@ import { ObjectType, Field, Int } from '@nestjs/graphql';
 import BigNumber from 'bignumber.js';
 import { CampVariantRegistration } from 'src/camp-variant-registration/entities/camp-variant-registration.entity';
 import { Camp } from 'src/camp/entities/camp.entity';
+import { ChildReport } from 'src/child-report/entities/child-report.entity';
 import { moneyFixation } from 'support/constants';
 import { Decimal, GraphqlDecimal } from 'support/scalars';
 import {
@@ -94,9 +95,16 @@ export class CampVariant {
   @OneToMany(
     () => CampVariantRegistration,
     (campVariantRegistration) => campVariantRegistration.campVariant,
+    { nullable: true },
   )
-  @Field(() => [CampVariantRegistration])
-  campVariantRegistrations: CampVariantRegistration[];
+  @Field(() => [CampVariantRegistration], { nullable: true })
+  campVariantRegistrations?: CampVariantRegistration[];
+
+  @OneToMany(() => ChildReport, (childReport) => childReport.campVariant, {
+    nullable: true,
+  })
+  @Field(() => [ChildReport], { nullable: true })
+  childReports?: ChildReport[];
 
   // @AfterInsert()s
   // setDefaultCurCapacity() {

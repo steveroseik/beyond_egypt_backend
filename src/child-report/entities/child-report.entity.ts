@@ -1,10 +1,16 @@
 import { ObjectType, Field, Int } from '@nestjs/graphql';
+import { CampVariant } from 'src/camp-variant/entities/camp-variant.entity';
+import { ChildReportHistory } from 'src/child-report-history/entities/child-report-history.entity';
+import { Child } from 'src/child/entities/child.entity';
 import { ChildReportStatus, ChildReportType } from 'support/enums';
 import {
   Column,
   CreateDateColumn,
   DeleteDateColumn,
   Entity,
+  JoinColumn,
+  ManyToOne,
+  OneToMany,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
@@ -19,6 +25,7 @@ export class ChildReport {
   @Column('int', { name: 'childId' })
   @Field()
   childId: number;
+
   @Column('int', { name: 'campVariantId' })
   @Field()
   campVariantId: number;
@@ -60,4 +67,26 @@ export class ChildReport {
   @DeleteDateColumn({ name: 'deletedAt', precision: 3 })
   @Field({ nullable: true })
   deletedAt?: Date;
+
+  @OneToMany(() => ChildReportHistory, (history) => history.childReport)
+  @Field(() => [ChildReportHistory])
+  history: ChildReportHistory[];
+
+  @ManyToOne(() => Child, (child) => child.reports, {
+    cascade: true,
+    onDelete: 'CASCADE',
+    onUpdate: 'CASCADE',
+  })
+  @JoinColumn({ name: 'childId' })
+  @Field(() => Child)
+  child: Child;
+
+  @ManyToOne(() => CampVariant, (campVariant) => campVariant.childReports, {
+    cascade: true,
+    onDelete: 'CASCADE',
+    onUpdate: 'CASCADE',
+  })
+  @JoinColumn({ name: 'campVariantId' })
+  @Field(() => CampVariant)
+  campVariant: CampVariant;
 }

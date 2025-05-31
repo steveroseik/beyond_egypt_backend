@@ -3,14 +3,16 @@ import { ChildReportService } from './child-report.service';
 import { ChildReport } from './entities/child-report.entity';
 import { CreateChildReportInput } from './dto/create-child-report.input';
 import { UpdateChildReportInput } from './dto/update-child-report.input';
+import { GraphQLJSONObject } from 'graphql-type-json';
+import { ChildReportStatus } from 'support/enums';
 
 @Resolver(() => ChildReport)
 export class ChildReportResolver {
   constructor(private readonly childReportService: ChildReportService) {}
 
-  @Mutation(() => ChildReport)
-  createChildReport(@Args('createChildReportInput') createChildReportInput: CreateChildReportInput) {
-    return this.childReportService.create(createChildReportInput);
+  @Mutation(() => GraphQLJSONObject)
+  createChildReport(@Args('input') input: CreateChildReportInput) {
+    return this.childReportService.create(input);
   }
 
   @Query(() => [ChildReport], { name: 'childReport' })
@@ -23,12 +25,23 @@ export class ChildReportResolver {
     return this.childReportService.findOne(id);
   }
 
-  @Mutation(() => ChildReport)
-  updateChildReport(@Args('updateChildReportInput') updateChildReportInput: UpdateChildReportInput) {
-    return this.childReportService.update(updateChildReportInput.id, updateChildReportInput);
+  @Mutation(() => GraphQLJSONObject)
+  updateChildReport(
+    @Args('input')
+    input: UpdateChildReportInput,
+  ) {
+    return this.childReportService.update(input);
   }
 
-  @Mutation(() => ChildReport)
+  @Mutation(() => GraphQLJSONObject)
+  closeChildReport(@Args('id', { type: () => Int }) id: number) {
+    return this.childReportService.update({
+      id,
+      status: ChildReportStatus.closed,
+    });
+  }
+
+  @Mutation(() => GraphQLJSONObject)
   removeChildReport(@Args('id', { type: () => Int }) id: number) {
     return this.childReportService.remove(id);
   }

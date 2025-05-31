@@ -1,10 +1,11 @@
-import { InputType, Int, Field } from '@nestjs/graphql';
+import { Field, InputType, Int } from '@nestjs/graphql';
+import { CreateChildReportHistoryInput } from './create-child-report-history.input';
 import { ChildReportStatus } from 'support/enums';
 
 @InputType()
-export class CreateChildReportHistoryInput {
-  @Field(() => Int, { description: 'ID of the child report' })
-  childReportId: number;
+export class CreateChildReportHistoryWithoutIdInput {
+  @Field(() => Int, { nullable: true, description: 'ID of the child report' })
+  childReportId?: number;
 
   @Field(() => Date, { description: 'Time of the report' })
   reportTime: Date;

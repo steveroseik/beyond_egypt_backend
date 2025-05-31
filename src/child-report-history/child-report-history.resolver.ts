@@ -6,11 +6,15 @@ import { UpdateChildReportHistoryInput } from './dto/update-child-report-history
 
 @Resolver(() => ChildReportHistory)
 export class ChildReportHistoryResolver {
-  constructor(private readonly childReportHistoryService: ChildReportHistoryService) {}
+  constructor(
+    private readonly childReportHistoryService: ChildReportHistoryService,
+  ) {}
 
   @Mutation(() => ChildReportHistory)
-  createChildReportHistory(@Args('createChildReportHistoryInput') createChildReportHistoryInput: CreateChildReportHistoryInput) {
-    return this.childReportHistoryService.create(createChildReportHistoryInput);
+  createChildReportHistory(
+    @Args('input') input: CreateChildReportHistoryInput,
+  ) {
+    return this.childReportHistoryService.create(input);
   }
 
   @Query(() => [ChildReportHistory], { name: 'childReportHistory' })
@@ -24,8 +28,14 @@ export class ChildReportHistoryResolver {
   }
 
   @Mutation(() => ChildReportHistory)
-  updateChildReportHistory(@Args('updateChildReportHistoryInput') updateChildReportHistoryInput: UpdateChildReportHistoryInput) {
-    return this.childReportHistoryService.update(updateChildReportHistoryInput.id, updateChildReportHistoryInput);
+  updateChildReportHistory(
+    @Args('updateChildReportHistoryInput')
+    updateChildReportHistoryInput: UpdateChildReportHistoryInput,
+  ) {
+    return this.childReportHistoryService.update(
+      updateChildReportHistoryInput.id,
+      updateChildReportHistoryInput,
+    );
   }
 
   @Mutation(() => ChildReportHistory)
