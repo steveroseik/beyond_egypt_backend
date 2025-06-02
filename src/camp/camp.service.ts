@@ -446,7 +446,7 @@ export class CampService {
         relations: [
           'campVariants',
           'campRegistrations',
-          'campRegistrations.campVariant',
+          'campRegistrations.campVariantRegistrations',
         ],
       });
 
