@@ -2727,6 +2727,142 @@ export class CampRegistrationService {
     }
   }
 
+  async cancelRegistrations({
+    queryRunner,
+    registrationIds = [],
+    registrations = [],
+  }: {
+    queryRunner: QueryRunner;
+    registrationIds?: number[];
+    registrations?: CampRegistration[];
+  }) {
+    if (!registrations?.length) {
+      if (!registrationIds?.length) {
+        throw new Error('No registrations found to cancel');
+      }
+
+      registrations = await queryRunner.manager.find(CampRegistration, {
+        where: { id: In(registrationIds) },
+        relations: ['campVariantRegistrations'],
+      });
+
+      if ((registrations?.length ?? 0) !== registrationIds.length) {
+        throw new Error('Some registrations not found');
+      }
+    }
+
+    if (!registrations?.length) {
+      throw new Error('No registrations found to cancel');
+    }
+
+    if (
+      registrations.some(
+        (e) =>
+          ![
+            CampRegistrationStatus.idle,
+            CampRegistrationStatus.pending,
+          ].includes(e.status),
+      )
+    ) {
+      throw new Error(
+        'Cannot cancel registrations that are not in idle or pending status, please cancel them manually',
+      );
+    }
+
+    const campVariantIds = Array.from(
+      new Set(
+        registrations.flatMap((e) =>
+          e.campVariantRegistrations.map((cv) => cv.campVariantId),
+        ),
+      ),
+    );
+
+    const campVariants = await queryRunner.manager.find(CampVariant, {
+      where: { id: In(campVariantIds) },
+      lock: { mode: 'pessimistic_write' },
+    });
+
+    const vacanciesToRelease = new Map<number, number>();
+    for (const registration of registrations) {
+      if (
+        registration.status !== CampRegistrationStatus.pending &&
+        registration.paymentMethod == PaymentMethod.fawry
+      ) {
+        for (const variant of registration.campVariantRegistrations) {
+          if (!vacanciesToRelease.has(variant.campVariantId)) {
+            vacanciesToRelease.set(variant.campVariantId, 1);
+          } else {
+            vacanciesToRelease.set(
+              variant.campVariantId,
+              vacanciesToRelease.get(variant.campVariantId) + 1,
+            );
+          }
+        }
+      }
+    }
+
+    if (vacanciesToRelease.size > 0) {
+      for (const [campVariantId, count] of vacanciesToRelease.entries()) {
+        const update = await queryRunner.manager.update(
+          CampVariant,
+          { id: campVariantId },
+          { remainingCapacity: () => `remainingCapacity + ${count}` },
+        );
+        if (update.affected !== 1) {
+          const campVariant = campVariants.find((e) => e.id == campVariantId);
+          throw Error(
+            `Failed to release capacity for ${campVariant.name} (${campVariant.id})`,
+          );
+        }
+      }
+    }
+
+    const deleteReserves = await queryRunner.manager.delete(
+      RegistrationReserve,
+      {
+        campRegistrationId: In(registrations.map((e) => e.id)),
+      },
+    );
+
+    /// check if reserves deleted
+
+    const cancelRegistrations = await queryRunner.manager.update(
+      CampRegistration,
+      { id: In(registrations.map((e) => e.id)) },
+      {
+        status: CampRegistrationStatus.cancelled,
+        paidAmount: 0,
+        amount: 0,
+        discountId: null,
+        discountAmount: 0,
+        penaltyFees: 0,
+        refundPolicyConsent: false,
+        behaviorConsent: false,
+        paymentMethod: null,
+      },
+    );
+
+    if (cancelRegistrations.affected !== registrations.length) {
+      throw new Error('Failed to cancel some registrations');
+    }
+
+    // delete camp variant registrations
+
+    const deleteVariants = await queryRunner.manager.delete(
+      CampVariantRegistration,
+      {
+        campRegistrationId: In(registrations.map((e) => e.id)),
+      },
+    );
+
+    if (
+      deleteVariants.affected !==
+      registrations.map((e) => e.campVariantRegistrations).flat().length
+    ) {
+      throw new Error('Failed to delete some camp variant registrations');
+    }
+  }
+
   setPaymentTimoout(paymentId: number) {
     const timeout = 11 * 60 * 1000; // 11 minutes
     setTimeout(async () => {

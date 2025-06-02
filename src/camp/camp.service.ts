@@ -15,12 +15,14 @@ import { CampRegistration } from 'src/camp-registration/entities/camp-registrati
 import { CampRegistrationStatus } from 'support/enums';
 import { moneyFixation } from 'support/constants';
 import * as moment from 'moment-timezone';
+import { CampRegistrationService } from 'src/camp-registration/camp-registration.service';
 
 @Injectable()
 export class CampService {
   constructor(
     @InjectRepository(Camp) private repo: Repository<Camp>,
     private dataSource: DataSource,
+    private campRegistrationService: CampRegistrationService,
   ) {}
 
   async create(input: CreateCampInput) {
@@ -441,20 +443,48 @@ export class CampService {
     try {
       const camp = await this.repo.findOne({
         where: { id },
-        relations: ['campVariants', 'campRegistrations'],
+        relations: [
+          'campVariants',
+          'campRegistrations',
+          'campRegistrations.campVariant',
+        ],
       });
 
       if (!camp) throw Error('Camp does not exist');
 
+      const now = moment.tz('Africa/Cairo');
+
       if (camp.campRegistrations?.length) {
+        // Check if there are any registrations for the camp
         for (const variant of camp.campVariants) {
-          const now = moment.tz('Africa/Cairo');
-          if (now.diff(variant.endDate) < 0) {
-            throw Error(
-              `Cannot delete camp, some weeks are still running ${variant.name}`,
-            );
+          const registrations = camp.campRegistrations.filter((registration) =>
+            registration.campVariantRegistrations?.some(
+              (variant) =>
+                variant.campVariantId === variant.id &&
+                registration.status === CampRegistrationStatus.accepted,
+            ),
+          );
+
+          if (registrations.length) {
+            if (now.diff(variant.endDate) <= 0) {
+              throw Error(
+                `Cannot delete camp, there are registrations for the camp variant ${variant.name} that are still active.`,
+              );
+            }
           }
         }
+
+        const registrationsToCancel = camp.campRegistrations.filter((e) =>
+          [
+            CampRegistrationStatus.idle,
+            CampRegistrationStatus.pending,
+          ].includes(e.status),
+        );
+
+        await this.campRegistrationService.cancelRegistrations({
+          queryRunner,
+          registrations: registrationsToCancel,
+        });
       }
 
       const deleteCamp = await queryRunner.manager.softDelete(Camp, { id });

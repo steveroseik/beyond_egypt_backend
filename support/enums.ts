@@ -43,7 +43,6 @@ export enum CampRegistrationStatus {
   accepted = 'accepted',
   rejected = 'rejected',
   cancelled = 'cancelled',
-  modified = 'modified',
   refunded = 'refunded',
 }
 

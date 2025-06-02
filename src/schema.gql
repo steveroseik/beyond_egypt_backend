@@ -240,7 +240,6 @@ enum CampRegistrationStatus {
   accepted
   rejected
   cancelled
-  modified
   refunded
 }
 
@@ -359,11 +358,6 @@ type AllergyPage {
   data: [Allergy!]!
 }
 
-type CampPage {
-  cursor: GraphqlCursor!
-  data: [Camp!]!
-}
-
 type RegistrationReserve {
   id: Int!
   campRegistrationId: Int!
@@ -371,6 +365,11 @@ type RegistrationReserve {
   count: Int!
   expirationDate: DateTime
   createdAt: DateTime!
+}
+
+type CampPage {
+  cursor: GraphqlCursor!
+  data: [Camp!]!
 }
 
 type CampRegistrationPage {
@@ -540,6 +539,9 @@ type Query {
   paginateCampVariantRegistrations(input: PaginateCampVariantRegistrationsInput!): CampVariantsRegistrationPage!
   findOneCamp(id: Int!): Camp!
   paginateCamps(input: PaginateCampsInput!): CampPage!
+  findOneCampRegistration(id: Int!): CampRegistration
+  paginateCampRegistrations(input: PaginateCampRegistrationsInput!): CampRegistrationPage!
+  campRegistrationRefundOptions(input: CampRegistrationRefundOptionsInput!): JSONObject!
   findOneEvent(id: Int!): Event
   paginateEvents(input: PaginateEventsInput!): EventPage!
   findOneAgeRange(id: Int!): AgeRange
@@ -552,9 +554,6 @@ type Query {
   paginateUsers(input: PaginateUsersInput!): UsersPage!
   findOneDiscount(id: Int!): Discount
   paginateDiscounts(input: PaginateDiscountsInput!): DiscountsPage!
-  findOneCampRegistration(id: Int!): CampRegistration
-  paginateCampRegistrations(input: PaginateCampRegistrationsInput!): CampRegistrationPage!
-  campRegistrationRefundOptions(input: CampRegistrationRefundOptionsInput!): JSONObject!
   childReportHistory(id: Int!): ChildReportHistory!
   paginateChildReportHistory(input: PaginateChildReportHistoryInput!): ChildReportHistoryPage!
   childReport(id: Int!): ChildReport!
@@ -624,6 +623,21 @@ input PaginateCampsInput {
   isPrivate: Boolean
 }
 
+input PaginateCampRegistrationsInput {
+  isAsc: Boolean! = false
+  limit: Int = 20
+  afterCursor: String
+  beforeCursor: String
+  search: String
+  campIds: [Int!]
+  parentIds: [String!]
+  statuses: [CampRegistrationStatus!]
+}
+
+input CampRegistrationRefundOptionsInput {
+  CampRegistrationId: Int!
+}
+
 input PaginateEventsInput {
   isAsc: Boolean! = false
   limit: Int = 20
@@ -681,21 +695,6 @@ input PaginateDiscountsInput {
   beforeCursor: String
   search: String
   active: Boolean
-}
-
-input PaginateCampRegistrationsInput {
-  isAsc: Boolean! = false
-  limit: Int = 20
-  afterCursor: String
-  beforeCursor: String
-  search: String
-  campIds: [Int!]
-  parentIds: [String!]
-  statuses: [CampRegistrationStatus!]
-}
-
-input CampRegistrationRefundOptionsInput {
-  CampRegistrationId: Int!
 }
 
 input PaginateChildReportHistoryInput {
@@ -780,6 +779,15 @@ type Mutation {
   createCamp(input: CreateCampInput!): JSONObject!
   updateCamp(input: UpdateCampInput!): JSONObject!
   removeCamp(id: Int!): JSONObject!
+  createCampRegistration(input: CreateCampRegistrationInput!): JSONObject!
+  completeCampRegistration(input: CompleteCampRegistrationInput!): JSONObject!
+  removeCampRegistration(id: Int!): CampRegistration!
+  updateCampRegistration(input: UpdateCampRegistrationInput!): JSONObject!
+  processCampRegistration(input: ProcessCampRegistrationInput!): JSONObject!
+  confirmCampRegistration(input: ConfirmCampRegistrationInput!): JSONObject!
+  processCampRegistrationRefund(input: ProcessCampRegistrationRefundInput!): JSONObject!
+  completeRegistrationRefund(input: CompleteRegistrationRefundInput!): JSONObject!
+  sendTestEmail: JSONObject
   createEvent(input: CreateEventInput!): JSONObject!
   updateEvent(input: UpdateEventInput!): JSONObject!
   removeEvent(input: RemoveEventInput!): JSONObject!
@@ -800,15 +808,6 @@ type Mutation {
   createDiscount(input: CreateDiscountInput!): JSONObject!
   updateDiscount(input: UpdateDiscountInput!): JSONObject!
   removeDiscount(ids: [Int!]!): JSONObject!
-  createCampRegistration(input: CreateCampRegistrationInput!): JSONObject!
-  completeCampRegistration(input: CompleteCampRegistrationInput!): JSONObject!
-  removeCampRegistration(id: Int!): CampRegistration!
-  updateCampRegistration(input: UpdateCampRegistrationInput!): JSONObject!
-  processCampRegistration(input: ProcessCampRegistrationInput!): JSONObject!
-  confirmCampRegistration(input: ConfirmCampRegistrationInput!): JSONObject!
-  processCampRegistrationRefund(input: ProcessCampRegistrationRefundInput!): JSONObject!
-  completeRegistrationRefund(input: CompleteRegistrationRefundInput!): JSONObject!
-  sendTestEmail: JSONObject
   createChildReportHistory(input: CreateChildReportHistoryInput!): ChildReportHistory!
   updateChildReportHistory(updateChildReportHistoryInput: UpdateChildReportHistoryInput!): ChildReportHistory!
   removeChildReportHistory(id: Int!): ChildReportHistory!
@@ -1003,6 +1002,70 @@ input UpdateCampInput {
   variantsToUpdate: [UpdateCampVariantInput!]
 }
 
+input CreateCampRegistrationInput {
+  parentId: String!
+  campId: Int!
+  oneDayPrice: Decimal
+  discountId: Int
+  behaviorConsent: Boolean
+  refundPolicyConsent: Boolean
+  paymentMethod: PaymentMethod
+  campVariantRegistrations: [CreateCampVariantRegistrationInput!]
+}
+
+input CompleteCampRegistrationInput {
+  id: Int!
+  parentId: String
+  behaviorConsent: Boolean
+  refundPolicyConsent: Boolean
+  discountId: Int
+  campVariantRegistrations: [CreateCampVariantRegistrationInput!]
+}
+
+input UpdateCampRegistrationInput {
+  id: Int!
+  discountId: Int
+  oneDayPrice: Decimal
+  paymentMethod: PaymentMethod
+  behaviorConsent: Boolean
+  refundPolicyConsent: Boolean
+  campVariantRegistrations: [CreateCampVariantRegistrationInput!]
+}
+
+input ProcessCampRegistrationInput {
+  campRegistrationId: Int!
+  paymentMethod: PaymentMethod
+  receipt: Base64Image
+  referenceNumber: String
+  refundPolicyConsent: Boolean
+  behaviorConsent: Boolean
+  discountId: Int
+}
+
+input Base64Image {
+  base64: String!
+  name: String!
+}
+
+input ConfirmCampRegistrationInput {
+  id: Int!
+  paymentMethod: PaymentMethod
+  receipt: Base64Image
+  referenceNumber: String
+  paidAmount: Decimal!
+}
+
+input ProcessCampRegistrationRefundInput {
+  campRegistrationId: Int!
+  key: String!
+}
+
+input CompleteRegistrationRefundInput {
+  campRegistrationId: Int!
+  paymentId: Int!
+  receipt: Base64Image!
+}
+
 input CreateEventInput {
   name: String!
   description: String
@@ -1119,70 +1182,6 @@ input UpdateDiscountInput {
   startDate: DateTime
   endDate: DateTime
   id: Int!
-}
-
-input CreateCampRegistrationInput {
-  parentId: String!
-  campId: Int!
-  oneDayPrice: Decimal
-  discountId: Int
-  behaviorConsent: Boolean
-  refundPolicyConsent: Boolean
-  paymentMethod: PaymentMethod
-  campVariantRegistrations: [CreateCampVariantRegistrationInput!]
-}
-
-input CompleteCampRegistrationInput {
-  id: Int!
-  parentId: String
-  behaviorConsent: Boolean
-  refundPolicyConsent: Boolean
-  discountId: Int
-  campVariantRegistrations: [CreateCampVariantRegistrationInput!]
-}
-
-input UpdateCampRegistrationInput {
-  id: Int!
-  discountId: Int
-  oneDayPrice: Decimal
-  paymentMethod: PaymentMethod
-  behaviorConsent: Boolean
-  refundPolicyConsent: Boolean
-  campVariantRegistrations: [CreateCampVariantRegistrationInput!]
-}
-
-input ProcessCampRegistrationInput {
-  campRegistrationId: Int!
-  paymentMethod: PaymentMethod
-  receipt: Base64Image
-  referenceNumber: String
-  refundPolicyConsent: Boolean
-  behaviorConsent: Boolean
-  discountId: Int
-}
-
-input Base64Image {
-  base64: String!
-  name: String!
-}
-
-input ConfirmCampRegistrationInput {
-  id: Int!
-  paymentMethod: PaymentMethod
-  receipt: Base64Image
-  referenceNumber: String
-  paidAmount: Decimal!
-}
-
-input ProcessCampRegistrationRefundInput {
-  campRegistrationId: Int!
-  key: String!
-}
-
-input CompleteRegistrationRefundInput {
-  campRegistrationId: Int!
-  paymentId: Int!
-  receipt: Base64Image!
 }
 
 input CreateChildReportHistoryInput {
