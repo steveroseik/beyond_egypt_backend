@@ -900,6 +900,50 @@ export class CampRegistrationService {
     }
   }
 
+  async handleFreePayment(
+    queryRunner: QueryRunner,
+    campRegistration: CampRegistration,
+  ) {
+    const vacanciesToDeduct: Map<number, number> = new Map();
+
+    for (const variant of campRegistration.campVariantRegistrations) {
+      if (vacanciesToDeduct.has(variant.campVariantId)) {
+        vacanciesToDeduct.set(
+          variant.campVariantId,
+          vacanciesToDeduct.get(variant.campVariantId) + 1,
+        );
+      } else {
+        vacanciesToDeduct.set(variant.campVariantId, 1);
+      }
+    }
+
+    if (!vacanciesToDeduct.size) {
+      throw new Error('No camp variants to deduct vacancies from');
+    }
+
+    for (const [campVariantId, count] of vacanciesToDeduct.entries()) {
+      const update = await queryRunner.manager.increment(
+        CampVariant,
+        { id: campVariantId },
+        'remainingCapacity',
+        -count,
+      );
+
+      if (update.affected !== 1) {
+        throw new Error(
+          `Failed to deduct vacancies for variant ${campVariantId}`,
+        );
+      }
+    }
+
+    // update registration status
+    return {
+      success: true,
+      paid: true,
+      message: 'Registration completed successfully with free payment',
+    };
+  }
+
   async handleIdlePayment(
     campRegistration: CampRegistration,
     queryRunner: QueryRunner,
@@ -948,6 +992,8 @@ export class CampRegistrationService {
 
     let amountTobePaid = campRegistration.amountDifference();
 
+    let paymentResetted: boolean = false;
+
     if (discountId) {
       // validate discount
       const discount = await this.findDiscount(discountId, queryRunner);
@@ -992,13 +1038,57 @@ export class CampRegistrationService {
             },
             { status: PaymentStatus.expired },
           );
+
+          paymentResetted = true;
         }
       }
     }
 
-    const pendingPayments = campRegistration.payments?.filter(
-      (e) => e.status == PaymentStatus.pending,
-    );
+    const pendingPayments = paymentResetted
+      ? []
+      : campRegistration.payments?.filter(
+          (e) => e.status == PaymentStatus.pending,
+        );
+
+    // handle free payment
+    if (amountTobePaid === new Decimal('0')) {
+      if (!paymentResetted) {
+        const match = pendingPayments.find((e) => e.amount === amountTobePaid);
+        if (match) {
+          if (match.paymentMethod !== PaymentMethod.cash) {
+            await queryRunner.manager.update(
+              RegistrationPayment,
+              {
+                id: match.id,
+              },
+              {
+                paymentMethod: PaymentMethod.cash,
+                status: PaymentStatus.paid,
+                receipt: null,
+                referenceNumber: null,
+                url: null,
+              },
+            );
+
+            return await this.handleFreePayment(queryRunner, campRegistration);
+          }
+        }
+      }
+
+      // create cash payment
+      const payment = await queryRunner.manager.insert(RegistrationPayment, {
+        campRegistrationId: campRegistration.id,
+        amount: amountTobePaid.toFixed(moneyFixation),
+        paymentMethod: PaymentMethod.cash,
+        status: PaymentStatus.paid,
+      });
+
+      if (payment.raw.affectedRows !== 1) {
+        throw new Error('Failed to create cash payment');
+      }
+
+      return await this.handleFreePayment(queryRunner, campRegistration);
+    }
 
     if (paymentMethod === PaymentMethod.fawry) {
       /// Find pending and return of any
