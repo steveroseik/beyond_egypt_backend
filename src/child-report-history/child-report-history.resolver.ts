@@ -1,4 +1,13 @@
-import { Resolver, Query, Mutation, Args, Int } from '@nestjs/graphql';
+import {
+  Resolver,
+  Query,
+  Mutation,
+  Args,
+  Int,
+  ResolveField,
+  Context,
+  Parent,
+} from '@nestjs/graphql';
 import { ChildReportHistoryService } from './child-report-history.service';
 import { ChildReportHistory } from './entities/child-report-history.entity';
 import { CreateChildReportHistoryInput } from './dto/create-child-report-history.input';
@@ -6,6 +15,8 @@ import { UpdateChildReportHistoryInput } from './dto/update-child-report-history
 import { ChildReportHistoryPage } from './entities/child-report-history-page.entity';
 import { PaginateChildReportHistoryInput } from './dto/paginate-child-report-history.input';
 import { CurrentUser } from 'src/auth/decorators/currentUserDecorator';
+import { File } from 'src/file/entities/file.entity';
+import { DataloaderRegistry } from 'src/dataloaders/dataloaderRegistry';
 
 @Resolver(() => ChildReportHistory)
 export class ChildReportHistoryResolver {
@@ -30,6 +41,16 @@ export class ChildReportHistoryResolver {
   @Query(() => ChildReportHistory, { name: 'childReportHistory' })
   findOne(@Args('id', { type: () => Int }) id: number) {
     return this.childReportHistoryService.findOne(id);
+  }
+
+  @ResolveField(() => [File], { nullable: true })
+  files(
+    @Parent() childReportHistory: ChildReportHistory,
+    @Context() { loaders }: { loaders: DataloaderRegistry },
+  ) {
+    return loaders.ChildReportHistoryFilesDataLoader.load(
+      childReportHistory.id,
+    );
   }
 
   // @Mutation(() => ChildReportHistory)

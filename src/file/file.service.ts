@@ -73,6 +73,14 @@ export class FileService {
       .getMany();
   }
 
+  findFilesByChildReportHistoryIds(keys: readonly number[]) {
+    return this.repo
+      .createQueryBuilder('file')
+      .leftJoinAndSelect('file.childReportHistories', 'childReportHistory')
+      .where('childReportHistory.id IN (:...keys)', { keys })
+      .getMany();
+  }
+
   findFilesByEventIds(keys: readonly number[]) {
     return this.repo
       .createQueryBuilder('file')

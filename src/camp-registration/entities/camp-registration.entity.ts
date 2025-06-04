@@ -42,9 +42,9 @@ export class CampRegistration {
     name: 'oneDayPrice',
     nullable: true,
     precision: 10,
-    scale: 0,
+    scale: 2,
     transformer: {
-      to: (value) => value,
+      to: (value) => value && value.toFixed(moneyFixation),
       from: (value?: string) => value && new Decimal(value),
     },
   })
@@ -54,10 +54,14 @@ export class CampRegistration {
   @Column('decimal', {
     name: 'paidAmount',
     precision: 10,
+    scale: 2,
     nullable: true,
-    scale: 0,
     transformer: {
-      to: (value) => value,
+      to: (value) => {
+        console.log('Transforming paidAmount:', value);
+        console.log('Type of value:', typeof value);
+        return value && value.toFixed(moneyFixation);
+      },
       from: (value?: string) => value && new Decimal(value),
     },
   })
@@ -67,10 +71,10 @@ export class CampRegistration {
   @Column('decimal', {
     name: 'amount',
     precision: 10,
+    scale: 2,
     nullable: true,
-    scale: 0,
     transformer: {
-      to: (value) => value,
+      to: (value) => value && value.toFixed(moneyFixation),
       from: (value?: string) => value && new Decimal(value),
     },
   })
@@ -114,11 +118,11 @@ export class CampRegistration {
 
   @Column('decimal', {
     name: 'discountAmount',
-    nullable: true,
     precision: 10,
-    scale: 0,
+    scale: 2,
+    nullable: true,
     transformer: {
-      to: (value) => value,
+      to: (value) => value && value.toFixed(moneyFixation),
       from: (value?: string) => value && new Decimal(value),
     },
   })
@@ -128,10 +132,10 @@ export class CampRegistration {
   @Column('decimal', {
     name: 'penaltyFees',
     precision: 10,
+    scale: 2,
     default: 0,
-    scale: 0,
     transformer: {
-      to: (value) => value,
+      to: (value) => value && value.toFixed(moneyFixation),
       from: (value?: string) => value && new Decimal(value),
     },
   })

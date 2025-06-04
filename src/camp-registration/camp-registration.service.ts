@@ -113,7 +113,7 @@ export class CampRegistrationService {
         );
       }
     } catch (e) {
-      queryRunner.rollbackTransaction();
+      await queryRunner.rollbackTransaction();
       console.log(e);
       return {
         success: false,
@@ -203,6 +203,8 @@ export class CampRegistrationService {
     /// assign camp to registration
     campRegistration.camp = camp;
 
+    console.log('Camp registration created:', campRegistration.id);
+
     let totalVariantsAmount = await this.handleCampVariantRegistrations({
       campVariantRegistrations: input.campVariantRegistrations,
       campRegistration,
@@ -221,10 +223,10 @@ export class CampRegistrationService {
       CampRegistration,
       { id: campRegistration.id },
       {
-        oneDayPrice: input.oneDayPrice?.toFixed(moneyFixation) ?? null,
-        amount: totalVariantsAmount?.toFixed(moneyFixation),
-        discountAmount: discountAmount?.toFixed(moneyFixation),
-        paidAmount: '0',
+        oneDayPrice: input.oneDayPrice,
+        amount: totalVariantsAmount,
+        discountAmount: discountAmount,
+        paidAmount: new Decimal('0'),
         discountId: discount?.id,
       },
     );
@@ -583,11 +585,11 @@ export class CampRegistrationService {
       CampRegistration,
       { id: input.id, parentId: userId },
       {
-        amount: amount?.toFixed(moneyFixation),
-        discountAmount: discountAmount?.toFixed(moneyFixation) ?? null,
+        amount: amount,
+        discountAmount: discountAmount,
         oneDayPrice: null,
         discountId: discount?.id,
-        paidAmount: '0',
+        paidAmount: new Decimal('0'),
         refundPolicyConsent: input.refundPolicyConsent,
         behaviorConsent: input.behaviorConsent,
       },
@@ -647,12 +649,12 @@ export class CampRegistrationService {
         CampRegistration,
         { id: input.id },
         {
-          oneDayPrice: input.oneDayPrice?.toFixed(moneyFixation) ?? null,
+          oneDayPrice: input.oneDayPrice,
           paymentMethod: input.paymentMethod,
           behaviorConsent: input.behaviorConsent,
           refundPolicyConsent: input.refundPolicyConsent,
-          amount: total.toFixed(moneyFixation),
-          paidAmount: '0',
+          amount: total,
+          paidAmount: new Decimal('0'),
           discountId: null,
           discountAmount: null,
         },
@@ -719,12 +721,12 @@ export class CampRegistrationService {
         CampRegistration,
         { id: input.id },
         {
-          paidAmount: '0',
+          paidAmount: new Decimal('0'),
           paymentMethod: input.paymentMethod,
           oneDayPrice: null,
-          amount: price.toFixed(moneyFixation),
+          amount: price,
           discountId: discount?.id ?? null,
-          discountAmount: amountDiscounted?.toFixed(moneyFixation) ?? null,
+          discountAmount: amountDiscounted,
         },
       );
 
@@ -906,6 +908,9 @@ export class CampRegistrationService {
   ) {
     const vacanciesToDeduct: Map<number, number> = new Map();
 
+    console.log('Handling free payment for registration:', campRegistration.id);
+    console.log('vacanciesToDeduct:', vacanciesToDeduct);
+
     for (const variant of campRegistration.campVariantRegistrations) {
       if (vacanciesToDeduct.has(variant.campVariantId)) {
         vacanciesToDeduct.set(
@@ -935,6 +940,20 @@ export class CampRegistrationService {
         );
       }
     }
+
+    const updateCamp = await queryRunner.manager.update(
+      CampRegistration,
+      { id: campRegistration.id },
+      {
+        status: CampRegistrationStatus.accepted,
+      },
+    );
+
+    if (updateCamp.affected !== 1) {
+      throw new Error('Failed to update camp registration status');
+    }
+
+    await queryRunner.commitTransaction();
 
     // update registration status
     return {
@@ -1019,8 +1038,8 @@ export class CampRegistrationService {
             { id: campRegistration.id },
             {
               discountId: discount.id,
-              discountAmount: discountAmount?.toFixed(moneyFixation),
-              amount: totalAmount?.toFixed(moneyFixation),
+              discountAmount: discountAmount,
+              amount: totalAmount,
             },
           );
 
@@ -1051,11 +1070,17 @@ export class CampRegistrationService {
         );
 
     // handle free payment
-    if (amountTobePaid === new Decimal('0')) {
+    console.log('Amount to be paid:', amountTobePaid.toString());
+
+    if (amountTobePaid.eq(new Decimal('0'))) {
+      console.log('Free payment detected, handling free payment');
+      console.log('Pending payments:', pendingPayments);
       if (!paymentResetted) {
         const match = pendingPayments.find((e) => e.amount === amountTobePaid);
+        console.log('Match found:', match);
         if (match) {
           if (match.paymentMethod !== PaymentMethod.cash) {
+            console.log('Updating existing payment to cash');
             await queryRunner.manager.update(
               RegistrationPayment,
               {
@@ -1067,6 +1092,7 @@ export class CampRegistrationService {
                 receipt: null,
                 referenceNumber: null,
                 url: null,
+                userId: userId,
               },
             );
 
@@ -1081,6 +1107,7 @@ export class CampRegistrationService {
         amount: amountTobePaid.toFixed(moneyFixation),
         paymentMethod: PaymentMethod.cash,
         status: PaymentStatus.paid,
+        userId: userId,
       });
 
       if (payment.raw.affectedRows !== 1) {
@@ -2121,9 +2148,9 @@ export class CampRegistrationService {
         behaviorConsent: input.behaviorConsent,
         discountId: discount?.id,
         status: newStatus,
-        discountAmount: discountAmount.toFixed(moneyFixation),
-        amount: newTotalPrice.toFixed(moneyFixation),
-        paidAmount: paidAmount.toFixed(moneyFixation),
+        discountAmount: discountAmount,
+        amount: newTotalPrice,
+        paidAmount: paidAmount,
         penaltyFees: () =>
           `penaltyFees + ${additionalPenaltyFees?.toFixed(moneyFixation) ?? 0}`,
       },
@@ -2424,7 +2451,7 @@ export class CampRegistrationService {
         {
           status: CampRegistrationStatus.accepted,
           paymentMethod,
-          paidAmount: paidAmount?.toFixed(moneyFixation),
+          paidAmount: paidAmount,
         },
       );
 
@@ -2707,7 +2734,7 @@ export class CampRegistrationService {
         CampRegistration,
         { id: campRegistration.id },
         {
-          paidAmount: paidAmount.toFixed(moneyFixation),
+          paidAmount: paidAmount,
         },
       );
 
@@ -2792,7 +2819,7 @@ export class CampRegistrationService {
         CampRegistration,
         { id: payment.campRegistrationId },
         {
-          paidAmount: paidAmount.toFixed(moneyFixation),
+          paidAmount: paidAmount,
         },
       );
 
@@ -2916,16 +2943,17 @@ export class CampRegistrationService {
 
     /// check if reserves deleted
 
+    const zero = new Decimal('0');
     const cancelRegistrations = await queryRunner.manager.update(
       CampRegistration,
       { id: In(registrations.map((e) => e.id)) },
       {
         status: CampRegistrationStatus.cancelled,
-        paidAmount: 0,
-        amount: 0,
+        paidAmount: zero,
+        amount: zero,
         discountId: null,
-        discountAmount: 0,
-        penaltyFees: 0,
+        discountAmount: zero,
+        penaltyFees: zero,
         refundPolicyConsent: false,
         behaviorConsent: false,
         paymentMethod: null,

@@ -17,7 +17,7 @@ import {
 @ObjectType()
 @Entity('child-report-history', { schema: 'beyond_egypt' })
 export class ChildReportHistory {
-  @PrimaryColumn()
+  @PrimaryGeneratedColumn()
   @Field(() => Int)
   id: number;
 
@@ -41,7 +41,7 @@ export class ChildReportHistory {
   @Field()
   details: string;
 
-  @Column('text', { name: 'details' })
+  @Column('text', { name: 'actionsTaken' })
   @Field()
   actionsTaken: string;
 

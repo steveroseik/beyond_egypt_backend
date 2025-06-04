@@ -35,6 +35,7 @@ import { CampRegistrationService } from 'src/camp-registration/camp-registration
 import { CampsWithDeleteDataLoader } from './loaders/campsWithDelete.loader';
 import { LatestChildReportHistoryLoader } from './loaders/childReportHistory.loader';
 import { ChildReportHistoryService } from 'src/child-report-history/child-report-history.service';
+import ChildReportHistoryFilesDataLoader from './loaders/childReportHistoryFiles.loader';
 
 export class DataloaderRegistry {
   private cache: Record<string, any> = {};
@@ -109,6 +110,12 @@ export class DataloaderRegistry {
   public get ParentAdditionalDataLoader() {
     return this.get('ParentAdditionalDataLoader', () =>
       ParentAdditionalDataLoader.create(this.parentAdditionalService),
+    );
+  }
+
+  public get ChildReportHistoryFilesDataLoader() {
+    return this.get('ChildReportHistoryFilesDataLoader', () =>
+      ChildReportHistoryFilesDataLoader.create(this.fileService),
     );
   }
 

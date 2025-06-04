@@ -16,6 +16,7 @@ import { CampRegistrationStatus } from 'support/enums';
 import { moneyFixation } from 'support/constants';
 import * as moment from 'moment-timezone';
 import { CampRegistrationService } from 'src/camp-registration/camp-registration.service';
+import { FileService } from 'src/file/file.service';
 
 @Injectable()
 export class CampService {
@@ -23,6 +24,7 @@ export class CampService {
     @InjectRepository(Camp) private repo: Repository<Camp>,
     private dataSource: DataSource,
     private campRegistrationService: CampRegistrationService,
+    private fileService: FileService,
   ) {}
 
   async create(input: CreateCampInput) {
@@ -65,6 +67,9 @@ export class CampService {
       // const mealIds = await this.handleMeals(input, queryRunner);
       const fileIds = await this.handleFiles(input, queryRunner);
       const ageRangeIds = await this.handleAgeRanges(input, queryRunner);
+
+      console.log('Camp price:', input.defaultPrice);
+      console.log('Camp meal price:', input.mealPrice);
 
       const camp = await queryRunner.manager.insert(Camp, {
         ...input,
@@ -109,6 +114,12 @@ export class CampService {
     } catch (e) {
       console.log(e);
       await queryRunner.rollbackTransaction();
+
+      if (input.fileIds?.length) {
+        input.fileIds.forEach(async (fileId) => {
+          this.fileService.remove(fileId);
+        });
+      }
       return {
         success: false,
         message: e.message,
@@ -126,6 +137,16 @@ export class CampService {
     if (!input.variants?.length) {
       return;
     }
+
+    console.log('Fixed price:', input.defaultPrice?.toFixed(2));
+    console.log(
+      'Fixed variant price for each week:',
+      input.variants[0]?.price?.toFixed(2),
+    );
+
+    throw new Error(
+      'Camp variants are not supported in the current version. Please remove them from the input.',
+    );
 
     const campVariants = input.variants.map((variant) => {
       return {
@@ -426,6 +447,11 @@ export class CampService {
     } catch (e) {
       await queryRunner.rollbackTransaction();
       console.log(e);
+      if (input.fileIds?.length) {
+        input.fileIds.forEach(async (fileId) => {
+          this.fileService.remove(fileId);
+        });
+      }
       return {
         success: false,
         message: e.message,
