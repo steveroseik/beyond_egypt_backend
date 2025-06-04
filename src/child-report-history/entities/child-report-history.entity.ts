@@ -1,11 +1,14 @@
 import { ObjectType, Field, Int } from '@nestjs/graphql';
 import { ChildReport } from 'src/child-report/entities/child-report.entity';
+import { File } from 'src/file/entities/file.entity';
 import { ChildReportStatus } from 'support/enums';
 import {
   Column,
   CreateDateColumn,
   Entity,
   JoinColumn,
+  JoinTable,
+  ManyToMany,
   ManyToOne,
   PrimaryColumn,
   PrimaryGeneratedColumn,
@@ -49,9 +52,9 @@ export class ChildReportHistory {
   @Field(() => ChildReportStatus)
   status: ChildReportStatus;
 
-  @Column('int', { name: 'reporterId' })
+  @Column('varchar', { name: 'reporterId' })
   @Field()
-  reporterId: number;
+  reporterId: String;
 
   @CreateDateColumn({
     name: 'createdAt',
@@ -69,4 +72,21 @@ export class ChildReportHistory {
   @JoinColumn({ name: 'childReportId' })
   @Field(() => ChildReport)
   childReport: ChildReport;
+
+  @ManyToMany(() => File, (file) => file.childReportHistories, {
+    onDelete: 'CASCADE',
+  })
+  @JoinTable({
+    name: 'child-report-file',
+    inverseJoinColumn: {
+      name: 'id',
+      referencedColumnName: 'id',
+    },
+    joinColumn: {
+      name: 'childReportId',
+      referencedColumnName: 'id',
+    },
+  })
+  @Field(() => [File], { nullable: true })
+  files?: File[];
 }

@@ -23,5 +23,8 @@ export class CreateChildReportHistoryInput {
   @Field(() => ChildReportStatus, { description: 'Status of the report' })
   status: ChildReportStatus;
 
-  reporterId: number;
+  @Field(() => [Int], { description: 'List of file IDs', nullable: true })
+  fileIds?: number[];
+
+  reporterId: String;
 }

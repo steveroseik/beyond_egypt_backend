@@ -2,11 +2,13 @@ import { Injectable } from '@nestjs/common';
 import { CreateChildReportHistoryInput } from './dto/create-child-report-history.input';
 import { UpdateChildReportHistoryInput } from './dto/update-child-report-history.input';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, Repository } from 'typeorm';
+import { DataSource, In, Repository } from 'typeorm';
 import { ChildReportHistory } from './entities/child-report-history.entity';
 import { ChildReport } from 'src/child-report/entities/child-report.entity';
 import { PaginateChildReportHistoryInput } from './dto/paginate-child-report-history.input';
 import { buildPaginator } from 'typeorm-cursor-pagination';
+import { File } from 'src/file/entities/file.entity';
+import { FileService } from 'src/file/file.service';
 
 @Injectable()
 export class ChildReportHistoryService {
@@ -14,6 +16,7 @@ export class ChildReportHistoryService {
     @InjectRepository(ChildReportHistory)
     private repo: Repository<ChildReportHistory>,
     private dataSource: DataSource,
+    private fileService: FileService,
   ) {}
 
   async create(input: CreateChildReportHistoryInput) {
@@ -28,6 +31,25 @@ export class ChildReportHistoryService {
 
       if (createHistory.raw.affectedRows === 0) {
         throw new Error('Failed to create child report history');
+      }
+
+      // Add files if provided
+      if (input.fileIds?.length ?? false) {
+        const files = await queryRunner.manager.count(File, {
+          where: {
+            id: In(input.fileIds),
+          },
+        });
+
+        if (files !== input.fileIds?.length) {
+          throw new Error('Some files not found');
+        }
+
+        await queryRunner.manager
+          .createQueryBuilder(ChildReportHistory, 'history')
+          .relation(ChildReportHistory, 'files')
+          .of(createHistory.raw.insertId)
+          .add(input.fileIds);
       }
 
       const updateReportStatus = await queryRunner.manager.update(
@@ -48,6 +70,11 @@ export class ChildReportHistoryService {
       };
     } catch (e) {
       await queryRunner.rollbackTransaction();
+      if (input.fileIds?.length) {
+        input.fileIds.forEach(async (fileId) => {
+          this.fileService.remove(fileId);
+        });
+      }
       console.log(e);
       return {
         success: false,

@@ -221,7 +221,7 @@ export class CampRegistrationService {
       CampRegistration,
       { id: campRegistration.id },
       {
-        oneDayPrice: input.oneDayPrice,
+        oneDayPrice: input.oneDayPrice?.toFixed(moneyFixation) ?? null,
         amount: totalVariantsAmount?.toFixed(moneyFixation),
         discountAmount: discountAmount?.toFixed(moneyFixation),
         paidAmount: '0',
@@ -647,7 +647,7 @@ export class CampRegistrationService {
         CampRegistration,
         { id: input.id },
         {
-          oneDayPrice: input.oneDayPrice,
+          oneDayPrice: input.oneDayPrice?.toFixed(moneyFixation) ?? null,
           paymentMethod: input.paymentMethod,
           behaviorConsent: input.behaviorConsent,
           refundPolicyConsent: input.refundPolicyConsent,

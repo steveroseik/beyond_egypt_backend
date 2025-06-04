@@ -3,17 +3,20 @@ import { CreateChildReportInput } from './dto/create-child-report.input';
 import { UpdateChildReportInput } from './dto/update-child-report.input';
 import { InjectRepository } from '@nestjs/typeorm';
 import { ChildReport } from './entities/child-report.entity';
-import { DataSource, Repository } from 'typeorm';
+import { DataSource, In, Repository } from 'typeorm';
 import { ChildReportHistory } from 'src/child-report-history/entities/child-report-history.entity';
 import { PaginateChildReportsInput } from './dto/paginate-child-reports.input';
 import { UserType } from 'support/enums';
 import { buildPaginator } from 'typeorm-cursor-pagination';
+import { File } from 'src/file/entities/file.entity';
+import { FileService } from 'src/file/file.service';
 
 @Injectable()
 export class ChildReportService {
   constructor(
     @InjectRepository(ChildReport) private repo: Repository<ChildReport>,
     private dataSource: DataSource,
+    private fileService: FileService,
   ) {}
 
   async create(input: CreateChildReportInput) {
@@ -23,18 +26,46 @@ export class ChildReportService {
     await queryRunner.startTransaction();
 
     try {
-      const createReport = await queryRunner.manager.insert(ChildReport, input);
+      const createReport = await queryRunner.manager.insert(ChildReport, {
+        childId: input.childId,
+        campVariantId: input.campVariantId,
+        type: input.type,
+        status: input.status,
+      });
 
       if (createReport.raw.affectedRows === 0) {
         throw new Error('Failed to create child report');
       }
 
-      input.details.childReportId = createReport.raw.insertId;
-
       const createHistory = await queryRunner.manager.insert(
         ChildReportHistory,
-        input.details,
+        {
+          childReportId: createReport.raw.insertId,
+          details: input.details.details,
+          reporterId: input.details.reporterId,
+          status: input.status,
+          reportTime: input.details.reportTime,
+          gameName: input.details.gameName,
+          actionsTaken: input.details.actionsTaken,
+        },
       );
+
+      if (input.details.fileIds?.length) {
+        const files = await queryRunner.manager.count(File, {
+          where: {
+            id: In(input.details.fileIds),
+          },
+        });
+        if (files !== input.details.fileIds.length) {
+          throw new Error('Some files not found');
+        }
+
+        await queryRunner.manager
+          .createQueryBuilder(ChildReportHistory, 'history')
+          .relation(ChildReportHistory, 'files')
+          .of(createHistory.raw.insertId)
+          .add(input.details.fileIds);
+      }
 
       if (createHistory.raw.affectedRows === 0) {
         throw new Error('Failed to create child report history');
@@ -47,6 +78,12 @@ export class ChildReportService {
       };
     } catch (e) {
       await queryRunner.rollbackTransaction();
+
+      if (input.details.fileIds?.length) {
+        input.details.fileIds.forEach(async (fileId) => {
+          this.fileService.remove(fileId);
+        });
+      }
       console.log(e);
       return {
         success: false,

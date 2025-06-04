@@ -25,7 +25,11 @@ export class ChildReportResolver {
   constructor(private readonly childReportService: ChildReportService) {}
 
   @Mutation(() => GraphQLJSONObject)
-  createChildReport(@Args('input') input: CreateChildReportInput) {
+  createChildReport(
+    @Args('input') input: CreateChildReportInput,
+    @CurrentUser('id') userId: string,
+  ) {
+    input.details.reporterId = userId;
     return this.childReportService.create(input);
   }
 

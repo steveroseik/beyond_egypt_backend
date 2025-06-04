@@ -7,8 +7,8 @@ export class CreateChildReportHistoryWithoutIdInput {
   @Field(() => Int, { nullable: true, description: 'ID of the child report' })
   childReportId?: number;
 
-  @Field(() => Date, { description: 'Time of the report' })
-  reportTime: Date;
+  @Field(() => Date, { nullable: true, description: 'Time of the report' })
+  reportTime?: Date;
 
   @Field(() => String, { nullable: true, description: 'Name of the game' })
   gameName?: string;
@@ -24,5 +24,8 @@ export class CreateChildReportHistoryWithoutIdInput {
   @Field(() => ChildReportStatus, { description: 'Status of the report' })
   status: ChildReportStatus;
 
-  reporterId: number;
+  @Field(() => [Int], { description: 'List of file IDs', nullable: true })
+  fileIds?: number[];
+
+  reporterId: String;
 }

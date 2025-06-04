@@ -2,6 +2,47 @@
 # THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
 # ------------------------------------------------------
 
+type Event {
+  id: Int!
+  name: String!
+  description: String
+  thumbnailId: Int!
+  startDate: DateTime!
+  endDate: DateTime!
+  createdAt: DateTime!
+  lastModified: DateTime!
+  deletedAt: DateTime
+  earlyBirdId: Int
+  files: [File!]!
+  camps: [Camp!]
+  thumbnail: File
+}
+
+"""
+A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date-time format.
+"""
+scalar DateTime
+
+type File {
+  id: Int!
+  name: String!
+  type: FileType!
+  key: String!
+  userId: String!
+  sizeInKb: Int!
+  createdAt: DateTime!
+  url: String!
+}
+
+enum FileType {
+  video
+  image
+  audio
+  pdf
+  doc
+  other
+}
+
 type ChildReportHistory {
   id: Int!
   childReportId: Int!
@@ -10,15 +51,11 @@ type ChildReportHistory {
   details: String!
   actionsTaken: String!
   status: ChildReportStatus!
-  reporterId: Int!
+  reporterId: String!
   createdAt: DateTime!
   childReport: ChildReport!
+  files: [File!]
 }
-
-"""
-A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date-time format.
-"""
-scalar DateTime
 
 enum ChildReportStatus {
   new
@@ -258,42 +295,6 @@ type Discount {
   camps: [Camp!]
 }
 
-type File {
-  id: Int!
-  name: String!
-  type: FileType!
-  key: String!
-  userId: String!
-  sizeInKb: Int!
-  createdAt: DateTime!
-  url: String!
-}
-
-enum FileType {
-  video
-  image
-  audio
-  pdf
-  doc
-  other
-}
-
-type Event {
-  id: Int!
-  name: String!
-  description: String
-  thumbnailId: Int!
-  startDate: DateTime!
-  endDate: DateTime!
-  createdAt: DateTime!
-  lastModified: DateTime!
-  deletedAt: DateTime
-  earlyBirdId: Int
-  files: [File!]!
-  camps: [Camp!]
-  thumbnail: File
-}
-
 type Location {
   id: Int!
   name: String!
@@ -390,11 +391,6 @@ type ChildPage {
 type ChildReportPage {
   cursor: GraphqlCursor!
   data: [ChildReport!]!
-}
-
-type ChildReportHistoryPage {
-  cursor: GraphqlCursor!
-  data: [ChildReportHistory!]!
 }
 
 type DiscountsPage {
@@ -555,7 +551,6 @@ type Query {
   findOneDiscount(id: Int!): Discount
   paginateDiscounts(input: PaginateDiscountsInput!): DiscountsPage!
   childReportHistory(id: Int!): ChildReportHistory!
-  paginateChildReportHistory(input: PaginateChildReportHistoryInput!): ChildReportHistoryPage!
   childReport(id: Int!): ChildReport!
   paginateChildReports(input: PaginateChildReportsInput!): ChildReportPage!
   eventFile(id: Int!): EventFile!
@@ -697,15 +692,6 @@ input PaginateDiscountsInput {
   active: Boolean
 }
 
-input PaginateChildReportHistoryInput {
-  isAsc: Boolean! = false
-  limit: Int = 20
-  afterCursor: String
-  beforeCursor: String
-  search: String
-  childReportId: Int!
-}
-
 input PaginateChildReportsInput {
   isAsc: Boolean! = false
   limit: Int = 20
@@ -809,8 +795,6 @@ type Mutation {
   updateDiscount(input: UpdateDiscountInput!): JSONObject!
   removeDiscount(ids: [Int!]!): JSONObject!
   createChildReportHistory(input: CreateChildReportHistoryInput!): ChildReportHistory!
-  updateChildReportHistory(updateChildReportHistoryInput: UpdateChildReportHistoryInput!): ChildReportHistory!
-  removeChildReportHistory(id: Int!): ChildReportHistory!
   createChildReport(input: CreateChildReportInput!): JSONObject!
   updateChildReport(input: UpdateChildReportInput!): JSONObject!
   closeChildReport(id: Int!): JSONObject!
@@ -1202,27 +1186,9 @@ input CreateChildReportHistoryInput {
 
   """Status of the report"""
   status: ChildReportStatus!
-}
 
-input UpdateChildReportHistoryInput {
-  """ID of the child report"""
-  childReportId: Int
-
-  """Time of the report"""
-  reportTime: DateTime
-
-  """Name of the game"""
-  gameName: String
-
-  """Details of the report"""
-  details: String
-
-  """Actions taken in response to the report"""
-  actionsTaken: String
-
-  """Status of the report"""
-  status: ChildReportStatus
-  id: Int!
+  """List of file IDs"""
+  fileIds: [Int!]
 }
 
 input CreateChildReportInput {
@@ -1245,7 +1211,7 @@ input CreateChildReportHistoryWithoutIdInput {
   childReportId: Int
 
   """Time of the report"""
-  reportTime: DateTime!
+  reportTime: DateTime
 
   """Name of the game"""
   gameName: String
@@ -1258,6 +1224,9 @@ input CreateChildReportHistoryWithoutIdInput {
 
   """Status of the report"""
   status: ChildReportStatus!
+
+  """List of file IDs"""
+  fileIds: [Int!]
 }
 
 input UpdateChildReportInput {

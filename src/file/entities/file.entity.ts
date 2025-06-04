@@ -1,5 +1,7 @@
 import { ObjectType, Field, Int } from '@nestjs/graphql';
 import { Camp } from 'src/camp/entities/camp.entity';
+import { ChildReportHistory } from 'src/child-report-history/entities/child-report-history.entity';
+import { ChildReport } from 'src/child-report/entities/child-report.entity';
 import { Event } from 'src/event/entities/event.entity';
 import { FileType } from 'support/enums';
 import {
@@ -52,4 +54,9 @@ export class File {
 
   @ManyToMany(() => Event, (event) => event.files, { nullable: true })
   events?: Event[];
+
+  @ManyToMany(() => ChildReportHistory, (history) => history.files, {
+    nullable: true,
+  })
+  childReportHistories?: ChildReportHistory[];
 }

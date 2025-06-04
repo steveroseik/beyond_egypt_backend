@@ -2,6 +2,7 @@ import { ObjectType, Field, Int } from '@nestjs/graphql';
 import { CampVariant } from 'src/camp-variant/entities/camp-variant.entity';
 import { ChildReportHistory } from 'src/child-report-history/entities/child-report-history.entity';
 import { Child } from 'src/child/entities/child.entity';
+
 import { ChildReportStatus, ChildReportType } from 'support/enums';
 import {
   Column,
@@ -9,6 +10,8 @@ import {
   DeleteDateColumn,
   Entity,
   JoinColumn,
+  JoinTable,
+  ManyToMany,
   ManyToOne,
   OneToMany,
   PrimaryGeneratedColumn,
