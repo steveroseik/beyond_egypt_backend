@@ -269,6 +269,7 @@ type CampRegistration {
   parent: User!
   paid: Boolean!
   amountDifference: Decimal
+  registrationCode: String
 }
 
 enum CampRegistrationStatus {
@@ -773,7 +774,7 @@ type Mutation {
   confirmCampRegistration(input: ConfirmCampRegistrationInput!): JSONObject!
   processCampRegistrationRefund(input: ProcessCampRegistrationRefundInput!): JSONObject!
   completeRegistrationRefund(input: CompleteRegistrationRefundInput!): JSONObject!
-  sendTestEmail: JSONObject
+  sendTestEmail(code: String!): JSONObject
   createEvent(input: CreateEventInput!): JSONObject!
   updateEvent(input: UpdateEventInput!): JSONObject!
   removeEvent(input: RemoveEventInput!): JSONObject!

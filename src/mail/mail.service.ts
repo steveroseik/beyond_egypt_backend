@@ -7,11 +7,15 @@ import { CampRegistration } from 'src/camp-registration/entities/camp-registrati
 import { generateCampRegistrationEmail } from './templates/camp-registration-confirmation';
 import { User } from 'src/user/entities/user.entity';
 import { generateWelcomeActivationEmail } from './templates/activate-account';
+import { EncryptionService } from 'src/encryption/encryption.service';
 dotenv.config();
 
 @Injectable()
 export class MailService {
-  constructor(private dataSource: DataSource) {}
+  constructor(
+    private dataSource: DataSource,
+    private encryption: EncryptionService,
+  ) {}
 
   private transporter = nodemailer.createTransport({
     host: 'smtppro.zoho.com',
@@ -73,8 +77,14 @@ export class MailService {
 
     if (!campRegistration) return;
 
+    const regCode = this.encryption.encrypt({
+      campRegistrationId: campRegistration.id,
+      parentId: campRegistration.parentId,
+    });
+
     const data = await generateCampRegistrationEmail({
       registration: campRegistration,
+      code: regCode,
     });
 
     const response = await this.sendMail({

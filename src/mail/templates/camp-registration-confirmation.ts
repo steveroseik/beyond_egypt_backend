@@ -4,13 +4,15 @@ import { Decimal } from 'support/scalars';
 
 export async function generateCampRegistrationEmail({
   registration,
+  code,
 }: {
   registration: CampRegistration;
+  code: string;
 }): Promise<{ content: string; attachment: any }> {
   console.table(registration);
   const formatMoney = (val?: Decimal) => (val ? `${val.toFixed(2)} EGP` : '-');
 
-  const generatedQRCode = await generateQRCodeBase64(registration.parent.id);
+  const generatedQRCode = await generateQRCodeBase64(code);
 
   console.log('QRG', generatedQRCode);
 

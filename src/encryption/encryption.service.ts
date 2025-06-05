@@ -16,7 +16,6 @@ export class EncryptionService {
   }
 
   encrypt(payload: object): string {
-    console.log('KEYY', this.config.get<string>('payments_encryption_secret'));
     const iv = randomBytes(12); // 96-bit nonce for GCM
     const cipher = createCipheriv('aes-256-gcm', this.key, iv);
     const plaintext = Buffer.from(JSON.stringify(payload), 'utf8');

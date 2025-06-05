@@ -13,7 +13,7 @@ import { CampRegistration } from './entities/camp-registration.entity';
 import { CreateCampRegistrationInput } from './dto/create-camp-registration.input';
 import { CompleteCampRegistrationInput } from './dto/complete-camp-registration.input';
 import { CurrentUser } from 'src/auth/decorators/currentUserDecorator';
-import { UserType } from 'support/enums';
+import { CampRegistrationStatus, UserType } from 'support/enums';
 import { GraphQLJSONObject } from 'graphql-type-json';
 import { CampRegistrationPage } from './entities/camp-registration-page.entity';
 import { PaginateCampRegistrationsInput } from './dto/paginate-camp-registrations.input';
@@ -209,8 +209,15 @@ export class CampRegistrationResolver {
     return campRegistration.amountDifference();
   }
 
+  @ResolveField(() => String, { nullable: true })
+  registrationCode(@Parent() registration: CampRegistration) {
+    return registration.status === CampRegistrationStatus.accepted
+      ? this.campRegistrationService.encryptedCode(registration)
+      : null;
+  }
+
   @Mutation(() => GraphQLJSONObject, { nullable: true })
-  async sendTestEmail() {
-    return this.campRegistrationService.test();
+  async sendTestEmail(@Args('code') code?: string) {
+    return this.campRegistrationService.test(code);
   }
 }

@@ -3055,7 +3055,11 @@ export class CampRegistrationService {
     }, timeout);
   }
 
-  async test() {
+  async test(code?: string) {
+    return {
+      data: this.encryptionService.decrypt(code),
+    };
+
     const campRegistration = await this.repo.findOne({
       where: { status: CampRegistrationStatus.accepted },
       relations: [
@@ -3083,5 +3087,12 @@ export class CampRegistrationService {
     });
 
     return response;
+  }
+
+  encryptedCode(campRegistration: CampRegistration) {
+    return this.encryptionService.encrypt({
+      campRegistrationId: campRegistration.id,
+      parentId: campRegistration.parentId,
+    });
   }
 }
