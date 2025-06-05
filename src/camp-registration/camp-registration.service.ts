@@ -3056,10 +3056,6 @@ export class CampRegistrationService {
   }
 
   async test(code?: string) {
-    return {
-      data: this.encryptionService.decrypt(code),
-    };
-
     const campRegistration = await this.repo.findOne({
       where: { status: CampRegistrationStatus.accepted },
       relations: [
@@ -3077,6 +3073,7 @@ export class CampRegistrationService {
 
     const data = await generateCampRegistrationEmail({
       registration: campRegistration,
+      code: code ?? this.encryptedCode(campRegistration),
     });
     const response = await this.mailService.sendMail({
       to: 'steveroseik@gmail.com',
