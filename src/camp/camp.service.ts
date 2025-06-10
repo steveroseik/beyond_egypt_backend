@@ -138,23 +138,11 @@ export class CampService {
       return;
     }
 
-    console.log('Fixed price:', input.defaultPrice?.toFixed(2));
-    console.log(
-      'Fixed variant price for each week:',
-      input.variants[0]?.price?.toFixed(2),
-    );
-
-    throw new Error(
-      'Camp variants are not supported in the current version. Please remove them from the input.',
-    );
-
     const campVariants = input.variants.map((variant) => {
       return {
         ...variant,
         capacity: variant.capacity ?? input.defaultCapacity,
-        price:
-          variant.price?.toFixed(2) ??
-          input.defaultPrice?.toFixed(moneyFixation),
+        price: variant.price ?? input.defaultPrice,
         campId,
         remainingCapacity: variant.capacity,
       };
