@@ -159,8 +159,8 @@ type ChildReport {
   createdAt: DateTime!
   lastModified: DateTime!
   deletedAt: DateTime
-  child: Child!
-  campVariant: CampVariant!
+  child: Child
+  campVariant: CampVariant
   latestReportHistory: ChildReportHistory
 }
 
@@ -552,7 +552,8 @@ type Query {
   findOneDiscount(id: Int!): Discount
   paginateDiscounts(input: PaginateDiscountsInput!): DiscountsPage!
   childReportHistory(id: Int!): ChildReportHistory!
-  childReport(id: Int!): ChildReport!
+  childReport: [ChildReport!]!
+  findOneChildReport(id: Int!): ChildReport
   paginateChildReports(input: PaginateChildReportsInput!): ChildReportPage!
   eventFile(id: Int!): EventFile!
   paginateRegistrationAttendance(input: PaginateRegistrationAttendanceInput!): RegistrationAttendancePage!
