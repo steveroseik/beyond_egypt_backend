@@ -19,6 +19,8 @@ import { PaginateChildReportsInput } from './dto/paginate-child-reports.input';
 import { CurrentUser } from 'src/auth/decorators/currentUserDecorator';
 import { DataloaderRegistry } from 'src/dataloaders/dataloaderRegistry';
 import { ChildReportHistory } from 'src/child-report-history/entities/child-report-history.entity';
+import { Child } from 'src/child/entities/child.entity';
+import { CampVariant } from 'src/camp-variant/entities/camp-variant.entity';
 
 @Resolver(() => ChildReport)
 export class ChildReportResolver {
@@ -79,5 +81,26 @@ export class ChildReportResolver {
     @Context() { loaders }: { loaders: DataloaderRegistry },
   ) {
     return loaders.latestChildReportHistoryDataLoader.load(childReport.id);
+  }
+
+  @ResolveField(() => Child)
+  child(
+    @Parent() childReport: ChildReport,
+    @Context() { loaders }: { loaders: DataloaderRegistry },
+  ) {
+    return (
+      childReport.child ?? loaders.ChildDataLoader.load(childReport.childId)
+    );
+  }
+
+  @ResolveField(() => CampVariant)
+  campVariant(
+    @Parent() childReport: ChildReport,
+    @Context() { loaders }: { loaders: DataloaderRegistry },
+  ) {
+    return (
+      childReport.campVariant ??
+      loaders.CampVariantsDataLoader.load(childReport.campVariantId)
+    );
   }
 }

@@ -123,7 +123,7 @@ export class ChildReportHistoryService {
       .innerJoin(
         '(' + subQuery.getQuery() + ')',
         'latest',
-        'childReportHistory.childReportId = latest."childReportId" AND childReportHistory.createdAt = latest."maxCreatedAt"',
+        'childReportHistory.childReportId = latest.childReportId AND childReportHistory.createdAt = latest.maxCreatedAt',
       )
       .setParameters(subQuery.getParameters())
       .getMany();

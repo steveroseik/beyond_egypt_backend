@@ -81,8 +81,8 @@ export class ChildReport {
     onUpdate: 'CASCADE',
   })
   @JoinColumn({ name: 'childId' })
-  @Field(() => Child)
-  child: Child;
+  @Field(() => Child, { nullable: true })
+  child?: Child;
 
   @ManyToOne(() => CampVariant, (campVariant) => campVariant.childReports, {
     cascade: true,
@@ -90,6 +90,6 @@ export class ChildReport {
     onUpdate: 'CASCADE',
   })
   @JoinColumn({ name: 'campVariantId' })
-  @Field(() => CampVariant)
-  campVariant: CampVariant;
+  @Field(() => CampVariant, { nullable: true })
+  campVariant?: CampVariant;
 }
