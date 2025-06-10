@@ -40,8 +40,8 @@ export class ChildReportResolver {
     return this.childReportService.findAll();
   }
 
-  @Query(() => ChildReport, { name: 'childReport' })
-  findOne(@Args('id', { type: () => Int }) id: number) {
+  @Query(() => ChildReport)
+  findOneChildReport(@Args('id', { type: () => Int }) id: number) {
     return this.childReportService.findOne(id);
   }
 

@@ -99,7 +99,9 @@ export class ChildReportService {
   }
 
   findOne(id: number) {
-    return `This action returns a #${id} childReport`;
+    return this.repo.findOne({
+      where: { id },
+    });
   }
 
   async update(input: UpdateChildReportInput) {
