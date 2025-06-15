@@ -25,66 +25,141 @@ import { CampRegistration } from 'src/camp-registration/entities/camp-registrati
 import { DataloaderRegistry } from 'src/dataloaders/dataloaderRegistry';
 import { CampVariantRegistration } from 'src/camp-variant-registration/entities/camp-variant-registration.entity';
 import { Child } from 'src/child/entities/child.entity';
+import moment from 'moment-timezone';
+import { LeaveCampInput } from './dto/leave-camp-input';
 
 @Resolver(() => RegistrationAttendance)
 // @UseGuards(GqlAuthGuard)
 export class RegistrationAttendanceResolver {
   constructor(private readonly service: RegistrationAttendanceService) {}
 
-  @Mutation(() => GraphQLJSONObject, { name: 'enterAttendance' })
+  @Mutation(() => GraphQLJSONObject, { name: 'enterCamp' })
   async enter(
     @Args('input') input: CreateRegistrationAttendanceInput,
     @CurrentUser('id') userId: string,
     @CurrentUser('type') type: UserType,
   ) {
-    if (type !== UserType.admin) {
-      return {
-        message: 'Unauthorized, only admins can enter attendance',
-        success: false,
-      };
-    }
-    const existingCampVariant = await this.service.checkCampVariant(
-      input.campVariantId,
-    );
-    if (!existingCampVariant) {
-      return {
-        message: 'Camp variant not found',
-        success: false,
-      };
-    }
+    try {
+      if (type !== UserType.admin) {
+        return {
+          message: 'Unauthorized, only admins can enter attendance',
+          success: false,
+        };
+      }
 
-    const existingChild = await this.service.checkChild(input.childId);
-    if (!existingChild) {
+      const { parentId, campRegistrationId } = await this.service.validateToken(
+        input.token,
+      );
+
+      if (campRegistrationId !== input.campRegistrationId) {
+        throw Error('Invalid attendance token 1.1');
+      }
+
+      const { campRegistration, remainingAttendance } =
+        await this.service.findRegistrationAndLimit(input, parentId);
+
+      const existingCampVariant = await this.service.checkCampVariant(
+        input.campVariantId,
+      );
+      if (!existingCampVariant) {
+        return {
+          message: 'Camp variant not found',
+          success: false,
+        };
+      }
+
+      if (remainingAttendance === 0) {
+        return {
+          message: 'No remaining attendance days for this registration',
+          success: false,
+        };
+      }
+
+      const existingChild = await this.service.checkChild(
+        input.childId,
+        parentId,
+      );
+      if (!existingChild) {
+        return {
+          message: 'Child not found',
+          success: false,
+        };
+      }
+
+      const campVariant =
+        campRegistration.campVariantRegistrations.find(
+          (variant) => variant.campVariantId === input.campVariantId,
+        ).campVariant ??
+        (await this.service.checkCampVariant(input.campVariantId));
+
+      if (!campVariant) {
+        return {
+          message: 'Camp variant not found in registration',
+          success: false,
+        };
+      }
+
+      const now = moment.tz('Africa/Cairo');
+
+      if (now.isBefore(campVariant.startDate)) {
+        return {
+          message: 'Attendance cannot be recorded before the camp start date',
+          success: false,
+        };
+      }
+
+      if (now.isAfter(campVariant.endDate)) {
+        return {
+          message: 'Attendance cannot be recorded after the camp end date',
+          success: false,
+        };
+      }
+
+      return this.service.enter(input, userId);
+    } catch (e) {
+      console.log(e);
       return {
-        message: 'Child not found',
         success: false,
+        message: e ?? 'Error processing attendance',
       };
     }
-    return this.service.enter(input, userId);
   }
 
-  @Mutation(() => GraphQLJSONObject, { name: 'leaveAttendance' })
+  @Mutation(() => GraphQLJSONObject, { name: 'leaveCamp' })
   async leave(
-    @Args('id', { type: () => Int }) id: number,
+    @Args('input') input: LeaveCampInput,
     @CurrentUser('id') userId: string,
     @CurrentUser('type') type: UserType,
   ) {
-    if (type !== UserType.admin) {
+    try {
+      if (type !== UserType.admin) {
+        return {
+          message: 'Unauthorized, only admins can record leave',
+          success: false,
+        };
+      }
+
+      await this.service.validateToken(input.token);
+
+      const existingAttendance = await this.service.findActiveAttendanceById(
+        input.registrationAttendanceId,
+      );
+
+      if (!existingAttendance) {
+        return {
+          message: 'No active attendance record found',
+          success: false,
+        };
+      }
+
+      return this.service.leave(input.registrationAttendanceId, userId);
+    } catch (e) {
+      console.log(e);
       return {
-        message: 'Unauthorized, only admins can record leave',
         success: false,
+        message: e,
       };
     }
-
-    const existingAttendance = await this.service.findActiveAttendanceById(id);
-    if (!existingAttendance) {
-      return {
-        message: 'No active attendance record found',
-        success: false,
-      };
-    }
-
-    return this.service.leave(id, userId);
   }
 
   @Query(() => RegistrationAttendancePage)

@@ -2,6 +2,7 @@ import { ObjectType, Field, Int } from '@nestjs/graphql';
 import { Allergy } from 'src/allergy/entities/allergy.entity';
 import { CampVariantRegistration } from 'src/camp-variant-registration/entities/camp-variant-registration.entity';
 import { ChildReport } from 'src/child-report/entities/child-report.entity';
+import { RegistrationAttendance } from 'src/registration-attendance/entities/registration-attendance.entity';
 import { User } from 'src/user/entities/user.entity';
 import { ParentRelation } from 'support/enums';
 import {
@@ -148,4 +149,9 @@ export class Child {
   })
   @Field(() => [ChildReport], { nullable: true })
   reports?: ChildReport[];
+
+  @OneToMany(() => RegistrationAttendance, (attendance) => attendance.child, {
+    nullable: true,
+  })
+  attendances?: RegistrationAttendance[];
 }

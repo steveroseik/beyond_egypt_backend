@@ -1,9 +1,12 @@
 import { ObjectType, Field } from '@nestjs/graphql';
+import { CampVariant } from 'src/camp-variant/entities/camp-variant.entity';
+import { Child } from 'src/child/entities/child.entity';
 import {
   Column,
   CreateDateColumn,
   DeleteDateColumn,
   Entity,
+  ManyToOne,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
@@ -63,4 +66,18 @@ export class RegistrationAttendance {
   @DeleteDateColumn({ name: 'deletedAt', precision: 3 })
   @Field({ nullable: true })
   deletedAt?: Date;
+
+  @ManyToOne(() => Child, (child) => child.attendances, {
+    onDelete: 'CASCADE',
+    onUpdate: 'CASCADE',
+  })
+  @Field(() => Child)
+  child: Child;
+
+  @ManyToOne(() => CampVariant, (campVariant) => campVariant.attendances, {
+    onDelete: 'CASCADE',
+    onUpdate: 'CASCADE',
+  })
+  @Field(() => CampVariant)
+  campVariant: CampVariant;
 }

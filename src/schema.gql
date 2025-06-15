@@ -84,6 +84,26 @@ enum AllergyCategory {
   insects
 }
 
+type RegistrationAttendance {
+  id: Int!
+  campRegistrationId: Int!
+  campVariantId: Int!
+  childId: Int!
+  enterTime: DateTime!
+  leaveTime: DateTime
+  enterAuditorId: String!
+  leaveAuditorId: String
+  createdAt: DateTime!
+  lastModified: DateTime!
+  deletedAt: DateTime
+  child: Child!
+  campVariant: CampVariant!
+  campRegistration: CampRegistration
+  campVariantRegistration: CampVariantRegistration
+  enterAuditor: User
+  leaveAuditor: User
+}
+
 type ParentAdditional {
   id: Int!
   userId: String!
@@ -439,25 +459,6 @@ The `JSONObject` scalar type represents JSON objects as specified by [ECMA-404](
 """
 scalar JSONObject
 
-type RegistrationAttendance {
-  id: Int!
-  campRegistrationId: Int!
-  campVariantId: Int!
-  childId: Int!
-  enterTime: DateTime!
-  leaveTime: DateTime
-  enterAuditorId: String!
-  leaveAuditorId: String
-  createdAt: DateTime!
-  lastModified: DateTime!
-  deletedAt: DateTime
-  campRegistration: CampRegistration
-  campVariantRegistration: CampVariantRegistration
-  child: Child
-  enterAuditor: User
-  leaveAuditor: User
-}
-
 type RegistrationAttendancePage {
   cursor: GraphqlCursor!
   data: [RegistrationAttendance!]!
@@ -717,6 +718,9 @@ input PaginateRegistrationAttendanceInput {
   afterCursor: String
   beforeCursor: String
   search: String
+  parentIds: [String!]
+  childrenIds: [Int!]
+  campVariantIds: [Int!]
 }
 
 input PaginateRegistrationPaymentsInput {
@@ -804,8 +808,8 @@ type Mutation {
   createEventFile(createEventFileInput: CreateEventFileInput!): EventFile!
   updateEventFile(updateEventFileInput: UpdateEventFileInput!): EventFile!
   removeEventFile(id: Int!): EventFile!
-  enterAttendance(input: CreateRegistrationAttendanceInput!): JSONObject!
-  leaveAttendance(id: Int!): JSONObject!
+  enterCamp(input: CreateRegistrationAttendanceInput!): JSONObject!
+  leaveCamp(input: LeaveCampInput!): JSONObject!
   createRegistrationHistory(createRegistrationHistoryInput: CreateRegistrationHistoryInput!): RegistrationHistory!
   updateRegistrationHistory(updateRegistrationHistoryInput: UpdateRegistrationHistoryInput!): RegistrationHistory!
   removeRegistrationHistory(id: Int!): RegistrationHistory!
@@ -1263,6 +1267,12 @@ input CreateRegistrationAttendanceInput {
   campRegistrationId: Int!
   campVariantId: Int!
   childId: Int!
+  token: String!
+}
+
+input LeaveCampInput {
+  registrationAttendanceId: Int!
+  token: String!
 }
 
 input CreateRegistrationHistoryInput {

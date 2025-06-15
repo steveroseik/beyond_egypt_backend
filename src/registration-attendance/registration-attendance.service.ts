@@ -10,6 +10,10 @@ import { buildPaginator } from 'typeorm-cursor-pagination';
 import { CampVariant } from 'src/camp-variant/entities/camp-variant.entity';
 import { CampRegistrationService } from 'src/camp-registration/camp-registration.service';
 import { Child } from 'src/child/entities/child.entity';
+import { EncryptionService } from 'src/encryption/encryption.service';
+import { CampRegistrationStatus } from 'support/enums';
+import { getDateDifferenceInDays } from 'support/helpers/days-diferrence.calculator';
+import { max } from 'lodash';
 
 @Injectable()
 export class RegistrationAttendanceService {
@@ -17,6 +21,7 @@ export class RegistrationAttendanceService {
     @InjectRepository(RegistrationAttendance)
     private repo: Repository<RegistrationAttendance>,
     private campRegistrationService: CampRegistrationService,
+    private encryptionService: EncryptionService,
     private dataSource: DataSource,
   ) {}
 
@@ -42,64 +47,39 @@ export class RegistrationAttendanceService {
       };
     }
 
-    // Get current active attendances count for this registration
-    const currentAttendances = await this.repo.count({
-      where: {
-        campRegistrationId: input.campRegistrationId,
-        //leaveTime: null,
-      },
-    });
-    // Get camp registration to check capacity
-    const campRegistration = await this.repo.findOne({
-      where: { id: input.campRegistrationId },
-    });
-
-    if (!campRegistration) {
-      return {
-        success: false,
-        message: 'Camp registration not found',
-      };
-    }
-    console.log('currentAttendances', currentAttendances);
-    console.log('campRegistration.capacity', campRegistration);
-    if (currentAttendances >= 999) {
-      return {
-        success: false,
-        message: 'Camp has reached maximum capacity for today',
-      };
-    }
-
-    const attendance = await this.repo.save({
+    const attendance = await this.repo.insert({
       ...input,
-      enterTime: new Date(),
+      enterTime: () => 'CURRENT_TIMESTAMP(3)',
       enterAuditorId: auditorId,
     });
 
     return {
       success: true,
       message: 'Attendance recorded successfully',
-      data: attendance,
     };
   }
 
   async leave(id: number, auditorId: string): Promise<AttendanceResponse> {
-    const attendance = await this.findActiveAttendanceById(id);
+    const updatedAttendance = await this.repo.update(
+      {
+        id,
+      },
+      {
+        leaveTime: () => 'CURRENT_TIMESTAMP(3)',
+        leaveAuditorId: auditorId,
+      },
+    );
 
-    if (!attendance) {
+    if (updatedAttendance.affected === 0) {
       return {
         success: false,
-        message: 'No active attendance record found',
+        message: 'No active attendance found for the given ID',
       };
     }
-
-    attendance.leaveTime = new Date();
-    attendance.leaveAuditorId = auditorId;
-    const updatedAttendance = await this.repo.save(attendance);
 
     return {
       success: true,
       message: 'Leave time recorded successfully',
-      data: updatedAttendance,
     };
   }
 
@@ -115,9 +95,9 @@ export class RegistrationAttendanceService {
     });
   }
 
-  checkChild(childId: number) {
+  checkChild(childId: number, parentId: string) {
     return this.dataSource.manager.findOne(Child, {
-      where: { id: childId },
+      where: { id: childId, parentId },
     });
   }
 
@@ -136,13 +116,99 @@ export class RegistrationAttendanceService {
     });
   }
 
+  async findRegistrationAndLimit(
+    input: CreateRegistrationAttendanceInput,
+    parentId: string,
+  ): Promise<{
+    campRegistration: CampRegistration;
+    remainingAttendance: number;
+  }> {
+    const campRegistration = await this.dataSource.manager.findOne(
+      CampRegistration,
+      {
+        where: { id: input.campRegistrationId, parentId },
+        relations: [
+          'campVariantRegistrations',
+          'campVariantRegistrations.campVariant',
+        ],
+      },
+    );
+
+    if (!campRegistration) {
+      throw new Error('Camp registration not found');
+    }
+
+    if (campRegistration.status !== CampRegistrationStatus.accepted) {
+      throw new Error('Invalid camp registration');
+    }
+
+    if (!campRegistration.campVariantRegistrations?.length) {
+      throw new Error('No camp variants registered for this camp registration');
+    }
+
+    const existingAttendance = await this.findAttendanceCount(
+      input.campRegistrationId,
+    );
+
+    const remaining =
+      campRegistration.campVariantRegistrations
+        .map(
+          (e) =>
+            getDateDifferenceInDays(
+              e.campVariant.startDate,
+              e.campVariant.endDate,
+            ) + 1,
+        )
+        .reduce((acc, count) => acc + count, 0) - existingAttendance;
+
+    return {
+      campRegistration,
+      remainingAttendance: max([remaining, 0]),
+    };
+  }
+
+  async findAttendanceCount(campRegistrationId: number) {
+    return this.dataSource.manager.count(RegistrationAttendance, {
+      where: {
+        campRegistrationId,
+      },
+    });
+  }
+
+  async validateToken(
+    token: string,
+  ): Promise<{ parentId: string; campRegistrationId: number }> {
+    // Assuming the token contains the parentId as a claim
+    const payload = this.encryptionService.decrypt(token);
+    if (!payload || !payload.parentId || !payload.campRegistrationId) {
+      throw new Error('Invalid attendance token 1.0');
+    }
+    return payload;
+  }
+
   paginate(input: PaginateRegistrationAttendanceInput) {
-    const queryBuilder = this.repo.createQueryBuilder('registrationAttendance');
+    const queryBuilder = this.repo.createQueryBuilder('ra');
+
+    if (input.childrenIds?.length) {
+      queryBuilder.andWhere('ra.childId IN (:...childrenIds)', {
+        childrenIds: input.childrenIds,
+      });
+    }
+
+    if (input.campVariantIds?.length) {
+      queryBuilder.andWhere('ra.campVariantId IN (:...campVariantIds', {
+        campVariantIds: input.campVariantIds,
+      });
+    }
+
+    if (input.parentIds?.length) {
+      queryBuilder.innerJoin('ra.child', 'child');
+    }
 
     const paginator = buildPaginator({
       entity: RegistrationAttendance,
       paginationKeys: ['createdAt', 'id'],
-      alias: 'registrationAttendance',
+      alias: 'ra',
       query: {
         ...input,
         order: input.isAsc ? 'ASC' : 'DESC',

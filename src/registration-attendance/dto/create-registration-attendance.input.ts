@@ -10,5 +10,7 @@ export class CreateRegistrationAttendanceInput {
 
   @Field(() => Int)
   childId: number;
-  //auditor kaman?
+
+  @Field(() => String)
+  token: string;
 }

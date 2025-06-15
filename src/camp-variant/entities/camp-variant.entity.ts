@@ -3,6 +3,7 @@ import BigNumber from 'bignumber.js';
 import { CampVariantRegistration } from 'src/camp-variant-registration/entities/camp-variant-registration.entity';
 import { Camp } from 'src/camp/entities/camp.entity';
 import { ChildReport } from 'src/child-report/entities/child-report.entity';
+import { RegistrationAttendance } from 'src/registration-attendance/entities/registration-attendance.entity';
 import { moneyFixation } from 'support/constants';
 import { Decimal, GraphqlDecimal } from 'support/scalars';
 import {
@@ -105,6 +106,16 @@ export class CampVariant {
   })
   // @Field(() => [ChildReport], { nullable: true })
   childReports?: ChildReport[];
+
+  @OneToMany(
+    () => RegistrationAttendance,
+    (attendance) => attendance.campVariant,
+    {
+      nullable: true,
+    },
+  )
+  // @Field(() => [ChildReport], { nullable: true })
+  attendances?: RegistrationAttendance[];
 
   // @AfterInsert()s
   // setDefaultCurCapacity() {
