@@ -79,8 +79,8 @@ export class CampVariantRegistrationResolver {
     @Parent() campVariantRegistration: CampVariantRegistration,
     @Context() { loaders }: { loaders: DataloaderRegistry },
   ) {
-    return loaders.CampVariantsDataLoader.load(
-      campVariantRegistration.campVariantId,
-    );
+    return loaders
+      .CampVariantsDataLoader({ withDeleted: true })
+      .load(campVariantRegistration.campVariantId);
   }
 }

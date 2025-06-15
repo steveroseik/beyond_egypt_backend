@@ -811,6 +811,7 @@ type Mutation {
   removeRegistrationHistory(id: Int!): RegistrationHistory!
   createRegistrationPaymentHistory(createRegistrationPaymentHistoryInput: CreateRegistrationPaymentHistoryInput!): RegistrationPayment!
   updateRegistrationPaymentHistory(updateRegistrationPaymentHistoryInput: UpdateRegistrationPaymentHistoryInput!): RegistrationPayment!
+  revalidateFawryPayment(id: Int!): JSONObject!
   removeRegistrationPaymentHistory(id: Int!): RegistrationPayment!
   createSetting(createSettingInput: CreateSettingInput!): Settings!
   updateSetting(updateSettingInput: UpdateSettingInput!): Settings!

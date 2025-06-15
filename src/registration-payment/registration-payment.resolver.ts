@@ -18,6 +18,7 @@ import { PaginateRegistrationPaymentsInput } from './dto/paginate-registration-p
 import { User } from 'src/user/entities/user.entity';
 import { DataloaderRegistry } from 'src/dataloaders/dataloaderRegistry';
 import { CampRegistration } from 'src/camp-registration/entities/camp-registration.entity';
+import { GraphQLJSONObject } from 'graphql-type-json';
 dotenv.config();
 
 @Resolver(() => RegistrationPayment)
@@ -62,6 +63,11 @@ export class RegistrationPaymentHistoryResolver {
       updateRegistrationPaymentHistoryInput.id,
       updateRegistrationPaymentHistoryInput,
     );
+  }
+
+  @Mutation(() => GraphQLJSONObject)
+  revalidateFawryPayment(@Args('id', { type: () => Int }) id: number) {
+    return this.registrationPaymentHistoryService.revalidate(id);
   }
 
   @Mutation(() => RegistrationPayment)

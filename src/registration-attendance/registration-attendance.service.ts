@@ -7,6 +7,7 @@ import { CampRegistration } from 'src/camp-registration/entities/camp-registrati
 import { AttendanceResponse } from './dto/attendance-response.type';
 import { PaginateRegistrationAttendanceInput } from './dto/paginate-registration-attendance.input';
 import { buildPaginator } from 'typeorm-cursor-pagination';
+import { CampVariant } from 'src/camp-variant/entities/camp-variant.entity';
 
 @Injectable()
 export class RegistrationAttendanceService {
@@ -15,6 +16,7 @@ export class RegistrationAttendanceService {
     private repo: Repository<RegistrationAttendance>,
     @InjectRepository(CampRegistration)
     private campRegistrationRepo: Repository<CampRegistration>,
+    private dataSource: Repository<CampRegistration>,
   ) {}
 
   async enter(
@@ -47,7 +49,7 @@ export class RegistrationAttendanceService {
       },
     });
     // Get camp registration to check capacity
-    const campRegistration = await this.campRegistrationRepo.findOne({
+    const campRegistration = await this.repo.findOne({
       where: { id: input.campRegistrationId },
     });
 
@@ -59,7 +61,7 @@ export class RegistrationAttendanceService {
     }
     console.log('currentAttendances', currentAttendances);
     console.log('campRegistration.capacity', campRegistration);
-    if (currentAttendances >= campRegistration.capacity) {
+    if (currentAttendances >= 999) {
       return {
         success: false,
         message: 'Camp has reached maximum capacity for today',
@@ -107,7 +109,7 @@ export class RegistrationAttendanceService {
   }
 
   checkCampVariant(campVariantId: number) {
-    return this.campRegistrationRepo.findOne({
+    return this.dataSource.manager.findOne(CampVariant, {
       where: { id: campVariantId },
     });
   }

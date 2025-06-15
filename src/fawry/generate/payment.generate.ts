@@ -9,6 +9,7 @@ import axios from 'axios';
 import { PaymentStatusResponse } from '../models/payment-status.payload';
 import { generateQueryParams } from 'support/query-params.generator';
 import { RefundRequestStatus } from '../models/refund-request-status.payload';
+import { CancelOrderResponse } from '../models/cancel-order.response';
 dotenv.config();
 
 /**
@@ -317,5 +318,56 @@ export async function requestRefund(
       );
     }
     throw new Error(`Failure in requesting refund: ${error.message}`);
+  }
+}
+
+export async function cancelPayment(
+  orderRefNo: string,
+  lang: 'ar-eg' | 'en-gb' = 'en-gb',
+): Promise<CancelOrderResponse | null> {
+  const merchantAccount = process.env.FAWRY_MERCHANT_ID;
+
+  const dataToSign =
+    orderRefNo + merchantAccount + lang + process.env.FAWRY_SECURE_KEY;
+
+  const signature = crypto
+    .createHash('sha256')
+    .update(dataToSign)
+    .digest('hex');
+
+  const payload = {
+    merchantAccount,
+    orderRefNo,
+    lang,
+    signature,
+  };
+
+  const endpoint =
+    'https://atfawry.fawrystaging.com/ECommerceWeb/api/orders/cancel-unpaid-order';
+
+  try {
+    const response = await axios.post(endpoint, payload, {
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    return response.data;
+  } catch (error: any) {
+    console.log(error);
+    if (axios.isAxiosError(error) && error.response) {
+      console.error('Fawry API error details:', error.response.data);
+      return {
+        code: `${error.response.status}`,
+        description: error.response.data.description || 'Error occurred',
+        reason: error.message || error.response.statusText || 'Unknown error',
+      };
+    }
+    console.error('Error in cancelPayment:', error.message);
+    return {
+      code: '500',
+      description: 'Internal Server Error',
+      reason: error.message || 'Unknown error',
+    };
   }
 }

@@ -107,7 +107,9 @@ export class RegistrationAttendanceResolver {
     @Parent() parent: RegistrationAttendance,
     @Context() { loaders }: { loaders: DataloaderRegistry },
   ) {
-    return loaders.CampVariantsDataLoader.load(parent.campVariantId);
+    return loaders
+      .CampVariantsDataLoader({ withDeleted: true })
+      .load(parent.campVariantId);
   }
 
   @ResolveField(() => Child, { nullable: true })

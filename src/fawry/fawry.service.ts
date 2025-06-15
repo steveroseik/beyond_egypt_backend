@@ -2,6 +2,7 @@ import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { DataSource, In, QueryRunner } from 'typeorm';
 import { FawryReturnDto } from './models/fawry-return.dto';
 import {
+  cancelPayment,
   generateStatusQuerySignature,
   requestPaymentStatus,
 } from './generate/payment.generate';
@@ -32,6 +33,11 @@ export class FawryService {
   ) {}
 
   async handleReturn(query: FawryReturnDto, res: Response) {
+    console.log('Fawry Return Query:', query);
+    console.table(query);
+    console.log('Fawry res');
+    console.table(res);
+
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
@@ -74,6 +80,12 @@ export class FawryService {
         message: e.message ?? 'An error occurred',
       };
 
+      await this.dataSource.manager.update(
+        RegistrationPayment,
+        { referenceNumber: `${query.merchantRefNumber}` },
+        { status: PaymentStatus.failed },
+      );
+
       return res.redirect(
         `${process.env.FRONTEND_URL}/payment-failed?${generateQueryParams(parameters)}`,
       );
@@ -83,44 +95,29 @@ export class FawryService {
   }
 
   async expirePayment(payment: RegistrationPayment, queryRunner: QueryRunner) {
+    const cancel = await cancelPayment(payment.referenceNumber, 'en-gb');
+
+    const cancelled = cancel?.code === '200';
+
     await queryRunner.manager.update(
       RegistrationPayment,
       { id: payment.id },
       {
-        status: PaymentStatus.expired,
+        status: cancelled ? PaymentStatus.expired : PaymentStatus.failed,
       },
     );
 
-    const reserves = await queryRunner.manager.find(RegistrationReserve, {
-      where: { campRegistrationId: payment.campRegistrationId },
-      lock: { mode: 'pessimistic_write' },
-    });
-
-    if (reserves.length) {
-      const campVariantIds = reserves.map((reserve) => reserve.campVariantId);
-
-      // Lock the CampVariant records
-      await queryRunner.manager.find(CampVariant, {
-        where: { id: In(campVariantIds) },
+    if (cancelled) {
+      const reserves = await queryRunner.manager.find(RegistrationReserve, {
+        where: { campRegistrationId: payment.campRegistrationId },
         lock: { mode: 'pessimistic_write' },
       });
 
-      for (const reserve of reserves) {
-        const update = await queryRunner.manager.update(
-          CampVariant,
-          { id: reserve.campVariantId },
-          {
-            remainingCapacity: () => `remainingCapacity + ${reserve.count}`,
-          },
-        );
-        if (update.affected !== 1) {
-          throw new Error('Failed to update camp variant capacity');
-        }
+      if (reserves.length) {
+        await queryRunner.manager.delete(RegistrationReserve, {
+          paymentId: payment.id,
+        });
       }
-
-      await queryRunner.manager.delete(RegistrationReserve, {
-        paymentId: payment.id,
-      });
     }
   }
 
@@ -220,7 +217,7 @@ export class FawryService {
       }
 
       await queryRunner.manager.delete(RegistrationReserve, {
-        paymentId: payment.id,
+        campRegistrationId: payment.campRegistrationId,
       });
     } else {
       await this.deductVacancies(payment.campRegistrationId, queryRunner);

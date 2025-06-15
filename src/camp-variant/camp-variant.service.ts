@@ -36,7 +36,9 @@ export class CampVariantService {
     return this.repo.find({ where: { campId: In(keys) } });
   }
 
-  findAllByKeys(keys: readonly number[]) {
-    return this.repo.find({ where: { id: In(keys) } });
+  async findAllByKeys(keys: readonly number[], withDeleted = false) {
+    const d = this.repo.find({ where: { id: In(keys) }, withDeleted });
+    console.table(d);
+    return d;
   }
 }

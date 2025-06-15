@@ -100,7 +100,9 @@ export class ChildReportResolver {
   ) {
     return (
       childReport.campVariant ??
-      loaders.CampVariantsDataLoader.load(childReport.campVariantId)
+      loaders
+        .CampVariantsDataLoader({ withDeleted: true })
+        .load(childReport.campVariantId)
     );
   }
 }

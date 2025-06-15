@@ -83,10 +83,16 @@ export class DataloaderRegistry {
     );
   }
 
-  public get CampVariantsDataLoader() {
-    return this.get('CampVariantsDataLoader', () =>
-      CampVariantsDataLoader.create(this.campVariantService),
-    );
+  CampVariantsDataLoader({ withDeleted = false }: { withDeleted: boolean }) {
+    if (withDeleted) {
+      return this.get('CampVariantsDataLoaderWD', () =>
+        CampVariantsDataLoader.create(this.campVariantService, true),
+      );
+    } else {
+      return this.get('CampVariantsDataLoaderND', () =>
+        CampVariantsDataLoader.create(this.campVariantService, false),
+      );
+    }
   }
 
   public get LocationsLoader() {

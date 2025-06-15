@@ -2,7 +2,15 @@ import { Injectable } from '@nestjs/common';
 import { CreateCampRegistrationInput } from './dto/create-camp-registration.input';
 import { CompleteCampRegistrationInput } from './dto/complete-camp-registration.input';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, In, MoreThan, QueryRunner, Repository } from 'typeorm';
+import {
+  DataSource,
+  In,
+  IsNull,
+  MoreThan,
+  Not,
+  QueryRunner,
+  Repository,
+} from 'typeorm';
 import { CampRegistration } from './entities/camp-registration.entity';
 import {
   CampRegistrationStatus,
@@ -23,6 +31,7 @@ import { PaymentPayload } from 'src/fawry/models/payment.payload';
 import { RegistrationPayment } from 'src/registration-payment/entities/registration-payment.entity';
 import * as moment from 'moment-timezone';
 import {
+  cancelPayment,
   generateFawryPaymentUrl,
   requestRefund,
 } from 'src/fawry/generate/payment.generate';
@@ -31,7 +40,7 @@ import { CreateRegistrationReserveInput } from 'src/registration-reserve/dto/cre
 
 import * as dotenv from 'dotenv';
 import { Decimal } from 'support/scalars';
-import { moneyFixation } from 'support/constants';
+import { moneyFixation, onlineTTL } from 'support/constants';
 import { Base64Image } from 'support/shared/base64Image.object';
 import { AwsBucketService } from 'src/aws-bucket/aws-bucket.service';
 import { generateMerchantRefNumber } from 'support/random-uuid.generator';
@@ -665,7 +674,7 @@ export class CampRegistrationService {
       }
 
       // reset all payments
-      await this.resetCampPaymentMethod(campRegistration, queryRunner);
+      await this.cancelPayments({ campRegistration, queryRunner });
 
       await this.updateReservations({
         queryRunner,
@@ -735,7 +744,7 @@ export class CampRegistrationService {
       }
 
       // reset all payments
-      await this.resetCampPaymentMethod(campRegistration, queryRunner);
+      await this.cancelPayments({ campRegistration, queryRunner });
 
       await queryRunner.commitTransaction();
 
@@ -747,19 +756,6 @@ export class CampRegistrationService {
         },
       };
     }
-  }
-
-  async resetCampPaymentMethod(
-    campRegistration: CampRegistration,
-    queryRunner: QueryRunner,
-  ) {
-    const expirePayments = await queryRunner.manager.update(
-      RegistrationPayment,
-      { campRegistrationId: campRegistration.id },
-      { status: PaymentStatus.expired },
-    );
-
-    return expirePayments;
   }
 
   async findDiscount(
@@ -953,6 +949,10 @@ export class CampRegistrationService {
       throw new Error('Failed to update camp registration status');
     }
 
+    await queryRunner.manager.delete(RegistrationReserve, {
+      campRegistrationId: campRegistration.id,
+    });
+
     await queryRunner.commitTransaction();
 
     // update registration status
@@ -1049,14 +1049,9 @@ export class CampRegistrationService {
 
           amountTobePaid = totalAmount?.minus(discountAmount ?? 0);
 
-          await queryRunner.manager.update(
-            RegistrationPayment,
-            {
-              campRegistrationId: campRegistration.id,
-              status: PaymentStatus.pending,
-            },
-            { status: PaymentStatus.expired },
-          );
+          await this.cancelPayments({ queryRunner, campRegistration });
+
+          console.log('Payment reset due to discount change');
 
           paymentResetted = true;
         }
@@ -1066,7 +1061,7 @@ export class CampRegistrationService {
     const pendingPayments = paymentResetted
       ? []
       : campRegistration.payments?.filter(
-          (e) => e.status == PaymentStatus.pending,
+          (e) => e.status == PaymentStatus.pending && !e.parentId,
         );
 
     // handle free payment
@@ -1076,7 +1071,7 @@ export class CampRegistrationService {
       console.log('Free payment detected, handling free payment');
       console.log('Pending payments:', pendingPayments);
       if (!paymentResetted) {
-        const match = pendingPayments.find((e) => e.amount === amountTobePaid);
+        const match = pendingPayments.find((e) => e.amount.eq(amountTobePaid));
         console.log('Match found:', match);
         if (match) {
           if (match.paymentMethod !== PaymentMethod.cash) {
@@ -1126,29 +1121,35 @@ export class CampRegistrationService {
             moment().tz('Africa/Cairo').diff(e.expirationDate, 'minutes') < 0,
         );
 
+        console.log('Time now:', moment().tz('Africa/Cairo').toString());
+        console.log('Valid payments:', validPayments);
+        console.log('Amount to be paid:', amountTobePaid.toString());
+
         if (validPayments?.length) {
-          const validWithAmount = validPayments.find(
-            (e) => e.amount == amountTobePaid,
-          );
+          const validWithAmount = validPayments.find((e) => {
+            console.log(
+              'Comparing payment amount:',
+              e.amount.toString(),
+              'with amount to be paid:',
+              amountTobePaid.toString(),
+            );
+            return e.amount.eq(amountTobePaid);
+          });
+          console.log('Valid payment with amount:', validWithAmount);
+
           if (validWithAmount) {
-            const ids = validPayments
-              .filter((p) => p.id !== validWithAmount.id)
-              .map((e) => e.id);
+            const ids = validPayments.filter(
+              (p) => p.id !== validWithAmount.id,
+            );
+
+            console.log('Expiring old payments with ids:', ids);
 
             if (ids?.length) {
-              const expirePendingPayments = await queryRunner.manager.update(
-                RegistrationPayment,
-                {
-                  id: In(ids),
-                },
-                {
-                  status: PaymentStatus.expired,
-                },
-              );
-
-              if (expirePendingPayments.affected !== ids.length) {
-                throw new Error('Failed to expire old fawry payments');
-              }
+              await this.cancelFawryPayments({
+                queryRunner,
+                campRegistration,
+                ids: ids.map((e) => e.id),
+              });
             }
 
             await queryRunner.commitTransaction();
@@ -1172,14 +1173,36 @@ export class CampRegistrationService {
       if (expiredFawryPayments?.length) {
         const newExpiration = moment()
           .tz('Africa/Cairo')
-          .add(10, 'minute')
-          .toDate();
+          .add(onlineTTL, 'minute');
+
+        const parent =
+          campRegistration.parent ??
+          (await queryRunner.manager.findOne(User, {
+            where: { id: campRegistration.parentId },
+          }));
+
+        const { paymentUrl, merchantRef } = await this.generateFawryPaymentUrl(
+          campRegistration,
+          campRegistration.amount,
+          expiredFawryPayments[0].id,
+          parent,
+          newExpiration,
+        );
+
+        if (!paymentUrl) {
+          throw new Error('Failed to generate new fawry payment url');
+        }
+
+        const expiredPayment = expiredFawryPayments[0];
+
         const updatePayment = await queryRunner.manager.update(
           RegistrationPayment,
-          { id: expiredFawryPayments[0].id },
+          { id: expiredPayment.id },
           {
             status: PaymentStatus.pending,
-            expirationDate: newExpiration,
+            expirationDate: newExpiration.toDate(),
+            referenceNumber: merchantRef,
+            url: paymentUrl,
             createdAt: () => 'CURRENT_TIMESTAMP(3)',
           },
         );
@@ -1188,26 +1211,23 @@ export class CampRegistrationService {
           throw new Error('Failed to update fawry payment');
         }
 
-        if (pendingPayments?.length) {
-          const expireOldPayments = await queryRunner.manager.update(
-            RegistrationPayment,
-            {
-              id: In(pendingPayments.map((e) => e.id)),
-            },
-            {
-              status: PaymentStatus.expired,
-            },
-          );
+        expiredPayment.status = PaymentStatus.pending;
+        expiredPayment.expirationDate = newExpiration.toDate();
+        expiredPayment.referenceNumber = merchantRef;
+        expiredPayment.url = paymentUrl;
+        expiredPayment.createdAt = new Date();
 
-          if (expireOldPayments.affected !== pendingPayments.length) {
-            throw new Error('Failed to expire old fawry payments');
-          }
+        if (pendingPayments?.length) {
+          this.cancelPayments({
+            queryRunner,
+            payments: pendingPayments,
+          });
         }
 
         await queryRunner.commitTransaction();
         return {
           success: true,
-          payment: expiredFawryPayments[0],
+          payment: expiredPayment,
           expiration: newExpiration,
         };
       }
@@ -1215,29 +1235,15 @@ export class CampRegistrationService {
       if (pendingPayments?.length) {
         const validPayment = pendingPayments?.find(
           (e) =>
-            e.paymentMethod === paymentMethod && e.amount == amountTobePaid,
+            e.paymentMethod === paymentMethod && e.amount.eq(amountTobePaid),
         );
 
         if (validPayment) {
-          const ids = pendingPayments
-            .filter((p) => p.id !== validPayment.id)
-            .map((e) => e.id);
+          const toCancel = pendingPayments.filter(
+            (p) => p.id !== validPayment.id,
+          );
 
-          if (ids?.length) {
-            const expirePendingPayments = await queryRunner.manager.update(
-              RegistrationPayment,
-              {
-                id: In(ids),
-              },
-              {
-                status: PaymentStatus.expired,
-              },
-            );
-
-            if (expirePendingPayments.affected !== ids.length) {
-              throw new Error('Failed to expire old fawry payments');
-            }
-          }
+          await this.cancelPayments({ queryRunner, payments: toCancel });
 
           await queryRunner.commitTransaction();
           return {
@@ -1245,17 +1251,11 @@ export class CampRegistrationService {
             payment: validPayment,
           };
         } else {
-          const expireValidPayments = await queryRunner.manager.update(
-            RegistrationPayment,
-            { id: In(pendingPayments.map((e) => e.id)) },
-            {
-              status: PaymentStatus.expired,
-            },
-          );
-
-          if (expireValidPayments.affected !== pendingPayments.length) {
-            throw new Error('Failed to expire old fawry payments');
-          }
+          await this.cancelPayments({
+            queryRunner,
+            payments: pendingPayments,
+            updateReserves: false,
+          });
         }
       }
     }
@@ -1282,6 +1282,150 @@ export class CampRegistrationService {
           input,
         );
     }
+  }
+
+  async cancelPayments({
+    queryRunner,
+    campRegistration,
+    payments,
+    ids = [],
+    updateReserves = true,
+  }: {
+    queryRunner: QueryRunner;
+    campRegistration?: CampRegistration;
+    payments?: RegistrationPayment[];
+    ids?: number[];
+    updateReserves?: boolean;
+  }) {
+    if (!campRegistration && !payments && !ids?.length) {
+      throw new Error('No camp registration or payments provided');
+    }
+
+    let cancelled: RegistrationPayment[] = [];
+
+    payments ??= await queryRunner.manager.find(RegistrationPayment, {
+      where: {
+        ...(ids?.length
+          ? { id: In(ids) }
+          : { campRegistrationId: campRegistration.id }),
+        status: PaymentStatus.pending,
+        parentId: IsNull(),
+      },
+    });
+
+    payments = payments.filter((e) => !e.parentId);
+
+    if (!payments?.length) {
+      throw new Error('No payments to cancel');
+    }
+
+    const fawryPayments = payments.filter(
+      (e) => e.paymentMethod === PaymentMethod.fawry,
+    );
+
+    const otherPayments = payments.filter(
+      (e) => e.paymentMethod !== PaymentMethod.fawry,
+    );
+
+    if (fawryPayments?.length) {
+      cancelled = await this.cancelFawryPayments({
+        queryRunner,
+        campRegistration,
+        payments: fawryPayments,
+        updateReserves: updateReserves,
+      });
+    }
+
+    if (otherPayments?.length) {
+      const expirePayments = await queryRunner.manager.update(
+        RegistrationPayment,
+        { id: In(otherPayments.map((e) => e.id)) },
+        { status: PaymentStatus.expired },
+      );
+
+      if (expirePayments.affected !== otherPayments.length) {
+        throw Error('Failed to expire all payments');
+      }
+    }
+
+    return [...fawryPayments, ...otherPayments];
+  }
+
+  async cancelFawryPayments({
+    queryRunner,
+    campRegistration,
+    payments,
+    ids = [],
+    updateReserves = true,
+  }: {
+    queryRunner: QueryRunner;
+    campRegistration?: CampRegistration;
+    payments?: RegistrationPayment[];
+    ids?: number[];
+    updateReserves?: boolean;
+  }) {
+    if (!campRegistration && !payments && !ids?.length) {
+      throw new Error('No camp registration or payments provided');
+    }
+    payments ??= await queryRunner.manager.find(RegistrationPayment, {
+      where: {
+        ...(ids?.length
+          ? { id: In(ids) }
+          : { campRegistrationId: campRegistration?.id }),
+        status: PaymentStatus.pending,
+        parentId: IsNull(),
+      },
+    });
+
+    if (!payments?.length) {
+      throw new Error('No payments to cancel');
+    }
+
+    const failedPayments: RegistrationPayment[] = [];
+    for (let payment of payments) {
+      const cancelPayments = await cancelPayment(
+        payment.referenceNumber,
+        'en-gb',
+      );
+      if (cancelPayments?.code !== '200') {
+        failedPayments.push(payment);
+      }
+    }
+
+    let cancelled = payments.filter((e) => !failedPayments.includes(e));
+
+    if (cancelled?.length) {
+      const expirePayments = await queryRunner.manager.update(
+        RegistrationPayment,
+        { id: In(cancelled.map((e) => e.id)) },
+        { status: PaymentStatus.expired },
+      );
+
+      if (expirePayments.affected !== cancelled.length) {
+        throw Error('Failed to expire all payments');
+      }
+    }
+
+    if (failedPayments?.length) {
+      const failPayments = await queryRunner.manager.update(
+        RegistrationPayment,
+        { id: In(failedPayments.map((e) => e.id)) },
+        { status: PaymentStatus.failed },
+      );
+
+      if (failPayments.affected !== cancelled.length) {
+        throw Error('Failed to expire all payments');
+      }
+    }
+
+    if (updateReserves) {
+      await this.updateReservations({
+        queryRunner,
+        campRegistration,
+      });
+    }
+
+    return [...cancelled, ...failedPayments];
   }
 
   async handleFawryPayment(
@@ -1333,35 +1477,18 @@ export class CampRegistrationService {
       throw Error('Failed to create payment record');
     }
 
-    const tenMinutesFromNow = moment.tz('Africa/Cairo').add(10, 'minute');
+    const tenMinutesFromNow = moment
+      .tz('Africa/Cairo')
+      .add(onlineTTL, 'minute');
     // const tenMinutesFromNow = Date.now() + 10 * 60 * 1000;
 
-    const merchantRef = generateMerchantRefNumber(payment.id);
-
-    const payloadData: PaymentPayload = {
-      merchantRefNum: merchantRef.toString(),
-      customerProfileId: parent.id,
-      customerEmail: parent.email,
-      customerMobile: parent.phone,
-      customerName: parent.name,
-      authCaptureModePayment: false,
-      paymentExpiry: `${tenMinutesFromNow.valueOf()}`,
-      language: 'en-gb',
-      chargeItems: [
-        {
-          itemId: campRegistration.id.toString(),
-          description: 'Camp Registration Payment',
-          /// TODO: fix, old implementation
-          price: totalAmount.toFixed(moneyFixation),
-          quantity: 1,
-        },
-      ],
-      returnUrl: `${process.env.BASE_URL}/fawry/return`,
-    };
-
-    console.log(payloadData);
-
-    const paymentUrl = await generateFawryPaymentUrl(payloadData);
+    const { paymentUrl, merchantRef } = await this.generateFawryPaymentUrl(
+      campRegistration,
+      totalAmount,
+      payment.id,
+      parent,
+      tenMinutesFromNow,
+    );
 
     if (!paymentUrl) throw Error('Payment url received empty');
 
@@ -1410,6 +1537,46 @@ export class CampRegistrationService {
       success: true,
       payment: payment,
       expiration: tenMinutesFromNow,
+    };
+  }
+
+  async generateFawryPaymentUrl(
+    campRegistration: CampRegistration,
+    totalAmount: Decimal,
+    paymentId: number,
+    parent: User,
+    tenMinutesFromNow: moment.Moment,
+  ): Promise<{ paymentUrl: string; merchantRef: string }> {
+    const merchantRef = generateMerchantRefNumber(paymentId);
+
+    const payloadData: PaymentPayload = {
+      merchantRefNum: merchantRef.toString(),
+      customerProfileId: parent.id,
+      customerEmail: parent.email,
+      customerMobile: parent.phone,
+      customerName: parent.name,
+      authCaptureModePayment: false,
+      paymentExpiry: `${tenMinutesFromNow.valueOf()}`,
+      language: 'en-gb',
+      chargeItems: [
+        {
+          itemId: campRegistration.id.toString(),
+          description: 'Camp Registration Payment',
+          /// TODO: fix, old implementation
+          price: totalAmount.toFixed(moneyFixation),
+          quantity: 1,
+        },
+      ],
+      returnUrl: `${process.env.BASE_URL}/fawry/return`,
+    };
+
+    console.log(payloadData);
+
+    const paymentUrl = await generateFawryPaymentUrl(payloadData);
+
+    return {
+      paymentUrl,
+      merchantRef,
     };
   }
 
@@ -1463,12 +1630,6 @@ export class CampRegistrationService {
       throw Error('Failed to create payment record');
     }
 
-    await this.updateReservations({
-      queryRunner,
-      campVariantVacancies,
-      campRegistration,
-    });
-
     const updateCampRegistration = await queryRunner.manager.update(
       CampRegistration,
       {
@@ -1483,6 +1644,12 @@ export class CampRegistrationService {
     if (updateCampRegistration.affected !== 1) {
       throw Error('Failed to update camp registration status');
     }
+
+    this.updateReservations({
+      queryRunner,
+      campRegistration,
+      campVariantVacancies,
+    });
 
     // deduct vacancies
     // for (const [key, value] of campVariantVacancies) {
@@ -1584,7 +1751,7 @@ export class CampRegistrationService {
           {
             count,
             expirationDate: expirationMinutes
-              ? now.add(expirationMinutes, 'minute').toDate()
+              ? now.add(onlineTTL, 'milliseconds').toDate()
               : undefined,
           },
         );
@@ -2316,6 +2483,7 @@ export class CampRegistrationService {
         where: {
           campRegistrationId: campRegistration.id,
           status: PaymentStatus.pending,
+          parentId: IsNull(),
         },
         lock: { mode: 'pessimistic_write' },
       });
@@ -2331,16 +2499,11 @@ export class CampRegistrationService {
           input.paymentMethod &&
           input.paymentMethod !== payment.paymentMethod
         ) {
-          const expirePayments = await queryRunner.manager.update(
-            RegistrationPayment,
-            { id: payments[0].id },
-            {
-              status: PaymentStatus.expired,
-            },
-          );
-          if (expirePayments.affected !== 1) {
-            throw new Error('Failed to expire old payment');
-          }
+          await this.cancelPayments({
+            queryRunner,
+            payments: [payment],
+            updateReserves: false,
+          });
         } else {
           if (payments[0].paymentMethod === PaymentMethod.fawry) {
             throw new Error('Cannot confirm fawry payments');
@@ -2540,6 +2703,7 @@ export class CampRegistrationService {
           campRegistrationId: campRegistration.id,
           status: PaymentStatus.paid,
           amount: MoreThan(0),
+          parentId: IsNull(),
         },
         relations: ['childPayments'],
         lock: { mode: 'pessimistic_write' },
@@ -2982,7 +3146,7 @@ export class CampRegistrationService {
   }
 
   setPaymentTimoout(paymentId: number) {
-    const timeout = 11 * 60 * 1000; // 11 minutes
+    const timeout = onlineTTL + 1 * 60 * 1000; // 1 minute more than the online TTL
     setTimeout(async () => {
       const queryRunner = this.dataSource.createQueryRunner();
       await queryRunner.connect();
@@ -2991,60 +3155,46 @@ export class CampRegistrationService {
       try {
         const payment = await queryRunner.manager.findOne(RegistrationPayment, {
           where: { id: paymentId },
+          relations: ['campRegistration', 'campVariantRegistrations'],
           lock: { mode: 'pessimistic_write' },
         });
 
         if (!payment) {
-          throw new Error('Payment not found');
+          throw new Error('No payment found');
         }
 
         if (payment.status !== PaymentStatus.pending) {
-          throw new Error('Payment already processed');
+          throw new Error('Payments already processed');
         }
 
-        await queryRunner.manager.update(
-          RegistrationPayment,
-          { id: paymentId },
-          {
-            status: PaymentStatus.expired,
-          },
-        );
-
-        const reserves = await queryRunner.manager.find(RegistrationReserve, {
-          where: { campRegistrationId: payment.campRegistrationId },
-          lock: { mode: 'pessimistic_write' },
+        await this.cancelFawryPayments({
+          queryRunner,
+          payments: [payment],
         });
 
-        if (reserves.length) {
-          const campVariantIds = reserves.map(
-            (reserve) => reserve.campVariantId,
-          );
+        const vacancies: Map<number, number> = new Map();
 
-          // Lock the CampVariant records
-          await queryRunner.manager.find(CampVariant, {
-            where: { id: In(campVariantIds) },
-            lock: { mode: 'pessimistic_write' },
+        for (const variant of payment.campRegistration
+          .campVariantRegistrations) {
+          const count = vacancies.get(variant.campVariantId) ?? 0;
+          vacancies.set(variant.campVariantId, count + 1);
+        }
+
+        try {
+          await this.updateReservations({
+            queryRunner,
+            campVariantVacancies: vacancies,
+            campRegistration: payment.campRegistration,
           });
-
-          for (const reserve of reserves) {
-            const update = await queryRunner.manager.update(
-              CampVariant,
-              { id: reserve.campVariantId },
-              {
-                remainingCapacity: () => `remainingCapacity + ${reserve.count}`,
-              },
-            );
-            if (update.affected !== 1) {
-              throw new Error('Failed to update camp variant capacity');
-            }
-          }
-
+        } catch (e) {
+          console.log(e);
           await queryRunner.manager.delete(RegistrationReserve, {
-            paymentId,
+            campRegistrationId: payment.campRegistration.id,
           });
         }
 
         await queryRunner.commitTransaction();
+
         console.log('Payment expired and reserves released');
       } catch (e) {
         await queryRunner.rollbackTransaction();
@@ -3056,6 +3206,7 @@ export class CampRegistrationService {
   }
 
   async test(code?: string) {
+    return this.encryptionService.decrypt(code);
     const campRegistration = await this.repo.findOne({
       where: { status: CampRegistrationStatus.accepted },
       relations: [
