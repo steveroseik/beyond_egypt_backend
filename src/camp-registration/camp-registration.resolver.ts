@@ -166,6 +166,11 @@ export class CampRegistrationResolver {
     return this.campRegistrationService.completeRegistrationRefund(input);
   }
 
+  @Query(() => GraphQLJSONObject)
+  validateRegistrationCode(@Args('token') token: string) {
+    return this.campRegistrationService.validateCode(token);
+  }
+
   @ResolveField(() => [CampVariantRegistration], { nullable: true })
   campVariantRegistrations(
     @Parent() campRegistration: CampRegistration,

@@ -4,7 +4,6 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
 import { RegistrationAttendance } from './entities/registration-attendance.entity';
 import { CampRegistration } from 'src/camp-registration/entities/camp-registration.entity';
-import { AttendanceResponse } from './dto/attendance-response.type';
 import { PaginateRegistrationAttendanceInput } from './dto/paginate-registration-attendance.input';
 import { buildPaginator } from 'typeorm-cursor-pagination';
 import { CampVariant } from 'src/camp-variant/entities/camp-variant.entity';
@@ -25,10 +24,7 @@ export class RegistrationAttendanceService {
     private dataSource: DataSource,
   ) {}
 
-  async enter(
-    input: CreateRegistrationAttendanceInput,
-    auditorId: string,
-  ): Promise<AttendanceResponse> {
+  async enter(input: CreateRegistrationAttendanceInput, auditorId: string) {
     // Check if there's an existing active attendance record
     const existingAttendance = await this.repo.findOne({
       where: {
@@ -56,10 +52,13 @@ export class RegistrationAttendanceService {
     return {
       success: true,
       message: 'Attendance recorded successfully',
+      data: {
+        id: attendance.identifiers[0].id,
+      },
     };
   }
 
-  async leave(id: number, auditorId: string): Promise<AttendanceResponse> {
+  async leave(id: number, auditorId: string) {
     const updatedAttendance = await this.repo.update(
       {
         id,
@@ -177,13 +176,71 @@ export class RegistrationAttendanceService {
 
   async validateToken(
     token: string,
-  ): Promise<{ parentId: string; campRegistrationId: number }> {
-    // Assuming the token contains the parentId as a claim
-    const payload = this.encryptionService.decrypt(token);
-    if (!payload || !payload.parentId || !payload.campRegistrationId) {
+    leave: boolean = false,
+  ): Promise<{
+    parentId: string;
+    campRegistrationId: number;
+    remainingAttendances?: number;
+  }> {
+    const {
+      parentId,
+      campRegistrationId,
+    }: {
+      parentId: string;
+      campRegistrationId: number;
+    } = this.encryptionService.decrypt(token);
+
+    if (!parentId || !campRegistrationId) {
       throw new Error('Invalid attendance token 1.0');
     }
-    return payload;
+
+    if (!leave) {
+      const campRegistration = await this.dataSource.manager.findOne(
+        CampRegistration,
+        {
+          where: { id: campRegistrationId, parentId },
+          relations: [
+            'campVariantRegistrations',
+            'campVariantRegistrations.campVariant',
+          ],
+        },
+      );
+
+      if (campRegistration.status !== CampRegistrationStatus.accepted) {
+        throw Error('Invalid camp registration');
+      }
+
+      const existingAttendances = await this.dataSource.manager.count(
+        RegistrationAttendance,
+        {
+          where: {
+            campRegistrationId: campRegistration.id,
+          },
+        },
+      );
+
+      const remainingAttendances =
+        campRegistration.campVariantRegistrations
+          .map(
+            (e) =>
+              getDateDifferenceInDays(
+                e.campVariant.startDate,
+                e.campVariant.endDate,
+              ) + 1,
+          )
+          .reduce((acc, count) => acc + count, 0) - existingAttendances;
+
+      return {
+        parentId,
+        campRegistrationId,
+        remainingAttendances,
+      };
+    }
+
+    return {
+      parentId,
+      campRegistrationId,
+    };
   }
 
   paginate(input: PaginateRegistrationAttendanceInput) {

@@ -128,7 +128,7 @@ export class RegistrationPaymentHistoryService {
       console.log(e);
       return {
         success: false,
-        message: e ?? 'Error while paginating registration payments',
+        message: e.message ?? 'Error while paginating registration payments',
       };
     }
   }

@@ -63,6 +63,8 @@ import {
 } from 'src/encryption/paylaods/refund.payload';
 import { getSumOfPaidAmounts } from 'support/helpers/calculate-sum-of-paid';
 import { CompleteRegistrationRefundInput } from './dto/complete-registration-refund.input';
+import { RegistrationAttendance } from 'src/registration-attendance/entities/registration-attendance.entity';
+import { getDateDifferenceInDays } from 'support/helpers/days-diferrence.calculator';
 
 dotenv.config();
 
@@ -3242,5 +3244,30 @@ export class CampRegistrationService {
       campRegistrationId: campRegistration.id,
       parentId: campRegistration.parentId,
     });
+  }
+
+  async validateCode(token: string) {
+    try {
+      const {
+        parentId,
+        campRegistrationId,
+      }: { parentId: string; campRegistrationId: number } =
+        await this.encryptionService.decrypt(token);
+
+      if (!parentId || !campRegistrationId) {
+        throw Error('Invalid token');
+      }
+
+      return {
+        success: true,
+        message: 'Token is valid',
+      };
+    } catch (e) {
+      console.log(e);
+      return {
+        success: false,
+        message: e.message,
+      };
+    }
   }
 }

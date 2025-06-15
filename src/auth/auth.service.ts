@@ -67,7 +67,7 @@ export class AuthService {
         }; // Return the error message for further handling
       }
 
-      return { success: false, message: e };
+      return { success: false, message: e.message || 'Unknown error' };
     }
   }
 
@@ -124,7 +124,7 @@ export class AuthService {
         const response = await this.isEmailValid(email);
         return {
           userState: response,
-          message: e ?? 'Failed to sign in',
+          message: e.message ?? 'Failed to sign in',
         };
       }
 

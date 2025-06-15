@@ -61,7 +61,7 @@ export class LocationService {
       console.log(e);
       return {
         success: false,
-        message: e ?? 'Error while updating location',
+        message: e.message ?? 'Error while updating location',
       };
     }
   }

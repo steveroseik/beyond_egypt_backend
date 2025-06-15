@@ -15,7 +15,6 @@ import { UseGuards } from '@nestjs/common';
 // import { GqlAuthGuard } from '../auth/guards/gql-auth.guard';
 // import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { User } from '../user/entities/user.entity';
-import { AttendanceResponse } from './dto/attendance-response.type';
 import { CurrentUser } from 'src/auth/decorators/currentUserDecorator';
 import { UserType } from 'support/enums';
 import { GraphQLJSONObject } from 'graphql-type-json';
@@ -25,8 +24,8 @@ import { CampRegistration } from 'src/camp-registration/entities/camp-registrati
 import { DataloaderRegistry } from 'src/dataloaders/dataloaderRegistry';
 import { CampVariantRegistration } from 'src/camp-variant-registration/entities/camp-variant-registration.entity';
 import { Child } from 'src/child/entities/child.entity';
-import moment from 'moment-timezone';
 import { LeaveCampInput } from './dto/leave-camp-input';
+import * as moment from 'moment-timezone';
 
 @Resolver(() => RegistrationAttendance)
 // @UseGuards(GqlAuthGuard)
@@ -47,28 +46,24 @@ export class RegistrationAttendanceResolver {
         };
       }
 
-      const { parentId, campRegistrationId } = await this.service.validateToken(
-        input.token,
-      );
+      const { parentId, campRegistrationId, remainingAttendances } =
+        await this.service.validateToken(input.token);
 
       if (campRegistrationId !== input.campRegistrationId) {
         throw Error('Invalid attendance token 1.1');
       }
 
-      const { campRegistration, remainingAttendance } =
-        await this.service.findRegistrationAndLimit(input, parentId);
-
-      const existingCampVariant = await this.service.checkCampVariant(
+      const campVariant = await this.service.checkCampVariant(
         input.campVariantId,
       );
-      if (!existingCampVariant) {
+      if (!campVariant) {
         return {
           message: 'Camp variant not found',
           success: false,
         };
       }
 
-      if (remainingAttendance === 0) {
+      if (remainingAttendances === 0) {
         return {
           message: 'No remaining attendance days for this registration',
           success: false,
@@ -82,19 +77,6 @@ export class RegistrationAttendanceResolver {
       if (!existingChild) {
         return {
           message: 'Child not found',
-          success: false,
-        };
-      }
-
-      const campVariant =
-        campRegistration.campVariantRegistrations.find(
-          (variant) => variant.campVariantId === input.campVariantId,
-        ).campVariant ??
-        (await this.service.checkCampVariant(input.campVariantId));
-
-      if (!campVariant) {
-        return {
-          message: 'Camp variant not found in registration',
           success: false,
         };
       }
@@ -120,7 +102,7 @@ export class RegistrationAttendanceResolver {
       console.log(e);
       return {
         success: false,
-        message: e ?? 'Error processing attendance',
+        message: e.message ?? 'Error processing attendance',
       };
     }
   }
@@ -139,7 +121,7 @@ export class RegistrationAttendanceResolver {
         };
       }
 
-      await this.service.validateToken(input.token);
+      await this.service.validateToken(input.token, true);
 
       const existingAttendance = await this.service.findActiveAttendanceById(
         input.registrationAttendanceId,
@@ -157,7 +139,7 @@ export class RegistrationAttendanceResolver {
       console.log(e);
       return {
         success: false,
-        message: e,
+        message: e.message,
       };
     }
   }
