@@ -540,7 +540,7 @@ type Query {
   findOneCampRegistration(id: Int!): CampRegistration
   paginateCampRegistrations(input: PaginateCampRegistrationsInput!): CampRegistrationPage!
   campRegistrationRefundOptions(input: CampRegistrationRefundOptionsInput!): JSONObject!
-  validateRegistrationCode(token: String!): JSONObject!
+  validateRegistrationCode(token: String!, withAttendance: Boolean!): JSONObject!
   findOneEvent(id: Int!): Event
   paginateEvents(input: PaginateEventsInput!): EventPage!
   findOneAgeRange(id: Int!): AgeRange

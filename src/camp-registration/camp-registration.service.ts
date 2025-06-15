@@ -3246,7 +3246,7 @@ export class CampRegistrationService {
     });
   }
 
-  async validateCode(token: string) {
+  async validateCode(token: string, withAttendance: boolean) {
     try {
       const {
         parentId,
@@ -3256,6 +3256,46 @@ export class CampRegistrationService {
 
       if (!parentId || !campRegistrationId) {
         throw Error('Invalid token');
+      }
+
+      if (withAttendance) {
+        const campRegistration = await this.repo.findOne({
+          where: { id: campRegistrationId, parentId },
+          relations: [
+            'campVariantRegistrations',
+            'campVariantRegistrations.campVariant',
+          ],
+        });
+
+        if (campRegistration.status !== CampRegistrationStatus.accepted) {
+          throw Error('Invalid camp registration');
+        }
+
+        const existingAttendances = await this.dataSource.manager.count(
+          RegistrationAttendance,
+          {
+            where: {
+              campRegistrationId: campRegistration.id,
+            },
+          },
+        );
+
+        const remainingAttendances =
+          campRegistration.campVariantRegistrations
+            .map(
+              (e) =>
+                getDateDifferenceInDays(
+                  e.campVariant.startDate,
+                  e.campVariant.endDate,
+                ) + 1,
+            )
+            .reduce((acc, count) => acc + count, 0) - existingAttendances;
+
+        return {
+          success: true,
+          message: 'Token is valid',
+          data: { remainingAttendances },
+        };
       }
 
       return {

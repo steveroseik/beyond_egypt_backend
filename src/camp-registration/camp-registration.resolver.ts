@@ -167,8 +167,11 @@ export class CampRegistrationResolver {
   }
 
   @Query(() => GraphQLJSONObject)
-  validateRegistrationCode(@Args('token') token: string) {
-    return this.campRegistrationService.validateCode(token);
+  validateRegistrationCode(
+    @Args('token') token: string,
+    @Args('withAttendance') withAttendance: boolean,
+  ) {
+    return this.campRegistrationService.validateCode(token, withAttendance);
   }
 
   @ResolveField(() => [CampVariantRegistration], { nullable: true })
