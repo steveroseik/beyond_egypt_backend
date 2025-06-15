@@ -1,22 +1,23 @@
 import { Injectable } from '@nestjs/common';
 import { CreateRegistrationAttendanceInput } from './dto/create-registration-attendance.input';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 import { RegistrationAttendance } from './entities/registration-attendance.entity';
 import { CampRegistration } from 'src/camp-registration/entities/camp-registration.entity';
 import { AttendanceResponse } from './dto/attendance-response.type';
 import { PaginateRegistrationAttendanceInput } from './dto/paginate-registration-attendance.input';
 import { buildPaginator } from 'typeorm-cursor-pagination';
 import { CampVariant } from 'src/camp-variant/entities/camp-variant.entity';
+import { CampRegistrationService } from 'src/camp-registration/camp-registration.service';
+import { Child } from 'src/child/entities/child.entity';
 
 @Injectable()
 export class RegistrationAttendanceService {
   constructor(
     @InjectRepository(RegistrationAttendance)
     private repo: Repository<RegistrationAttendance>,
-    @InjectRepository(CampRegistration)
-    private campRegistrationRepo: Repository<CampRegistration>,
-    private dataSource: Repository<CampRegistration>,
+    private campRegistrationService: CampRegistrationService,
+    private dataSource: DataSource,
   ) {}
 
   async enter(
@@ -115,7 +116,7 @@ export class RegistrationAttendanceService {
   }
 
   checkChild(childId: number) {
-    return this.campRegistrationRepo.findOne({
+    return this.dataSource.manager.findOne(Child, {
       where: { id: childId },
     });
   }

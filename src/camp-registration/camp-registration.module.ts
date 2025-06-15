@@ -6,6 +6,8 @@ import { CampRegistration } from './entities/camp-registration.entity';
 import { AwsBucketModule } from 'src/aws-bucket/aws-bucket.module';
 import { MailModule } from 'src/mail/mail.module';
 import { EncryptionModule } from 'src/encryption/encryption.module';
+import { RegistrationAttendance } from 'src/registration-attendance/entities/registration-attendance.entity';
+import { RegistrationAttendanceModule } from 'src/registration-attendance/registration-attendance.module';
 
 @Module({
   imports: [
