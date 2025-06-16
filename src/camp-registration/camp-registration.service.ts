@@ -65,6 +65,7 @@ import { getSumOfPaidAmounts } from 'support/helpers/calculate-sum-of-paid';
 import { CompleteRegistrationRefundInput } from './dto/complete-registration-refund.input';
 import { RegistrationAttendance } from 'src/registration-attendance/entities/registration-attendance.entity';
 import { getDateDifferenceInDays } from 'support/helpers/days-diferrence.calculator';
+import { Child } from 'src/child/entities/child.entity';
 
 dotenv.config();
 
@@ -3291,10 +3292,16 @@ export class CampRegistrationService {
             )
             .reduce((acc, count) => acc + count, 0) - existingAttendances;
 
+        const children = await this.dataSource.manager.find(Child, {
+          where: {
+            parentId,
+          },
+        });
+
         return {
           success: true,
           message: 'Token is valid',
-          data: { remainingAttendances },
+          data: { remainingAttendances, children },
         };
       }
 

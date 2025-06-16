@@ -558,6 +558,7 @@ type Query {
   findOneChildReport(id: Int!): ChildReport
   paginateChildReports(input: PaginateChildReportsInput!): ChildReportPage!
   eventFile(id: Int!): EventFile!
+  validateAndFindAttendance(token: String!, campVariantId: Int!): JSONObject!
   paginateRegistrationAttendance(input: PaginateRegistrationAttendanceInput!): RegistrationAttendancePage!
   registrationHistory(id: Int!): RegistrationHistory!
   registrationPaymentHistory(id: Int!): RegistrationPayment!
@@ -801,7 +802,7 @@ type Mutation {
   createDiscount(input: CreateDiscountInput!): JSONObject!
   updateDiscount(input: UpdateDiscountInput!): JSONObject!
   removeDiscount(ids: [Int!]!): JSONObject!
-  createChildReportHistory(input: CreateChildReportHistoryInput!): ChildReportHistory!
+  createChildReportHistory(input: CreateChildReportHistoryInput!): JSONObject!
   createChildReport(input: CreateChildReportInput!): JSONObject!
   updateChildReport(input: UpdateChildReportInput!): JSONObject!
   closeChildReport(id: Int!): JSONObject!
@@ -1273,7 +1274,6 @@ input CreateRegistrationAttendanceInput {
 
 input LeaveCampInput {
   registrationAttendanceId: Int!
-  token: String!
 }
 
 input CreateRegistrationHistoryInput {

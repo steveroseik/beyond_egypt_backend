@@ -174,13 +174,9 @@ export class RegistrationAttendanceService {
     });
   }
 
-  async validateToken(
-    token: string,
-    leave: boolean = false,
-  ): Promise<{
+  async validateToken(token: string): Promise<{
     parentId: string;
     campRegistrationId: number;
-    remainingAttendances?: number;
   }> {
     const {
       parentId,
@@ -194,53 +190,49 @@ export class RegistrationAttendanceService {
       throw new Error('Invalid attendance token 1.0');
     }
 
-    if (!leave) {
-      const campRegistration = await this.dataSource.manager.findOne(
-        CampRegistration,
-        {
-          where: { id: campRegistrationId, parentId },
-          relations: [
-            'campVariantRegistrations',
-            'campVariantRegistrations.campVariant',
-          ],
-        },
-      );
-
-      if (campRegistration.status !== CampRegistrationStatus.accepted) {
-        throw Error('Invalid camp registration');
-      }
-
-      const existingAttendances = await this.dataSource.manager.count(
-        RegistrationAttendance,
-        {
-          where: {
-            campRegistrationId: campRegistration.id,
-          },
-        },
-      );
-
-      const remainingAttendances =
-        campRegistration.campVariantRegistrations
-          .map(
-            (e) =>
-              getDateDifferenceInDays(
-                e.campVariant.startDate,
-                e.campVariant.endDate,
-              ) + 1,
-          )
-          .reduce((acc, count) => acc + count, 0) - existingAttendances;
-
-      return {
-        parentId,
-        campRegistrationId,
-        remainingAttendances,
-      };
-    }
-
     return {
       parentId,
       campRegistrationId,
     };
+  }
+
+  async getRemainingAttendances(parentId: string, campRegistrationId: number) {
+    const campRegistration = await this.dataSource.manager.findOne(
+      CampRegistration,
+      {
+        where: { id: campRegistrationId, parentId },
+        relations: [
+          'campVariantRegistrations',
+          'campVariantRegistrations.campVariant',
+        ],
+      },
+    );
+
+    if (campRegistration.status !== CampRegistrationStatus.accepted) {
+      throw Error('Invalid camp registration');
+    }
+
+    const existingAttendances = await this.dataSource.manager.count(
+      RegistrationAttendance,
+      {
+        where: {
+          campRegistrationId: campRegistration.id,
+        },
+      },
+    );
+
+    const remainingAttendances =
+      campRegistration.campVariantRegistrations
+        .map(
+          (e) =>
+            getDateDifferenceInDays(
+              e.campVariant.startDate,
+              e.campVariant.endDate,
+            ) + 1,
+        )
+        .reduce((acc, count) => acc + count, 0) - existingAttendances;
+
+    return max([remainingAttendances, 0]);
   }
 
   paginate(input: PaginateRegistrationAttendanceInput) {
@@ -273,5 +265,45 @@ export class RegistrationAttendanceService {
     });
 
     return paginator.paginate(queryBuilder);
+  }
+
+  async validateAndFindAttendance(token: string, campVariantId: number) {
+    try {
+      const { parentId, campRegistrationId } = await this.validateToken(token);
+
+      const attendances = await this.repo
+        .createQueryBuilder('ra')
+        .innerJoinAndSelect('ra.child', 'child')
+        .where('ra.campRegistrationId = :campRegistrationId', {
+          campRegistrationId,
+        })
+        .andWhere('ra.campVariantId = :campVariantId', { campVariantId })
+        .andWhere('ra.child.parentId = :parentId', { parentId })
+        .andWhere('ra.leaveTime IS NULL')
+        .getMany();
+
+      if (!attendances?.length) {
+        return {
+          success: false,
+          message:
+            'No active attendance found for the given token and camp variant',
+        };
+      }
+
+      return {
+        success: true,
+        data: {
+          parentId,
+          campRegistrationId,
+          attendances,
+        },
+      };
+    } catch (e) {
+      console.log(e);
+      return {
+        success: false,
+        message: e.message ?? 'Error validating attendance token',
+      };
+    }
   }
 }

@@ -17,7 +17,7 @@ import { UseGuards } from '@nestjs/common';
 import { User } from '../user/entities/user.entity';
 import { CurrentUser } from 'src/auth/decorators/currentUserDecorator';
 import { UserType } from 'support/enums';
-import { GraphQLJSONObject } from 'graphql-type-json';
+import GraphQLJSON, { GraphQLJSONObject } from 'graphql-type-json';
 import { RegistrationAttendancePage } from './entities/registration-attendance-page.entity';
 import { PaginateRegistrationAttendanceInput } from './dto/paginate-registration-attendance.input';
 import { CampRegistration } from 'src/camp-registration/entities/camp-registration.entity';
@@ -46,12 +46,18 @@ export class RegistrationAttendanceResolver {
         };
       }
 
-      const { parentId, campRegistrationId, remainingAttendances } =
-        await this.service.validateToken(input.token);
+      const { parentId, campRegistrationId } = await this.service.validateToken(
+        input.token,
+      );
 
       if (campRegistrationId !== input.campRegistrationId) {
         throw Error('Invalid attendance token 1.1');
       }
+
+      const remainingAttendances = await this.service.getRemainingAttendances(
+        parentId,
+        campRegistrationId,
+      );
 
       const campVariant = await this.service.checkCampVariant(
         input.campVariantId,
@@ -107,6 +113,14 @@ export class RegistrationAttendanceResolver {
     }
   }
 
+  @Query(() => GraphQLJSONObject)
+  validateAndFindAttendance(
+    @Args('token') token: string,
+    @Args('campVariantId') campVariantId: number,
+  ) {
+    return this.service.validateAndFindAttendance(token, campVariantId);
+  }
+
   @Mutation(() => GraphQLJSONObject, { name: 'leaveCamp' })
   async leave(
     @Args('input') input: LeaveCampInput,
@@ -120,8 +134,6 @@ export class RegistrationAttendanceResolver {
           success: false,
         };
       }
-
-      await this.service.validateToken(input.token, true);
 
       const existingAttendance = await this.service.findActiveAttendanceById(
         input.registrationAttendanceId,

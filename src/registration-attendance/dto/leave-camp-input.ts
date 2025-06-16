@@ -4,7 +4,4 @@ import { Field, InputType } from '@nestjs/graphql';
 export class LeaveCampInput {
   @Field()
   registrationAttendanceId: number;
-
-  @Field()
-  token: string;
 }

@@ -17,6 +17,7 @@ import { PaginateChildReportHistoryInput } from './dto/paginate-child-report-his
 import { CurrentUser } from 'src/auth/decorators/currentUserDecorator';
 import { File } from 'src/file/entities/file.entity';
 import { DataloaderRegistry } from 'src/dataloaders/dataloaderRegistry';
+import { GraphQLJSONObject } from 'graphql-type-json';
 
 @Resolver(() => ChildReportHistory)
 export class ChildReportHistoryResolver {
@@ -24,7 +25,7 @@ export class ChildReportHistoryResolver {
     private readonly childReportHistoryService: ChildReportHistoryService,
   ) {}
 
-  @Mutation(() => ChildReportHistory)
+  @Mutation(() => GraphQLJSONObject)
   createChildReportHistory(
     @Args('input') input: CreateChildReportHistoryInput,
     @CurrentUser('id') userId: string,
