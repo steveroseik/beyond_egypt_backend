@@ -166,9 +166,9 @@ export class RegistrationAttendanceResolver {
   @ResolveField(() => CampRegistration, { nullable: true })
   campRegistration(
     @Parent() parent: RegistrationAttendance,
-    @Context() { loader }: { loader: DataloaderRegistry },
+    @Context() { loaders }: { loaders: DataloaderRegistry },
   ) {
-    return loader.CampRegistrationDataLoader.load(parent.campRegistrationId);
+    return loaders.CampRegistrationDataLoader.load(parent.campRegistrationId);
   }
 
   @ResolveField(() => CampVariantRegistration, { nullable: true })
