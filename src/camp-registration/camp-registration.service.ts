@@ -236,6 +236,7 @@ export class CampRegistrationService {
       { id: campRegistration.id },
       {
         oneDayPrice: input.oneDayPrice,
+        status: CampRegistrationStatus.pending,
         amount: totalVariantsAmount,
         discountAmount: discountAmount,
         paidAmount: new Decimal('0'),
