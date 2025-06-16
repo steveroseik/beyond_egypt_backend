@@ -236,7 +236,6 @@ export class CampRegistrationService {
       { id: campRegistration.id },
       {
         oneDayPrice: input.oneDayPrice,
-        status: CampRegistrationStatus.pending,
         amount: totalVariantsAmount,
         discountAmount: discountAmount,
         paidAmount: new Decimal('0'),
@@ -3302,7 +3301,12 @@ export class CampRegistrationService {
         return {
           success: true,
           message: 'Token is valid',
-          data: { remainingAttendances, children },
+          data: {
+            parentId,
+            campRegistrationId,
+            remainingAttendances,
+            children,
+          },
         };
       }
 
