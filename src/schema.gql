@@ -97,9 +97,8 @@ type RegistrationAttendance {
   lastModified: DateTime!
   deletedAt: DateTime
   child: Child!
-  campVariant: CampVariant!
   campRegistration: CampRegistration
-  campVariantRegistration: CampVariantRegistration
+  campVariant: CampVariantRegistration
   enterAuditor: User
   leaveAuditor: User
 }

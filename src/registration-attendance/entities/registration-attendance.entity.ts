@@ -78,6 +78,6 @@ export class RegistrationAttendance {
     onDelete: 'CASCADE',
     onUpdate: 'CASCADE',
   })
-  @Field(() => CampVariant)
+  // @Field(() => CampVariant)
   campVariant: CampVariant;
 }
