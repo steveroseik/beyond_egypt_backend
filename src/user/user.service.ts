@@ -94,7 +94,9 @@ export class UserService {
       throw new Error('Invalid or expired token');
     }
 
-    if (input.email !== firebaseData.email) {
+    if (
+      input.email.toLocaleLowerCase() !== firebaseData.email.toLocaleLowerCase()
+    ) {
       throw new Error('Email does not match token');
     }
 
@@ -647,7 +649,10 @@ export class UserService {
         throw new Error('Invalid registration');
       }
 
-      if (user.email !== firebaseData.email) {
+      if (
+        user.email.toLocaleLowerCase() !==
+        firebaseData.email.toLocaleLowerCase()
+      ) {
         throw new Error('Email does not match token');
       }
 
