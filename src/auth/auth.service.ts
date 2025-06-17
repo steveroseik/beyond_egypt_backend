@@ -23,7 +23,7 @@ import { FirebaseError } from 'firebase/app';
 import { UserAuthResponse } from './entities/user-auth-response.entity';
 import { TempSignInInput } from './dto/temp-signin.input';
 import { UserType } from 'support/enums';
-import { generate } from 'rxjs';
+import { shortIdLength } from 'support/random-uuid.generator';
 // import admin from "../main";
 
 @Injectable()
@@ -36,6 +36,7 @@ export class AuthService {
     private configService: ConfigService,
     @Inject(forwardRef(() => UserService)) private userService: UserService,
     private jwtService: JwtService,
+    private dataSource: DataSource,
   ) {
     this.firebaseAuth = admin.auth();
   }
@@ -91,10 +92,7 @@ export class AuthService {
 
       email = decoded.email;
 
-      const user = await this.userService.findExactOne(
-        decoded.email,
-        decoded.uid,
-      );
+      const user = await this.userService.findOneByEmail(decoded.email);
 
       if (!user) throw Error('User not found');
 
@@ -105,6 +103,26 @@ export class AuthService {
       } else {
         if (user.type === UserType.admin) {
           throw Error('Unauthorized, only parents can sign in');
+        }
+      }
+
+      if (user.id.length === shortIdLength) {
+        const updateUser = await this.dataSource.manager.update(
+          User,
+          { id: user.id },
+          {
+            id: decoded.uid,
+          },
+        );
+
+        if (updateUser.affected === 0) {
+          throw Error('Failed to complete user sign in, please try again');
+        }
+
+        user.id = decoded.uid;
+      } else {
+        if (user.id !== decoded.uid) {
+          throw Error('User mismatch, please try again');
         }
       }
 

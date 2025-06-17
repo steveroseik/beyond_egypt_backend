@@ -3,9 +3,9 @@ import ShortUniqueId from 'short-unique-id';
 import * as dotenv from 'dotenv';
 dotenv.config();
 
-const shortId = new ShortUniqueId({ length: 12 });
+export const shortIdLength = 12; // Length of the unique ID
 
-const shorterId = new ShortUniqueId({ length: 16 });
+const shortId = new ShortUniqueId({ length: shortIdLength });
 
 export function genId(): string {
   return shortId.rnd();
