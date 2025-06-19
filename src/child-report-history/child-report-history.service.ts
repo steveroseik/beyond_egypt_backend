@@ -9,6 +9,7 @@ import { PaginateChildReportHistoryInput } from './dto/paginate-child-report-his
 import { buildPaginator } from 'typeorm-cursor-pagination';
 import { File } from 'src/file/entities/file.entity';
 import { FileService } from 'src/file/file.service';
+import { MailService } from 'src/mail/mail.service';
 
 @Injectable()
 export class ChildReportHistoryService {
@@ -17,6 +18,7 @@ export class ChildReportHistoryService {
     private repo: Repository<ChildReportHistory>,
     private dataSource: DataSource,
     private fileService: FileService,
+    private readonly mailService: MailService,
   ) {}
 
   async create(input: CreateChildReportHistoryInput) {
@@ -24,12 +26,21 @@ export class ChildReportHistoryService {
     await queryRunner.connect();
     await queryRunner.startTransaction();
     try {
-      const createHistory = await queryRunner.manager.insert(
+      const childReport = await queryRunner.manager.findOne(ChildReport, {
+        where: { id: input.childReportId },
+        relations: ['child', 'campVariant', 'campVariant.camp', 'child.user'],
+      });
+
+      if (!childReport) {
+        throw new Error('Child report not found');
+      }
+
+      const createHistory = await queryRunner.manager.save(
         ChildReportHistory,
         input,
       );
 
-      if (createHistory.raw.affectedRows === 0) {
+      if (!createHistory) {
         throw new Error('Failed to create child report history');
       }
 
@@ -48,7 +59,7 @@ export class ChildReportHistoryService {
         await queryRunner.manager
           .createQueryBuilder(ChildReportHistory, 'history')
           .relation(ChildReportHistory, 'files')
-          .of(createHistory.raw.insertId)
+          .of(createHistory.id)
           .add(input.fileIds);
       }
 
@@ -63,6 +74,15 @@ export class ChildReportHistoryService {
       }
 
       await queryRunner.commitTransaction();
+
+      // Send email notification
+      this.mailService.sendReportEmail({
+        childReport,
+        latestHistory: createHistory,
+        child: childReport.child,
+        parent: childReport.child.user,
+        camp: childReport.campVariant.camp,
+      });
 
       return {
         success: true,

@@ -26,16 +26,6 @@ import { Allergy } from 'src/allergy/entities/allergy.entity';
 export class ChildResolver {
   constructor(private readonly childService: ChildService) {}
 
-  @Mutation(() => Child)
-  createChild(@Args('createChildInput') createChildInput: CreateChildInput) {
-    return this.childService.create(createChildInput);
-  }
-
-  @Query(() => Child, { name: 'child' })
-  findOne(@Args('id', { type: () => Int }) id: number) {
-    return this.childService.findOne(id);
-  }
-
   @Mutation(() => GraphQLJSONObject)
   updateChild(
     @Args('input') input: UpdateChildInput,
@@ -43,11 +33,6 @@ export class ChildResolver {
     @CurrentUser('type') userType: UserType,
   ) {
     return this.childService.update(input, userId, userType);
-  }
-
-  @Mutation(() => Child)
-  removeChild(@Args('id', { type: () => Int }) id: number) {
-    return this.childService.remove(id);
   }
 
   @Query(() => ChildPage)

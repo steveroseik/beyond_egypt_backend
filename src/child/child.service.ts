@@ -17,9 +17,6 @@ export class ChildService {
     private fileService: FileService,
     private dataSource: DataSource,
   ) {}
-  create(createChildInput: CreateChildInput) {
-    return 'This action adds a new child';
-  }
 
   findAllByKeys(keys: readonly number[]) {
     return this.repo.find({ where: { id: In(keys) } });
@@ -27,10 +24,6 @@ export class ChildService {
 
   findAllByParentId(keys: readonly string[]) {
     return this.repo.find({ where: { parentId: In(keys) } });
-  }
-
-  findOne(id: number) {
-    return `This action returns a #${id} child`;
   }
 
   async update(input: UpdateChildInput, userId: string, userType: UserType) {
@@ -148,10 +141,6 @@ export class ChildService {
           .remove(allergiesToDelete);
       }
     }
-  }
-
-  remove(id: number) {
-    return `This action removes a #${id} child`;
   }
 
   async paginate(input: PaginateChildrenInput) {

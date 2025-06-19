@@ -34,9 +34,9 @@ export class Child {
   @Field()
   name: string;
 
-  @Column('datetime', { name: 'birthdate' })
-  @Field()
-  birthdate: Date;
+  @Column('datetime', { name: 'birthdate', nullable: true })
+  @Field({ nullable: true })
+  birthdate?: Date;
 
   @Column('int', { name: 'schoolId', nullable: true })
   @Field({ nullable: true })

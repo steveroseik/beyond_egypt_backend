@@ -66,6 +66,7 @@ import { CompleteRegistrationRefundInput } from './dto/complete-registration-ref
 import { RegistrationAttendance } from 'src/registration-attendance/entities/registration-attendance.entity';
 import { getDateDifferenceInDays } from 'support/helpers/days-diferrence.calculator';
 import { Child } from 'src/child/entities/child.entity';
+import { chdir } from 'process';
 
 dotenv.config();
 
@@ -191,6 +192,7 @@ export class CampRegistrationService {
 
     const camp = await queryRunner.manager.findOne(Camp, {
       where: { id: input.campId },
+      relations: ['ageRanges'],
     });
 
     if (!camp) {
@@ -211,6 +213,13 @@ export class CampRegistrationService {
     if (!campRegistration) {
       throw new Error('Failed to create camp registration');
     }
+
+    await this.validateChildrenForCamp({
+      queryRunner,
+      camp,
+      parentId: input.parentId,
+      campVariantRegistrations: input.campVariantRegistrations,
+    });
 
     /// assign camp to registration
     campRegistration.camp = camp;
@@ -257,6 +266,68 @@ export class CampRegistrationService {
         totalAmount: totalVariantsAmount,
       },
     };
+  }
+
+  async validateChildrenForCamp({
+    queryRunner,
+    camp,
+    parentId,
+    campVariantRegistrations,
+  }: {
+    queryRunner: QueryRunner;
+    parentId: string;
+    camp: Camp;
+    campVariantRegistrations: CreateCampVariantRegistrationInput[];
+  }) {
+    const childIds = Array.from(
+      new Set(campVariantRegistrations.map((e) => e.childId)),
+    );
+
+    const children = await queryRunner.manager.find(Child, {
+      where: {
+        id: In(childIds),
+      },
+    });
+
+    if (children.length !== childIds.length) {
+      const missingIds = difference(
+        childIds,
+        children.map((e) => e.id),
+      );
+      throw new Error(`Children with ids ${missingIds.join(', ')} not found`);
+    }
+
+    if (children.some((e) => e.parentId !== parentId)) {
+      throw new Error('Some children do not belong to the parent');
+    }
+
+    // validate child age
+    for (const variant of campVariantRegistrations) {
+      const child = children.find((e) => e.id === variant.childId);
+      if (!child) {
+        throw new Error(`Child with id ${variant.childId} not found`);
+      }
+
+      const maxAge =
+        camp.ageRanges.sort((a, b) => b.maxAge - a.maxAge)[0].maxAge ?? 100;
+      const minAge =
+        camp.ageRanges.sort((a, b) => a.minAge - b.minAge)[0].minAge ?? 0;
+
+      const ageInDays = !child.birthdate
+        ? null
+        : getDateDifferenceInDays(
+            child.birthdate,
+            moment.tz('Africa/Cairo').toDate(),
+          );
+
+      const age = Math.floor(ageInDays ? ageInDays / 365.25 : 101); // convert days to years
+
+      if (age < minAge || age > maxAge) {
+        throw new Error(
+          `Child ${child.name} is not eligible for this camp, age: ${age}`,
+        );
+      }
+    }
   }
 
   async handleCampVariantRegistrations({
@@ -506,7 +577,7 @@ export class CampRegistrationService {
         id: input.id,
         ...(input.parentId && { parentId: input.parentId }),
       },
-      relations: ['campVariantRegistrations', 'camp'],
+      relations: ['campVariantRegistrations', 'camp', 'camp.ageRanges'],
     });
 
     if (!campRegistration) {
@@ -560,6 +631,13 @@ export class CampRegistrationService {
         throw new Error('Shirt size is required');
       }
     }
+
+    await this.validateChildrenForCamp({
+      queryRunner,
+      camp: campRegistration.camp,
+      parentId: userId,
+      campVariantRegistrations: input.campVariantRegistrations,
+    });
 
     const deleteOldVariants = await queryRunner.manager.delete(
       CampVariantRegistration,

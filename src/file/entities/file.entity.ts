@@ -13,6 +13,8 @@ import {
   OneToOne,
   PrimaryGeneratedColumn,
 } from 'typeorm';
+import * as dotenv from 'dotenv';
+dotenv.config();
 
 @Entity('file', { schema: 'beyond_egypt' })
 @ObjectType()
@@ -59,4 +61,9 @@ export class File {
     nullable: true,
   })
   childReportHistories?: ChildReportHistory[];
+
+  url(): string {
+    const bucket = process.env.AWS_S3_BASE_URL || 'beyond-egypt';
+    return `https://${bucket}.s3.amazonaws.com/${this.key}`;
+  }
 }

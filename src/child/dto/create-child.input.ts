@@ -21,8 +21,10 @@ export class CreateChildInput {
   name: string;
 
   @IsDateString()
-  @Field()
-  birthdate: Date;
+  // TODO: temporary
+  @IsOptional()
+  @Field({ nullable: true })
+  birthdate?: Date;
 
   @Field({ nullable: true })
   @IsOptional()

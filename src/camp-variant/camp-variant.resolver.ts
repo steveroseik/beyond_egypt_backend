@@ -1,4 +1,13 @@
-import { Resolver, Query, Mutation, Args, Int } from '@nestjs/graphql';
+import {
+  Resolver,
+  Query,
+  Mutation,
+  Args,
+  Int,
+  ResolveField,
+  Context,
+  Parent,
+} from '@nestjs/graphql';
 import { CampVariantService } from './camp-variant.service';
 import { CampVariant } from './entities/camp-variant.entity';
 import { CreateCampVariantInput } from './dto/create-camp-variant.input';
@@ -9,7 +18,10 @@ export class CampVariantResolver {
   constructor(private readonly campVariantService: CampVariantService) {}
 
   @Mutation(() => CampVariant)
-  createCampVariant(@Args('createCampVariantInput') createCampVariantInput: CreateCampVariantInput) {
+  createCampVariant(
+    @Args('createCampVariantInput')
+    createCampVariantInput: CreateCampVariantInput,
+  ) {
     return this.campVariantService.create(createCampVariantInput);
   }
 
@@ -24,8 +36,14 @@ export class CampVariantResolver {
   }
 
   @Mutation(() => CampVariant)
-  updateCampVariant(@Args('updateCampVariantInput') updateCampVariantInput: UpdateCampVariantInput) {
-    return this.campVariantService.update(updateCampVariantInput.id, updateCampVariantInput);
+  updateCampVariant(
+    @Args('updateCampVariantInput')
+    updateCampVariantInput: UpdateCampVariantInput,
+  ) {
+    return this.campVariantService.update(
+      updateCampVariantInput.id,
+      updateCampVariantInput,
+    );
   }
 
   @Mutation(() => CampVariant)

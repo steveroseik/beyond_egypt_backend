@@ -8,6 +8,13 @@ import { generateCampRegistrationEmail } from './templates/camp-registration-con
 import { User } from 'src/user/entities/user.entity';
 import { generateWelcomeActivationEmail } from './templates/activate-account';
 import { EncryptionService } from 'src/encryption/encryption.service';
+import { ChildReport } from 'src/child-report/entities/child-report.entity';
+import { ChildReportHistory } from 'src/child-report-history/entities/child-report-history.entity';
+import { Child } from 'src/child/entities/child.entity';
+import { Camp } from 'src/camp/entities/camp.entity';
+import { generateReportEmail } from './templates/child-report.template';
+import { EmailAttachment } from './interface/attachment.interface';
+import { CampVariant } from 'src/camp-variant/entities/camp-variant.entity';
 dotenv.config();
 
 @Injectable()
@@ -107,6 +114,97 @@ export class MailService {
       to: user.email,
       subject: 'Activate Your Account',
       html: content,
+    });
+
+    return response;
+  }
+
+  async sendReportEmail({
+    childReport,
+    latestHistory,
+    child,
+    parent,
+    camp,
+  }: {
+    childReport: ChildReport;
+    latestHistory: ChildReportHistory;
+    child?: Child;
+    parent?: User;
+    camp?: Camp;
+  }) {
+    const baseUrl = process.env.BASE_URL || 'https://beyond-egypt.com';
+
+    const reportViewUrl = `${baseUrl}/child-reports/view/${childReport.id}`;
+    let childName = child.name;
+    let parentName = parent.name;
+    let campName = camp.name;
+
+    if (!childName) {
+      const child = await this.dataSource.manager.findOne(Child, {
+        where: { id: childReport.childId },
+        ...(!parent && { relations: ['user'] }),
+      });
+
+      if (!child) {
+        console.error(
+          'Child not found for report:',
+          childReport.id,
+          ' skipping email.',
+        );
+        return;
+      }
+      childName = child.name;
+      parentName = child.user.name;
+    }
+
+    if (!parentName) {
+      const parentUser = await this.dataSource.manager.findOne(User, {
+        where: { id: childReport.child.parentId },
+      });
+
+      if (parentUser) {
+        parentName = parentUser.name;
+      } else {
+        console.error(
+          'Parent not found for report:',
+          childReport.id,
+          ' skipping email.',
+        );
+        return;
+      }
+    }
+
+    if (!campName) {
+      const campVariant = await this.dataSource.manager.findOne(CampVariant, {
+        where: { id: childReport.campVariantId },
+        relations: ['camp'],
+      });
+
+      if (campVariant) {
+        campName = campVariant.camp.name;
+      } else {
+        console.error(
+          'Camp not found for report:',
+          childReport.id,
+          ' skipping email.',
+        );
+        return;
+      }
+    }
+
+    const genTemplate = generateReportEmail({
+      childReport,
+      latestHistory,
+      parentName,
+      childName,
+      campName,
+      reportViewUrl,
+    });
+
+    const response = await this.sendMail({
+      to: childReport.child.user.email,
+      subject: `Child Report for ${childName}`,
+      html: genTemplate.htmlContent,
     });
 
     return response;

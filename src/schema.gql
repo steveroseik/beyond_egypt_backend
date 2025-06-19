@@ -2,18 +2,15 @@
 # THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
 # ------------------------------------------------------
 
-type Event {
+type AgeRange {
   id: Int!
-  name: String!
-  description: String
-  thumbnailId: Int!
-  startDate: DateTime!
-  endDate: DateTime!
+  name: String
+  thumbnailId: Int
+  minAge: Int
+  maxAge: Int
   createdAt: DateTime!
   lastModified: DateTime!
   deletedAt: DateTime
-  earlyBirdId: Int
-  files: [File!]!
   camps: [Camp!]
   thumbnail: File
 }
@@ -23,44 +20,19 @@ A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date
 """
 scalar DateTime
 
-type File {
+type Discount {
   id: Int!
   name: String!
-  type: FileType!
-  key: String!
-  userId: String!
-  sizeInKb: Int!
+  code: String
+  percentage: Decimal
+  maximumDiscount: Decimal
+  amount: Decimal
+  startDate: DateTime!
+  endDate: DateTime!
   createdAt: DateTime!
-  url: String!
-}
-
-enum FileType {
-  video
-  image
-  audio
-  pdf
-  doc
-  other
-}
-
-type ChildReportHistory {
-  id: Int!
-  childReportId: Int!
-  reportTime: DateTime!
-  gameName: String
-  details: String!
-  actionsTaken: String!
-  status: ChildReportStatus!
-  reporterId: String!
-  createdAt: DateTime!
-  childReport: ChildReport!
-  files: [File!]
-}
-
-enum ChildReportStatus {
-  new
-  followUp
-  closed
+  lastModified: DateTime!
+  deletedAt: DateTime
+  camps: [Camp!]
 }
 
 type Allergy {
@@ -141,7 +113,7 @@ type Child {
   id: Int!
   parentId: String!
   name: String!
-  birthdate: DateTime!
+  birthdate: DateTime
   schoolId: Int
   imageId: Int
   schoolName: String
@@ -185,6 +157,100 @@ type ChildReport {
 
 enum ChildReportType {
   incident
+}
+
+enum ChildReportStatus {
+  new
+  followUp
+  closed
+}
+
+type ChildReportHistory {
+  id: Int!
+  childReportId: Int!
+  reportTime: DateTime!
+  gameName: String
+  details: String!
+  actionsTaken: String!
+  status: ChildReportStatus!
+  reporterId: String!
+  createdAt: DateTime!
+  childReport: ChildReport!
+  files: [File!]
+}
+
+type File {
+  id: Int!
+  name: String!
+  type: FileType!
+  key: String!
+  userId: String!
+  sizeInKb: Int!
+  createdAt: DateTime!
+  url: String!
+}
+
+enum FileType {
+  video
+  image
+  audio
+  pdf
+  doc
+  other
+}
+
+type Event {
+  id: Int!
+  name: String!
+  description: String
+  thumbnailId: Int!
+  startDate: DateTime!
+  endDate: DateTime!
+  createdAt: DateTime!
+  lastModified: DateTime!
+  deletedAt: DateTime
+  earlyBirdId: Int
+  files: [File!]!
+  camps: [Camp!]
+  thumbnail: File
+}
+
+type Location {
+  id: Int!
+  name: String!
+  geoPoint: GraphqlPoint
+  url: String
+  createdAt: DateTime!
+  lastModified: DateTime!
+  deletedAt: DateTime
+  camps: [Camp!]
+}
+
+type Camp {
+  id: Int!
+  name: String!
+  description: String
+  thumbnailId: Int!
+  defaultPrice: Decimal
+  mealPrice: Decimal
+  hasShirts: Boolean!
+  eventId: Int
+  isPrivate: Boolean!
+  defaultCapacity: Int
+  locationId: Int!
+  discountId: Int
+  createdAt: DateTime!
+  lastModified: DateTime!
+  deletedAt: DateTime
+  ageRanges: [AgeRange!]
+  files: [File!]
+  campVariants: [CampVariant!]
+  location: Location!
+  event: Event
+  campRegistrations: [CampRegistration!]
+  discount: Discount
+  thumbnail: File!
+  parentCampRegistration(parentId: String): CampRegistration
 }
 
 type CampVariant {
@@ -298,72 +364,6 @@ enum CampRegistrationStatus {
   rejected
   cancelled
   refunded
-}
-
-type Discount {
-  id: Int!
-  name: String!
-  code: String
-  percentage: Decimal
-  maximumDiscount: Decimal
-  amount: Decimal
-  startDate: DateTime!
-  endDate: DateTime!
-  createdAt: DateTime!
-  lastModified: DateTime!
-  deletedAt: DateTime
-  camps: [Camp!]
-}
-
-type Location {
-  id: Int!
-  name: String!
-  geoPoint: GraphqlPoint
-  url: String
-  createdAt: DateTime!
-  lastModified: DateTime!
-  deletedAt: DateTime
-  camps: [Camp!]
-}
-
-type Camp {
-  id: Int!
-  name: String!
-  description: String
-  thumbnailId: Int!
-  defaultPrice: Decimal
-  mealPrice: Decimal
-  hasShirts: Boolean!
-  eventId: Int
-  isPrivate: Boolean!
-  defaultCapacity: Int
-  locationId: Int!
-  discountId: Int
-  createdAt: DateTime!
-  lastModified: DateTime!
-  deletedAt: DateTime
-  ageRanges: [AgeRange!]
-  files: [File!]
-  campVariants: [CampVariant!]
-  location: Location!
-  event: Event
-  campRegistrations: [CampRegistration!]
-  discount: Discount
-  thumbnail: File!
-  parentCampRegistration(parentId: String): CampRegistration
-}
-
-type AgeRange {
-  id: Int!
-  name: String
-  thumbnailId: Int
-  minAge: Int
-  maxAge: Int
-  createdAt: DateTime!
-  lastModified: DateTime!
-  deletedAt: DateTime
-  camps: [Camp!]
-  thumbnail: File
 }
 
 type AgeRangePage {
@@ -530,7 +530,6 @@ type Query {
   findOneLocation(id: Int!): Location
   paginateLocations(input: PaginateLocationsInput!): LocationsPage!
   parentAdditional(id: Int!): ParentAdditional!
-  child(id: Int!): Child!
   paginateChildren(input: PaginateChildrenInput!): ChildPage!
   campVariantRegistration(id: Int!): CampVariantRegistration!
   paginateCampVariantRegistrations(input: PaginateCampVariantRegistrationsInput!): CampVariantsRegistrationPage!
@@ -763,9 +762,7 @@ type Mutation {
   createParentAdditional(createParentAdditionalInput: CreateParentAdditionalInput!): ParentAdditional!
   updateParentAdditional(input: UpdateParentAdditionalInput!): JSONObject!
   removeParentAdditional(id: Int!): ParentAdditional!
-  createChild(createChildInput: CreateChildInput!): Child!
   updateChild(input: UpdateChildInput!): JSONObject!
-  removeChild(id: Int!): Child!
   createCampVariantRegistration(createCampVariantRegistrationInput: CreateCampVariantRegistrationInput!): CampVariantRegistration!
   updateCampVariantRegistration(updateCampVariantRegistrationInput: UpdateCampVariantRegistrationInput!): CampVariantRegistration!
   removeCampVariantRegistration(id: Int!): CampVariantRegistration!
@@ -898,21 +895,6 @@ input UpdateParentAdditionalInput {
   name: String
   email: String
   phone: String
-}
-
-input CreateChildInput {
-  name: String!
-  birthdate: DateTime!
-  imageId: Int
-  schoolId: Int
-  isMale: Boolean!
-  schoolName: String
-  parentRelation: ParentRelation!
-  medicalInfo: String
-  canTakePhotos: Boolean = true
-  otherAllergies: String
-  extraNotes: String
-  allergies: [Int!]
 }
 
 input UpdateChildInput {
@@ -1117,6 +1099,21 @@ input CreateUserInput {
   district: String
   parentAdditional: [CreateParentAdditionalInput!]
   children: [CreateChildInput!]
+}
+
+input CreateChildInput {
+  name: String!
+  birthdate: DateTime
+  imageId: Int
+  schoolId: Int
+  isMale: Boolean!
+  schoolName: String
+  parentRelation: ParentRelation!
+  medicalInfo: String
+  canTakePhotos: Boolean = true
+  otherAllergies: String
+  extraNotes: String
+  allergies: [Int!]
 }
 
 input UpdateUserInput {

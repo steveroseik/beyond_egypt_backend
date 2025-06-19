@@ -1,6 +1,7 @@
 import { CampRegistration } from 'src/camp-registration/entities/camp-registration.entity';
 import { generateQRCodeBase64 } from 'support/qr-code/qr.generate';
 import { Decimal } from 'support/scalars';
+import { EmailAttachment } from '../interface/attachment.interface';
 
 export async function generateCampRegistrationEmail({
   registration,
@@ -8,13 +9,11 @@ export async function generateCampRegistrationEmail({
 }: {
   registration: CampRegistration;
   code: string;
-}): Promise<{ content: string; attachment: any }> {
+}): Promise<{ content: string; attachment: EmailAttachment }> {
   console.table(registration);
   const formatMoney = (val?: Decimal) => (val ? `${val.toFixed(2)} EGP` : '-');
 
   const generatedQRCode = await generateQRCodeBase64(code);
-
-  console.log('QRG', generatedQRCode);
 
   const tableRows = registration.campVariantRegistrations
     .map((r) => {
@@ -47,7 +46,7 @@ export async function generateCampRegistrationEmail({
   const discount = formatMoney(registration.discountAmount);
   const parentName = registration.parent?.name || 'Parent';
 
-  const attachment = {
+  const attachment: EmailAttachment = {
     filename: 'camp-qr.png',
     content: generatedQRCode,
     cid: 'camp_qr_code', // must match the `cid:` in HTML
