@@ -279,6 +279,8 @@ export class CampRegistrationService {
     camp: Camp;
     campVariantRegistrations: CreateCampVariantRegistrationInput[];
   }) {
+    if (!camp.ageRanges?.length) return;
+
     const childIds = Array.from(
       new Set(campVariantRegistrations.map((e) => e.childId)),
     );
