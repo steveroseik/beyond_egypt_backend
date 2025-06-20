@@ -102,6 +102,10 @@ export class RegistrationPayment {
   @ManyToOne(
     () => CampRegistration,
     (campRegistration) => campRegistration.payments,
+    {
+      onDelete: 'CASCADE',
+      onUpdate: 'CASCADE',
+    },
   )
   @JoinColumn({ name: 'campRegistrationId', referencedColumnName: 'id' })
   @Field(() => CampRegistration)

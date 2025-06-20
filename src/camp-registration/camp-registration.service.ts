@@ -933,13 +933,10 @@ export class CampRegistrationService {
             'Discounts are not allowed for completed registrations',
           );
         }
-      }
 
-      if (
-        campRegistration.refundPolicyConsent === false &&
-        input.refundPolicyConsent === false
-      ) {
-        throw new Error('Refund policy consent is required');
+        throw new Error(
+          'Camp registration already completed, you cannot process it again',
+        );
       }
 
       const paymentMethod =
@@ -961,6 +958,14 @@ export class CampRegistrationService {
 
       /// basic case
       /// if this is the first payment
+
+      /// TODO: this is a temp fix, the function is
+      /// implemented to work only with idle registrations
+      /// that have at least one week registered
+      /// it should work with all registrations statuses and phases
+
+      input.refundPolicyConsent = true;
+      input.behaviorConsent = true;
 
       return await this.handleIdlePayment(
         campRegistration,

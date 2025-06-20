@@ -99,6 +99,11 @@ export class UserResolver {
     return this.userService.remove(id);
   }
 
+  @Mutation(() => GraphQLJSONObject)
+  permanentlyRemoveUser(@Args('id') id: string) {
+    return this.userService.permanentlyRemove(id);
+  }
+
   @ResolveField(() => [ParentAdditional])
   parentAdditionals(
     @Parent() parent: User,

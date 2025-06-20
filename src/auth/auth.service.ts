@@ -196,8 +196,14 @@ export class AuthService {
     return `This action returns a #${id} auth`;
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} auth`;
+  async removeAuthUser(id: string) {
+    try {
+      await admin.auth().deleteUser(id);
+      return { success: true, message: 'User deleted successfully' };
+    } catch (e) {
+      console.log(e);
+      return { success: false, message: e.message || 'Failed to delete user' };
+    }
   }
 
   handleAuthError(error: FirebaseError) {

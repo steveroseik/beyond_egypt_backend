@@ -599,6 +599,50 @@ export class UserService {
     }
   }
 
+  async permanentlyRemove(id: string) {
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+    try {
+      const user = await this.repo.findOne({
+        where: { id },
+        relations: [
+          'children',
+          'parentAdditionals',
+          'campRegistrations',
+          'campRegistrations.campVariantRegistrations',
+          'campRegistrations.campVariantRegistrations.campVariant',
+        ],
+      });
+
+      if (!user) throw Error('User not found');
+
+      const deleted = await queryRunner.manager.delete(User, { id });
+
+      if (deleted.affected !== 1) {
+        throw Error('Failed to permanently remove user');
+      }
+
+      await this.authService.removeAuthUser(user.id);
+
+      await queryRunner.commitTransaction();
+
+      return {
+        success: true,
+        message: 'User permanently removed successfully',
+      };
+    } catch (e) {
+      await queryRunner.rollbackTransaction();
+      console.log(e);
+      return {
+        success: false,
+        message: e.message,
+      };
+    } finally {
+      await queryRunner.release();
+    }
+  }
+
   async createEmployee(input: CreateEmployeeInput) {
     try {
       const tempId = genId();

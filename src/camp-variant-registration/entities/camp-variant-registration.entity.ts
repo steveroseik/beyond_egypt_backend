@@ -133,6 +133,10 @@ export class CampVariantRegistration {
   @ManyToOne(
     () => CampRegistration,
     (campRegistration) => campRegistration.campVariantRegistrations,
+    {
+      onDelete: 'CASCADE',
+      onUpdate: 'CASCADE',
+    },
   )
   @JoinColumn({ name: 'campRegistrationId', referencedColumnName: 'id' })
   @Field(() => CampRegistration)
@@ -140,7 +144,7 @@ export class CampVariantRegistration {
 
   @ManyToOne(() => Child, (child) => child.campVariantRegistrations, {
     cascade: true,
-    onDelete: 'RESTRICT',
+    onDelete: 'CASCADE',
     onUpdate: 'CASCADE',
   })
   @JoinColumn({ name: 'childId', referencedColumnName: 'id' })
