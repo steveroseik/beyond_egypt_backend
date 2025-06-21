@@ -49,8 +49,9 @@ export class ChildReportHistoryResolver {
     @Parent() childReportHistory: ChildReportHistory,
     @Context() { loaders }: { loaders: DataloaderRegistry },
   ) {
-    return loaders.ChildReportHistoryFilesDataLoader.load(
-      childReportHistory.id,
+    return (
+      childReportHistory.files ??
+      loaders.ChildReportHistoryFilesDataLoader.load(childReportHistory.id)
     );
   }
 
