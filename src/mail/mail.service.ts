@@ -135,9 +135,9 @@ export class MailService {
     const baseUrl = process.env.BASE_URL || 'https://beyond-egypt.com';
 
     const reportViewUrl = `${baseUrl}/child-reports/view/${childReport.id}`;
-    let childName = child.name;
-    let parentName = parent.name;
-    let campName = camp.name;
+    let childName = child?.name;
+    let parentName = parent?.name;
+    let campName = camp?.name;
 
     if (!childName) {
       const child = await this.dataSource.manager.findOne(Child, {
