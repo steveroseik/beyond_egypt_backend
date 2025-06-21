@@ -67,6 +67,7 @@ import { RegistrationAttendance } from 'src/registration-attendance/entities/reg
 import { getDateDifferenceInDays } from 'support/helpers/days-diferrence.calculator';
 import { Child } from 'src/child/entities/child.entity';
 import { chdir } from 'process';
+import { parseCampRegCode } from 'support/helpers/camp-reg-code.mini';
 
 dotenv.config();
 
@@ -3312,7 +3313,7 @@ export class CampRegistrationService {
 
     const data = await generateCampRegistrationEmail({
       registration: campRegistration,
-      code: code ?? this.encryptedCode(campRegistration),
+      code: code ?? this.getCode(campRegistration),
     });
     const response = await this.mailService.sendMail({
       to: 'steveroseik@gmail.com',
@@ -3325,35 +3326,38 @@ export class CampRegistrationService {
     return response;
   }
 
-  encryptedCode(campRegistration: CampRegistration) {
-    return this.encryptionService.encrypt({
-      campRegistrationId: campRegistration.id,
-      parentId: campRegistration.parentId,
-    });
+  getCode(campRegistration: CampRegistration) {
+    return `R${campRegistration.id}${campRegistration.parentId.substring(0, 2).toUpperCase()}`;
   }
 
   async validateCode(token: string, withAttendance: boolean) {
     try {
       const {
-        parentId,
+        parentPartialId,
         campRegistrationId,
-      }: { parentId: string; campRegistrationId: number } =
-        await this.encryptionService.decrypt(token);
+      }: { parentPartialId: string; campRegistrationId: number } =
+        parseCampRegCode(token);
 
-      if (!parentId || !campRegistrationId) {
+      if (!parentPartialId || !campRegistrationId) {
         throw Error('Invalid token');
       }
 
       if (withAttendance) {
         const campRegistration = await this.repo.findOne({
-          where: { id: campRegistrationId, parentId },
+          where: { id: campRegistrationId },
           relations: [
             'campVariantRegistrations',
             'campVariantRegistrations.campVariant',
           ],
         });
 
-        if (campRegistration.status !== CampRegistrationStatus.accepted) {
+        if (
+          !campRegistration ||
+          campRegistration.parentId.substring(0, 2).toUpperCase() !==
+            parentPartialId.toUpperCase() ||
+          !campRegistration.campVariantRegistrations?.length ||
+          campRegistration.status !== CampRegistrationStatus.accepted
+        ) {
           throw Error('Invalid camp registration');
         }
 
@@ -3379,7 +3383,7 @@ export class CampRegistrationService {
 
         const children = await this.dataSource.manager.find(Child, {
           where: {
-            parentId,
+            parentId: campRegistration.parentId,
           },
         });
 
@@ -3387,7 +3391,7 @@ export class CampRegistrationService {
           success: true,
           message: 'Token is valid',
           data: {
-            parentId,
+            parentId: campRegistration.parentId,
             campRegistrationId,
             remainingAttendances,
             children,

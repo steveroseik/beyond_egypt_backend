@@ -15,6 +15,7 @@ import { Camp } from 'src/camp/entities/camp.entity';
 import { generateReportEmail } from './templates/child-report.template';
 import { EmailAttachment } from './interface/attachment.interface';
 import { CampVariant } from 'src/camp-variant/entities/camp-variant.entity';
+import { generateCampRegCode } from 'support/helpers/camp-reg-code.mini';
 dotenv.config();
 
 @Injectable()
@@ -84,7 +85,7 @@ export class MailService {
 
     if (!campRegistration) return;
 
-    const regCode = this.encryption.encrypt({
+    const regCode = generateCampRegCode({
       campRegistrationId: campRegistration.id,
       parentId: campRegistration.parentId,
     });

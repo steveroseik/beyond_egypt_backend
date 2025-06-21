@@ -4,4 +4,7 @@ import { Field, InputType } from '@nestjs/graphql';
 export class LeaveCampInput {
   @Field()
   registrationAttendanceId: number;
+
+  @Field({ nullable: true })
+  leaveTime?: Date;
 }

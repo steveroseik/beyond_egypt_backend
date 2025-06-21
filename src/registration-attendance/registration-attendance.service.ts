@@ -13,6 +13,7 @@ import { EncryptionService } from 'src/encryption/encryption.service';
 import { CampRegistrationStatus } from 'support/enums';
 import { getDateDifferenceInDays } from 'support/helpers/days-diferrence.calculator';
 import { max } from 'lodash';
+import { parseCampRegCode } from 'support/helpers/camp-reg-code.mini';
 
 @Injectable()
 export class RegistrationAttendanceService {
@@ -20,7 +21,7 @@ export class RegistrationAttendanceService {
     @InjectRepository(RegistrationAttendance)
     private repo: Repository<RegistrationAttendance>,
     private campRegistrationService: CampRegistrationService,
-    private encryptionService: EncryptionService,
+    // private encryptionService: EncryptionService,
     private dataSource: DataSource,
   ) {}
 
@@ -58,13 +59,13 @@ export class RegistrationAttendanceService {
     };
   }
 
-  async leave(id: number, auditorId: string) {
+  async leave(id: number, auditorId: string, leaveTime?: Date) {
     const updatedAttendance = await this.repo.update(
       {
         id,
       },
       {
-        leaveTime: () => 'CURRENT_TIMESTAMP(3)',
+        leaveTime: leaveTime ? leaveTime : () => 'CURRENT_TIMESTAMP(3)',
         leaveAuditorId: auditorId,
       },
     );
@@ -116,16 +117,16 @@ export class RegistrationAttendanceService {
   }
 
   async findRegistrationAndLimit(
-    input: CreateRegistrationAttendanceInput,
-    parentId: string,
+    campRegistrationId: number,
+    parentPartialId: string,
   ): Promise<{
     campRegistration: CampRegistration;
-    remainingAttendance: number;
+    remainingAttendances: number;
   }> {
     const campRegistration = await this.dataSource.manager.findOne(
       CampRegistration,
       {
-        where: { id: input.campRegistrationId, parentId },
+        where: { id: campRegistrationId },
         relations: [
           'campVariantRegistrations',
           'campVariantRegistrations.campVariant',
@@ -133,7 +134,11 @@ export class RegistrationAttendanceService {
       },
     );
 
-    if (!campRegistration) {
+    if (
+      !campRegistration ||
+      campRegistration.parentId.substring(0, 2).toUpperCase() !==
+        parentPartialId.toUpperCase()
+    ) {
       throw new Error('Camp registration not found');
     }
 
@@ -145,9 +150,8 @@ export class RegistrationAttendanceService {
       throw new Error('No camp variants registered for this camp registration');
     }
 
-    const existingAttendance = await this.findAttendanceCount(
-      input.campRegistrationId,
-    );
+    const existingAttendance =
+      await this.findAttendanceCount(campRegistrationId);
 
     const remaining =
       campRegistration.campVariantRegistrations
@@ -162,7 +166,7 @@ export class RegistrationAttendanceService {
 
     return {
       campRegistration,
-      remainingAttendance: max([remaining, 0]),
+      remainingAttendances: max([remaining, 0]),
     };
   }
 
@@ -175,64 +179,25 @@ export class RegistrationAttendanceService {
   }
 
   async validateToken(token: string): Promise<{
-    parentId: string;
+    parentPartialId: string;
     campRegistrationId: number;
   }> {
     const {
-      parentId,
+      parentPartialId,
       campRegistrationId,
     }: {
-      parentId: string;
+      parentPartialId: string;
       campRegistrationId: number;
-    } = this.encryptionService.decrypt(token);
+    } = parseCampRegCode(token);
 
-    if (!parentId || !campRegistrationId) {
+    if (!parentPartialId || !campRegistrationId) {
       throw new Error('Invalid attendance token 1.0');
     }
 
     return {
-      parentId,
+      parentPartialId,
       campRegistrationId,
     };
-  }
-
-  async getRemainingAttendances(parentId: string, campRegistrationId: number) {
-    const campRegistration = await this.dataSource.manager.findOne(
-      CampRegistration,
-      {
-        where: { id: campRegistrationId, parentId },
-        relations: [
-          'campVariantRegistrations',
-          'campVariantRegistrations.campVariant',
-        ],
-      },
-    );
-
-    if (campRegistration.status !== CampRegistrationStatus.accepted) {
-      throw Error('Invalid camp registration');
-    }
-
-    const existingAttendances = await this.dataSource.manager.count(
-      RegistrationAttendance,
-      {
-        where: {
-          campRegistrationId: campRegistration.id,
-        },
-      },
-    );
-
-    const remainingAttendances =
-      campRegistration.campVariantRegistrations
-        .map(
-          (e) =>
-            getDateDifferenceInDays(
-              e.campVariant.startDate,
-              e.campVariant.endDate,
-            ) + 1,
-        )
-        .reduce((acc, count) => acc + count, 0) - existingAttendances;
-
-    return max([remainingAttendances, 0]);
   }
 
   paginate(input: PaginateRegistrationAttendanceInput) {
@@ -269,7 +234,28 @@ export class RegistrationAttendanceService {
 
   async validateAndFindAttendance(token: string, campVariantId: number) {
     try {
-      const { parentId, campRegistrationId } = await this.validateToken(token);
+      const { parentPartialId, campRegistrationId } =
+        await this.validateToken(token);
+
+      const campRegistration = await this.dataSource.manager.findOne(
+        CampRegistration,
+        {
+          where: { id: campRegistrationId },
+        },
+      );
+
+      if (
+        !campRegistration ||
+        campRegistration.parentId.substring(0, 2).toUpperCase() !==
+          parentPartialId.toUpperCase()
+      ) {
+        return {
+          success: false,
+          message: 'Camp registration not found',
+        };
+      }
+
+      const parentId = campRegistration.parentId;
 
       const attendances = await this.repo
         .createQueryBuilder('ra')

@@ -220,7 +220,7 @@ export class CampRegistrationResolver {
   @ResolveField(() => String, { nullable: true })
   registrationCode(@Parent() registration: CampRegistration) {
     return registration.status === CampRegistrationStatus.accepted
-      ? this.campRegistrationService.encryptedCode(registration)
+      ? this.campRegistrationService.getCode(registration)
       : null;
   }
 

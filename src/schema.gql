@@ -70,7 +70,7 @@ type RegistrationAttendance {
   deletedAt: DateTime
   child: Child!
   campRegistration: CampRegistration
-  campVariant: CampVariantRegistration
+  campVariant: CampVariant
   enterAuditor: User
   leaveAuditor: User
 }
@@ -793,6 +793,7 @@ type Mutation {
   createEmployee(input: CreateEmployeeInput!): JSONObject!
   registerUser(input: RegisterUserInput!): CreateUserResponse!
   removeUser(id: String!): JSONObject!
+  permanentlyRemoveUser(id: String!): JSONObject!
   tempLogin(input: TempSignInInput!): JSONObject!
   signIn(input: TokenRequestInput!): UserAuthResponse!
   createDiscount(input: CreateDiscountInput!): JSONObject!
@@ -1270,6 +1271,7 @@ input CreateRegistrationAttendanceInput {
 
 input LeaveCampInput {
   registrationAttendanceId: Int!
+  leaveTime: DateTime
 }
 
 input CreateRegistrationHistoryInput {

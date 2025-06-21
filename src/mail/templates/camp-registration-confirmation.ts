@@ -101,6 +101,7 @@ export async function generateCampRegistrationEmail({
         <div class="qr">
           <p>Please present the QR code below at the camp entrance for access:</p>
           <img src="cid:camp_qr_code" alt="QR Code" />
+          <p> ${code}</p>
         </div>
 
         <p>We can't wait to welcome your children to camp!</p>

@@ -46,18 +46,14 @@ export class RegistrationAttendanceResolver {
         };
       }
 
-      const { parentId, campRegistrationId } = await this.service.validateToken(
-        input.token,
-      );
+      const { parentPartialId, campRegistrationId } =
+        await this.service.validateToken(input.token);
 
-      if (campRegistrationId !== input.campRegistrationId) {
-        throw Error('Invalid attendance token 1.1');
-      }
-
-      const remainingAttendances = await this.service.getRemainingAttendances(
-        parentId,
-        campRegistrationId,
-      );
+      const { campRegistration, remainingAttendances } =
+        await this.service.findRegistrationAndLimit(
+          campRegistrationId,
+          parentPartialId,
+        );
 
       const campVariant = await this.service.checkCampVariant(
         input.campVariantId,
@@ -78,7 +74,7 @@ export class RegistrationAttendanceResolver {
 
       const existingChild = await this.service.checkChild(
         input.childId,
-        parentId,
+        campRegistration.parentId,
       );
       if (!existingChild) {
         return {
@@ -146,7 +142,11 @@ export class RegistrationAttendanceResolver {
         };
       }
 
-      return this.service.leave(input.registrationAttendanceId, userId);
+      return this.service.leave(
+        input.registrationAttendanceId,
+        userId,
+        input.leaveTime,
+      );
     } catch (e) {
       console.log(e);
       return {
