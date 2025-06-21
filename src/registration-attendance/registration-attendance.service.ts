@@ -264,7 +264,7 @@ export class RegistrationAttendanceService {
           campRegistrationId,
         })
         .andWhere('ra.campVariantId = :campVariantId', { campVariantId })
-        .andWhere('ra.child.parentId = :parentId', { parentId })
+        .andWhere('child.parentId = :parentId', { parentId })
         .andWhere('ra.leaveTime IS NULL')
         .getMany();
 
