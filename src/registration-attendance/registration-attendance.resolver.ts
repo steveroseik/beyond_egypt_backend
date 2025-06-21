@@ -22,10 +22,10 @@ import { RegistrationAttendancePage } from './entities/registration-attendance-p
 import { PaginateRegistrationAttendanceInput } from './dto/paginate-registration-attendance.input';
 import { CampRegistration } from 'src/camp-registration/entities/camp-registration.entity';
 import { DataloaderRegistry } from 'src/dataloaders/dataloaderRegistry';
-import { CampVariantRegistration } from 'src/camp-variant-registration/entities/camp-variant-registration.entity';
 import { Child } from 'src/child/entities/child.entity';
 import { LeaveCampInput } from './dto/leave-camp-input';
 import * as moment from 'moment-timezone';
+import { CampVariant } from 'src/camp-variant/entities/camp-variant.entity';
 
 @Resolver(() => RegistrationAttendance)
 // @UseGuards(GqlAuthGuard)
@@ -171,7 +171,7 @@ export class RegistrationAttendanceResolver {
     return loaders.CampRegistrationDataLoader.load(parent.campRegistrationId);
   }
 
-  @ResolveField(() => CampVariantRegistration, { nullable: true })
+  @ResolveField(() => CampVariant, { nullable: true })
   campVariant(
     @Parent() parent: RegistrationAttendance,
     @Context() { loaders }: { loaders: DataloaderRegistry },
