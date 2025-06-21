@@ -7,16 +7,16 @@ class ChildReportHistoryFilesDataLoader {
   public static create(service: FileService) {
     return new DataLoader<number, File[]>(async (keys: readonly number[]) => {
       const data = await service.findFilesByChildReportHistoryIds(keys);
-      const campFiles: Map<number, File[]> = new Map();
+      const historyFiles: Map<number, File[]> = new Map();
       data.forEach((file) => {
-        for (const camp of file.camps) {
-          if (!campFiles.has(camp.id)) {
-            campFiles.set(camp.id, []);
+        for (const history of file.childReportHistories) {
+          if (!historyFiles.has(history.id)) {
+            historyFiles.set(history.id, []);
           }
-          campFiles.get(camp.id).push(file);
+          historyFiles.get(history.id).push(file);
         }
       });
-      const result = keys.map((key) => campFiles.get(key) || []);
+      const result = keys.map((key) => historyFiles.get(key) || []);
       return result;
     });
   }
