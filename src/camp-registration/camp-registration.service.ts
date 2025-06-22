@@ -1307,7 +1307,7 @@ export class CampRegistrationService {
         expiredPayment.createdAt = new Date();
 
         if (pendingPayments?.length) {
-          this.cancelPayments({
+          await this.cancelPayments({
             queryRunner,
             payments: pendingPayments,
           });
@@ -1621,7 +1621,9 @@ export class CampRegistrationService {
     }
 
     await queryRunner.commitTransaction();
+
     this.setPaymentTimoout(payment.id);
+
     return {
       success: true,
       payment: payment,
@@ -1734,7 +1736,7 @@ export class CampRegistrationService {
       throw Error('Failed to update camp registration status');
     }
 
-    this.updateReservations({
+    await this.updateReservations({
       queryRunner,
       campRegistration,
       campVariantVacancies,
