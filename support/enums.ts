@@ -55,6 +55,7 @@ export enum PaymentStatus {
   paid = 'paid',
   failed = 'failed',
   expired = 'expired',
+  rejected = 'rejected',
 }
 
 registerEnumType(PaymentStatus, {

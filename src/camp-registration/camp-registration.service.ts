@@ -2518,6 +2518,83 @@ export class CampRegistrationService {
     return campVariantVacancies;
   }
 
+  async rejectCampRegistration(campRegistrationId: number) {
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      const campRegistration = await queryRunner.manager.findOne(
+        CampRegistration,
+        {
+          where: { id: campRegistrationId },
+          relations: ['campVariantRegistrations', 'camp'],
+        },
+      );
+
+      if (!campRegistration) {
+        throw new Error('Camp registration not found');
+      }
+
+      if (
+        campRegistration.status !== CampRegistrationStatus.pending &&
+        campRegistration.status !== CampRegistrationStatus.idle
+      ) {
+        throw new Error('Camp registration already processed');
+      }
+
+      const update = await queryRunner.manager.update(
+        CampRegistration,
+        { id: campRegistration.id },
+        { status: CampRegistrationStatus.rejected },
+      );
+
+      if (update.affected !== 1) {
+        throw new Error('Failed to update camp registration status');
+      }
+
+      // expire all pending payments
+      const payments = await queryRunner.manager.find(RegistrationPayment, {
+        where: {
+          campRegistrationId: campRegistration.id,
+          status: PaymentStatus.pending,
+          parentId: IsNull(),
+        },
+      });
+
+      if (payments?.length) {
+        const reject = await queryRunner.manager.update(
+          RegistrationPayment,
+          { id: In(payments.map((e) => e.id)) },
+          {
+            status: PaymentStatus.rejected,
+          },
+        );
+
+        if (reject.affected !== payments.length) {
+          throw new Error('Failed to reject camp registration payments');
+        }
+      }
+
+      // delete all reservations
+      await queryRunner.manager.delete(RegistrationReserve, {
+        campRegistrationId: campRegistration.id,
+      });
+
+      await queryRunner.commitTransaction();
+      return {
+        success: true,
+        message: 'Camp registration rejected successfully',
+      };
+    } catch (e) {
+      await queryRunner.rollbackTransaction();
+      console.log(e);
+      return { success: false, message: e.message };
+    } finally {
+      queryRunner.release();
+    }
+  }
+
   async confirmCampRegistration(
     input: ConfirmCampRegistrationInput,
     userId: string,
@@ -2583,7 +2660,9 @@ export class CampRegistrationService {
         throw new Error('Invalid number of pending payments');
       }
 
+      /// Either one or zero payments
       if (payments?.length === 1) {
+        /// Handle singl payment
         if (
           input.paymentMethod &&
           input.paymentMethod !== payment.paymentMethod
@@ -2593,10 +2672,9 @@ export class CampRegistrationService {
             payments: [payment],
             updateReserves: false,
           });
+
+          payment = undefined;
         } else {
-          if (payments[0].paymentMethod === PaymentMethod.fawry) {
-            throw new Error('Cannot confirm fawry payments');
-          }
           if (!payment.amount.eq(amountToBePaid)) {
             throw new Error(
               'Invoice amount is not equal to the total amount to be paid',
@@ -2604,6 +2682,7 @@ export class CampRegistrationService {
           }
         }
       } else {
+        /// Handle no payment
         if (!input.paymentMethod) {
           throw new Error(
             'Payment method is required, current registration is still idle',

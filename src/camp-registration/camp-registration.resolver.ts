@@ -137,6 +137,11 @@ export class CampRegistrationResolver {
     return this.campRegistrationService.confirmCampRegistration(input, userId);
   }
 
+  @Mutation(() => GraphQLJSONObject)
+  rejectCampRegistration(@Args('id') id: number) {
+    return this.campRegistrationService.rejectCampRegistration(id);
+  }
+
   @Query(() => GraphQLJSONObject)
   campRegistrationRefundOptions(
     @Args('input') input: CampRegistrationRefundOptionsInput,
