@@ -19,8 +19,7 @@ import { LocationModule } from './location/location.module';
 import { MealModule } from './meal/meal.module';
 import { ParentAdditionalModule } from './parent-additional/parent-additional.module';
 import { RegistrationAttendanceModule } from './registration-attendance/registration-attendance.module';
-import { RegistrationHistoryModule } from './registration-history/registration-history.module';
-import { RegistrationPaymentHistoryModule } from './registration-payment/registration-payment.module';
+import { RegistrationPaymentModule } from './registration-payment/registration-payment.module';
 import { SettingsModule } from './settings/settings.module';
 import { UserModule } from './user/user.module';
 import { DataloadersModule } from './dataloaders/dataloaders.module';
@@ -118,8 +117,7 @@ import { EncryptionModule } from './encryption/encryption.module';
     MealModule,
     ParentAdditionalModule,
     RegistrationAttendanceModule,
-    RegistrationHistoryModule,
-    RegistrationPaymentHistoryModule,
+    RegistrationPaymentModule,
     SettingsModule,
     UserModule,
     DataloadersModule,

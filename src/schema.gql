@@ -328,6 +328,7 @@ enum PaymentStatus {
   paid
   failed
   expired
+  rejected
 }
 
 type CampRegistration {
@@ -349,12 +350,12 @@ type CampRegistration {
   lastModified: DateTime!
   deletedAt: DateTime
   campVariantRegistrations: [CampVariantRegistration!]
-  payments: [RegistrationPayment!]!
   camp: Camp!
   parent: User!
   paid: Boolean!
   amountDifference: Decimal
   registrationCode: String
+  pendingPayments: [RegistrationPayment!]
 }
 
 enum CampRegistrationStatus {
@@ -463,13 +464,6 @@ type RegistrationAttendancePage {
   data: [RegistrationAttendance!]!
 }
 
-type RegistrationHistory {
-  campRegistrationId: Int!
-  status: CampRegistrationStatus!
-  createdAt: DateTime!
-  lastModified: DateTime!
-}
-
 type RegistrationPaymentsPage {
   cursor: GraphqlCursor!
   data: [RegistrationPayment!]!
@@ -552,15 +546,14 @@ type Query {
   findOneDiscount(id: Int!): Discount
   paginateDiscounts(input: PaginateDiscountsInput!): DiscountsPage!
   childReportHistory(id: Int!): ChildReportHistory!
+  registrationPaymentHistory(id: Int!): RegistrationPayment!
+  paginateRegistrationPayments(input: PaginateRegistrationPaymentsInput!): RegistrationPaymentsPage!
   childReport: [ChildReport!]!
   findOneChildReport(id: Int!): ChildReport
   paginateChildReports(input: PaginateChildReportsInput!): ChildReportPage!
   eventFile(id: Int!): EventFile!
   validateAndFindAttendance(token: String!, campVariantId: Int!): JSONObject!
   paginateRegistrationAttendance(input: PaginateRegistrationAttendanceInput!): RegistrationAttendancePage!
-  registrationHistory(id: Int!): RegistrationHistory!
-  registrationPaymentHistory(id: Int!): RegistrationPayment!
-  paginateRegistrationPayments(input: PaginateRegistrationPaymentsInput!): RegistrationPaymentsPage!
   settings: [Settings!]!
   setting(id: Int!): Settings!
   findOneSchool(id: Int!): School
@@ -695,6 +688,19 @@ input PaginateDiscountsInput {
   active: Boolean
 }
 
+input PaginateRegistrationPaymentsInput {
+  isAsc: Boolean! = false
+  limit: Int = 20
+  afterCursor: String
+  beforeCursor: String
+  search: String
+  userId: String
+  campRegistrationId: Int
+  paymentMethods: [PaymentMethod!]
+  statuses: [PaymentStatus!]
+  amountFilter: String
+}
+
 input PaginateChildReportsInput {
   isAsc: Boolean! = false
   limit: Int = 20
@@ -721,19 +727,6 @@ input PaginateRegistrationAttendanceInput {
   parentIds: [String!]
   childrenIds: [Int!]
   campVariantIds: [Int!]
-}
-
-input PaginateRegistrationPaymentsInput {
-  isAsc: Boolean! = false
-  limit: Int = 20
-  afterCursor: String
-  beforeCursor: String
-  search: String
-  userId: String
-  campRegistrationId: Int
-  paymentMethods: [PaymentMethod!]
-  statuses: [PaymentStatus!]
-  amountFilter: String
 }
 
 input PaginateSchoolsInput {
@@ -775,6 +768,7 @@ type Mutation {
   updateCampRegistration(input: UpdateCampRegistrationInput!): JSONObject!
   processCampRegistration(input: ProcessCampRegistrationInput!): JSONObject!
   confirmCampRegistration(input: ConfirmCampRegistrationInput!): JSONObject!
+  rejectCampRegistration(id: Int!): JSONObject!
   processCampRegistrationRefund(input: ProcessCampRegistrationRefundInput!): JSONObject!
   completeRegistrationRefund(input: CompleteRegistrationRefundInput!): JSONObject!
   sendTestEmail(code: String!): JSONObject
@@ -800,6 +794,10 @@ type Mutation {
   updateDiscount(input: UpdateDiscountInput!): JSONObject!
   removeDiscount(ids: [Int!]!): JSONObject!
   createChildReportHistory(input: CreateChildReportHistoryInput!): JSONObject!
+  createRegistrationPaymentHistory(createRegistrationPaymentHistoryInput: CreateRegistrationPaymentHistoryInput!): RegistrationPayment!
+  updateRegistrationPaymentHistory(updateRegistrationPaymentHistoryInput: UpdateRegistrationPaymentHistoryInput!): RegistrationPayment!
+  revalidateFawryPayment(id: Int!): JSONObject!
+  removeRegistrationPaymentHistory(id: Int!): RegistrationPayment!
   createChildReport(input: CreateChildReportInput!): JSONObject!
   updateChildReport(input: UpdateChildReportInput!): JSONObject!
   closeChildReport(id: Int!): JSONObject!
@@ -809,13 +807,6 @@ type Mutation {
   removeEventFile(id: Int!): EventFile!
   enterCamp(input: CreateRegistrationAttendanceInput!): JSONObject!
   leaveCamp(input: LeaveCampInput!): JSONObject!
-  createRegistrationHistory(createRegistrationHistoryInput: CreateRegistrationHistoryInput!): RegistrationHistory!
-  updateRegistrationHistory(updateRegistrationHistoryInput: UpdateRegistrationHistoryInput!): RegistrationHistory!
-  removeRegistrationHistory(id: Int!): RegistrationHistory!
-  createRegistrationPaymentHistory(createRegistrationPaymentHistoryInput: CreateRegistrationPaymentHistoryInput!): RegistrationPayment!
-  updateRegistrationPaymentHistory(updateRegistrationPaymentHistoryInput: UpdateRegistrationPaymentHistoryInput!): RegistrationPayment!
-  revalidateFawryPayment(id: Int!): JSONObject!
-  removeRegistrationPaymentHistory(id: Int!): RegistrationPayment!
   createSetting(createSettingInput: CreateSettingInput!): Settings!
   updateSetting(updateSettingInput: UpdateSettingInput!): Settings!
   removeSetting(id: Int!): Settings!
@@ -1197,6 +1188,17 @@ input CreateChildReportHistoryInput {
   fileIds: [Int!]
 }
 
+input CreateRegistrationPaymentHistoryInput {
+  """Example field (placeholder)"""
+  exampleField: Int!
+}
+
+input UpdateRegistrationPaymentHistoryInput {
+  """Example field (placeholder)"""
+  exampleField: Int
+  id: Int!
+}
+
 input CreateChildReportInput {
   """ID of the child"""
   childId: Int!
@@ -1272,28 +1274,6 @@ input CreateRegistrationAttendanceInput {
 input LeaveCampInput {
   registrationAttendanceId: Int!
   leaveTime: DateTime
-}
-
-input CreateRegistrationHistoryInput {
-  """Example field (placeholder)"""
-  exampleField: Int!
-}
-
-input UpdateRegistrationHistoryInput {
-  """Example field (placeholder)"""
-  exampleField: Int
-  id: Int!
-}
-
-input CreateRegistrationPaymentHistoryInput {
-  """Example field (placeholder)"""
-  exampleField: Int!
-}
-
-input UpdateRegistrationPaymentHistoryInput {
-  """Example field (placeholder)"""
-  exampleField: Int
-  id: Int!
 }
 
 input CreateSettingInput {

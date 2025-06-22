@@ -1,9 +1,6 @@
 import { ObjectType, Field, Int } from '@nestjs/graphql';
-import BigNumber from 'bignumber.js';
 import moment from 'moment-timezone';
 import { Camp } from 'src/camp/entities/camp.entity';
-import { RegistrationHistory } from 'src/registration-history/entities/registration-history.entity';
-import { moneyFixation } from 'support/constants';
 import { Decimal, GraphqlDecimal } from 'support/scalars';
 import {
   Column,

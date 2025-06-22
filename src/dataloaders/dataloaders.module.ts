@@ -16,6 +16,7 @@ import { UserModule } from 'src/user/user.module';
 import { DiscountModule } from 'src/discount/discount.module';
 import { CampRegistrationModule } from 'src/camp-registration/camp-registration.module';
 import { ChildReportHistoryModule } from 'src/child-report-history/child-report-history.module';
+import { RegistrationPaymentModule } from 'src/registration-payment/registration-payment.module';
 
 @Module({
   imports: [
@@ -34,6 +35,7 @@ import { ChildReportHistoryModule } from 'src/child-report-history/child-report-
     DiscountModule,
     CampRegistrationModule,
     ChildReportHistoryModule,
+    RegistrationPaymentModule,
   ],
   providers: [DataloaderRegistry, DataloaderRegistryFactory],
   exports: [DataloaderRegistryFactory],

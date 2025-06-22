@@ -28,6 +28,7 @@ import { GraphqlDecimal } from 'support/scalars';
 import { CampRegistrationRefundOptionsInput } from './dto/camp-registration-refund-options.input';
 import { ProcessCampRegistrationRefundInput } from './dto/process-camp-registration-refund.input';
 import { CompleteRegistrationRefundInput } from './dto/complete-registration-refund.input';
+import { RegistrationPayment } from 'src/registration-payment/entities/registration-payment.entity';
 
 @Resolver(() => CampRegistration)
 export class CampRegistrationResolver {
@@ -227,6 +228,16 @@ export class CampRegistrationResolver {
     return registration.status === CampRegistrationStatus.accepted
       ? this.campRegistrationService.getCode(registration)
       : null;
+  }
+
+  @ResolveField(() => [RegistrationPayment], { nullable: true })
+  pendingPayments(
+    @Parent() campRegistration: CampRegistration,
+    @Context() { loaders }: { loaders: DataloaderRegistry },
+  ) {
+    return loaders.pendingRegistrationPaymentsCampRegLoader.load(
+      campRegistration.id,
+    );
   }
 
   @Mutation(() => GraphQLJSONObject, { nullable: true })

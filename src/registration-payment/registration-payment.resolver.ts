@@ -8,7 +8,7 @@ import {
   ResolveField,
   Context,
 } from '@nestjs/graphql';
-import { RegistrationPaymentHistoryService } from './registration-payment.service';
+import { RegistrationPaymentService } from './registration-payment.service';
 import { RegistrationPayment } from './entities/registration-payment.entity';
 import { CreateRegistrationPaymentHistoryInput } from './dto/create-registration-payment.input';
 import { UpdateRegistrationPaymentHistoryInput } from './dto/update-registration-payment.input';
@@ -22,9 +22,9 @@ import { GraphQLJSONObject } from 'graphql-type-json';
 dotenv.config();
 
 @Resolver(() => RegistrationPayment)
-export class RegistrationPaymentHistoryResolver {
+export class RegistrationPaymentResolver {
   constructor(
-    private readonly registrationPaymentHistoryService: RegistrationPaymentHistoryService,
+    private readonly registrationPaymentHistoryService: RegistrationPaymentService,
   ) {}
 
   @Mutation(() => RegistrationPayment)

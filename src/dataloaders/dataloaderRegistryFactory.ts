@@ -15,6 +15,7 @@ import { UserService } from 'src/user/user.service';
 import { DiscountService } from 'src/discount/discount.service';
 import { CampRegistrationService } from 'src/camp-registration/camp-registration.service';
 import { ChildReportHistoryService } from 'src/child-report-history/child-report-history.service';
+import { RegistrationPaymentService } from 'src/registration-payment/registration-payment.service';
 
 @Injectable()
 export class DataloaderRegistryFactory {
@@ -34,6 +35,7 @@ export class DataloaderRegistryFactory {
     private discountService: DiscountService,
     private campRegistrationService: CampRegistrationService,
     private childReportHistoryService: ChildReportHistoryService,
+    private registrationPaymentService: RegistrationPaymentService,
   ) {}
 
   public create() {
@@ -53,6 +55,7 @@ export class DataloaderRegistryFactory {
       this.discountService,
       this.campRegistrationService,
       this.childReportHistoryService,
+      this.registrationPaymentService,
     );
   }
 }

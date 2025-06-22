@@ -3,7 +3,7 @@ import { CreateRegistrationPaymentHistoryInput } from './dto/create-registration
 import { UpdateRegistrationPaymentHistoryInput } from './dto/update-registration-payment.input';
 import { InjectRepository } from '@nestjs/typeorm';
 import { RegistrationPayment } from './entities/registration-payment.entity';
-import { DataSource, QueryRunner, Repository } from 'typeorm';
+import { DataSource, In, IsNull, QueryRunner, Repository } from 'typeorm';
 import { PaginateRegistrationPaymentsInput } from './dto/paginate-registration-payments.input';
 import { buildPaginator } from 'typeorm-cursor-pagination';
 import {
@@ -27,7 +27,7 @@ import moment from 'moment-timezone';
 import { query } from 'express';
 
 @Injectable()
-export class RegistrationPaymentHistoryService {
+export class RegistrationPaymentService {
   constructor(
     @InjectRepository(RegistrationPayment)
     private repo: Repository<RegistrationPayment>,
@@ -349,5 +349,21 @@ export class RegistrationPaymentHistoryService {
             : PaymentStatus.expired,
       },
     );
+  }
+
+  async findLatestPendingPaymentsByCampReg(keys: readonly number[]) {
+    try {
+      const payments = await this.repo.find({
+        where: {
+          campRegistrationId: In(keys),
+          status: PaymentStatus.pending,
+          parentId: IsNull(),
+        },
+      });
+      return payments;
+    } catch (e) {
+      console.log(e);
+      return [];
+    }
   }
 }

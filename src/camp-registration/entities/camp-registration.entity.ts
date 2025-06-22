@@ -197,7 +197,7 @@ export class CampRegistration {
     () => RegistrationPayment,
     (registrationPayment) => registrationPayment.campRegistration,
   )
-  @Field(() => [RegistrationPayment])
+  // @Field(() => [RegistrationPayment])
   payments: RegistrationPayment[];
 
   @ManyToOne(() => Camp, (camp) => camp.campRegistrations, {
