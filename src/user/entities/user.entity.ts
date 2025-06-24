@@ -69,7 +69,7 @@ export class User {
   @Field({ nullable: true })
   deletedAt?: Date;
 
-  @OneToMany(() => Child, (child) => child.user)
+  @OneToMany(() => Child, (child) => child.parent)
   @Field(() => [Child])
   children: Child[];
 

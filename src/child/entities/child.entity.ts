@@ -141,8 +141,8 @@ export class Child {
     onUpdate: 'CASCADE',
   })
   @JoinColumn({ name: 'parentId', referencedColumnName: 'id' })
-  @Field(() => User)
-  user: User;
+  // @Field(() => User)
+  parent: User;
 
   @OneToMany(() => ChildReport, (childReport) => childReport.child, {
     nullable: true,

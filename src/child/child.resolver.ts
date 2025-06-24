@@ -62,4 +62,12 @@ export class ChildResolver {
   ) {
     return child.allergies ?? loaders.AllergiesByChildDataLoader.load(child.id);
   }
+
+  @ResolveField(() => User, { nullable: true })
+  parent(
+    @Parent() child: Child,
+    @Context() { loaders }: { loaders: DataloaderRegistry },
+  ) {
+    return loaders.UsersDataLoader.load(child.parentId);
+  }
 }

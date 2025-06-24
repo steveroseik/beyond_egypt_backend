@@ -57,7 +57,7 @@ export class AppService {
     const genTemplate = generateReportEmail({
       childReport,
       latestHistory,
-      parentName: childReport.child.user.name,
+      parentName: childReport.child.parent.name,
       childName: childReport.child.name,
       campName: childReport.campVariant.camp.name,
       reportViewUrl: `https://beyond-egypt.com/child-report/${childReport.id}`,

@@ -80,7 +80,7 @@ export class ChildReportHistoryService {
         childReport,
         latestHistory: createHistory,
         child: childReport.child,
-        parent: childReport.child.user,
+        parent: childReport.child.parent,
         camp: childReport.campVariant.camp,
       });
 

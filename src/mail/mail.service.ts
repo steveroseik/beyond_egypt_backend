@@ -155,7 +155,7 @@ export class MailService {
         return;
       }
       childName = child.name;
-      parentName = child.user.name;
+      parentName = child.parent.name;
     }
 
     if (!parentName) {
@@ -203,7 +203,7 @@ export class MailService {
     });
 
     const response = await this.sendMail({
-      to: childReport.child.user.email,
+      to: childReport.child.parent.email,
       subject: `Child Report for ${childName}`,
       html: genTemplate.htmlContent,
     });
