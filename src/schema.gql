@@ -128,9 +128,9 @@ type Child {
   deletedAt: DateTime
   allergies: [Allergy!]!
   campVariantRegistrations: [CampVariantRegistration!]
-  user: User!
   reports: [ChildReport!]
   file: File
+  parent: User
 }
 
 enum ParentRelation {
