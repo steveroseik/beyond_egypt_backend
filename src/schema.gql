@@ -772,6 +772,7 @@ type Mutation {
   processCampRegistrationRefund(input: ProcessCampRegistrationRefundInput!): JSONObject!
   completeRegistrationRefund(input: CompleteRegistrationRefundInput!): JSONObject!
   sendTestEmail(code: String!): JSONObject
+  sendCampRegistrationEmailConfirmation(campRegistrationId: Int!): JSONObject!
   createEvent(input: CreateEventInput!): JSONObject!
   updateEvent(input: UpdateEventInput!): JSONObject!
   removeEvent(input: RemoveEventInput!): JSONObject!
