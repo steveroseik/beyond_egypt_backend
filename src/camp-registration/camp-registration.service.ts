@@ -1052,6 +1052,8 @@ export class CampRegistrationService {
 
     await queryRunner.commitTransaction();
 
+    this.mailService.sendCampRegistrationConfirmation(campRegistration.id);
+
     // update registration status
     return {
       success: true,
