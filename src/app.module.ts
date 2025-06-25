@@ -38,6 +38,7 @@ import { SchoolModule } from './school/school.module';
 import { AwsBucketModule } from './aws-bucket/aws-bucket.module';
 import { RegistrationReserveModule } from './registration-reserve/registration-reserve.module';
 import { FawryModule } from './fawry/fawry.module';
+import { PaymobModule } from './paymob/paymob.module';
 import { MailModule } from './mail/mail.module';
 import { EncryptionService } from './encryption/encryption.service';
 import { EncryptionModule } from './encryption/encryption.module';
@@ -125,6 +126,7 @@ import { EncryptionModule } from './encryption/encryption.module';
     AwsBucketModule,
     RegistrationReserveModule,
     FawryModule,
+    PaymobModule,
     MailModule,
     EncryptionModule,
   ],

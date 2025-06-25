@@ -31,6 +31,7 @@ export enum PaymentMethod {
   fawry = 'fawry',
   instapay = 'instapay',
   cash = 'cash',
+  paymob = 'paymob',
 }
 
 registerEnumType(PaymentMethod, {

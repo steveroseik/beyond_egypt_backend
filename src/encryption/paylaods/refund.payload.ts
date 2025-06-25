@@ -12,7 +12,7 @@ export interface RefundPayload {
 export interface RefundOption {
   amount: Decimal;
   paymentId: number;
-  fawryReferenceNumber?: string;
+  paymentProviderRef?: string;
   paymentMethod: PaymentMethod;
 }
 
@@ -23,7 +23,7 @@ export function parseRefundPayload(raw: any): RefundPayload {
     refundOptions: (raw.refundOptions || []).map((opt: any) => ({
       paymentId: opt.paymentId != null ? Number(opt.paymentId) : undefined,
       paymentMethod: opt.paymentMethod,
-      referenceNumber: opt.referenceNumber,
+      paymentProviderRef: opt.paymentProviderRef,
       amount: new Decimal(opt.amount ?? '0'),
     })),
     nonce: raw.nonce ? String(raw.nonce) : null,

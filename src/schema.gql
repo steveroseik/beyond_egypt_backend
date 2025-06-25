@@ -128,9 +128,9 @@ type Child {
   deletedAt: DateTime
   allergies: [Allergy!]!
   campVariantRegistrations: [CampVariantRegistration!]
-  user: User!
   reports: [ChildReport!]
   file: File
+  parent: User
 }
 
 enum ParentRelation {
@@ -300,7 +300,7 @@ enum ShirtSize {
 type RegistrationPayment {
   id: Int!
   referenceNumber: String
-  fawryReferenceNumber: String
+  paymentProviderRef: String
   parentId: Int
   campRegistrationId: Int!
   paymentMethod: PaymentMethod!
@@ -321,6 +321,7 @@ enum PaymentMethod {
   fawry
   instapay
   cash
+  paymob
 }
 
 enum PaymentStatus {

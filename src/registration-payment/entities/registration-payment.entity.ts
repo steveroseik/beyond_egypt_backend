@@ -34,9 +34,9 @@ export class RegistrationPayment {
   @Field({ nullable: true })
   referenceNumber?: string;
 
-  @Column('varchar', { name: 'fawryReferenceNumber', nullable: true })
+  @Column('varchar', { name: 'paymentProviderRef', nullable: true })
   @Field({ nullable: true })
-  fawryReferenceNumber?: string;
+  paymentProviderRef?: string;
 
   @Column('int', { name: 'parentId', nullable: true })
   @Field({ nullable: true })

@@ -68,6 +68,11 @@ import { getDateDifferenceInDays } from 'support/helpers/days-diferrence.calcula
 import { Child } from 'src/child/entities/child.entity';
 import { chdir } from 'process';
 import { parseCampRegCode } from 'support/helpers/camp-reg-code.mini';
+import {
+  createPaymobIntention,
+  generatePaymobCheckoutUrl,
+  requestPaymobRefund,
+} from 'src/paymob/generate/payment.generate';
 
 dotenv.config();
 
@@ -946,9 +951,12 @@ export class CampRegistrationService {
       if (!paymentMethod) throw Error('Select a payment method first');
 
       if (userType == UserType.admin) {
-        if (paymentMethod === PaymentMethod.fawry) {
+        if (
+          paymentMethod === PaymentMethod.fawry ||
+          paymentMethod === PaymentMethod.paymob
+        ) {
           throw Error(
-            'Admins cannot initiate fawry payments, only parents can',
+            'Admins cannot initiate online payments (fawry/paymob), only parents can',
           );
         }
       }
@@ -1201,9 +1209,12 @@ export class CampRegistrationService {
       return await this.handleFreePayment(queryRunner, campRegistration);
     }
 
-    if (paymentMethod === PaymentMethod.fawry) {
+    if (
+      paymentMethod === PaymentMethod.fawry ||
+      paymentMethod === PaymentMethod.paymob
+    ) {
       /// Find pending and return of any
-      /// Otherwise expire fawry pendings
+      /// Otherwise expire online payment pendings
       if (pendingPayments?.length) {
         const validPayments = pendingPayments.filter(
           (e) =>
@@ -1252,14 +1263,15 @@ export class CampRegistrationService {
         }
       }
 
-      const expiredFawryPayments = campRegistration.payments?.filter(
+      const expiredOnlinePayments = campRegistration.payments?.filter(
         (e) =>
-          e.paymentMethod == PaymentMethod.fawry &&
+          (e.paymentMethod == PaymentMethod.fawry ||
+            e.paymentMethod == PaymentMethod.paymob) &&
           e.status == PaymentStatus.expired &&
           e.amount.eq(amountTobePaid),
       );
 
-      if (expiredFawryPayments?.length) {
+      if (expiredOnlinePayments?.length) {
         const newExpiration = moment()
           .tz('Africa/Cairo')
           .add(onlineTTL, 'minute');
@@ -1270,19 +1282,35 @@ export class CampRegistrationService {
             where: { id: campRegistration.parentId },
           }));
 
-        const { paymentUrl, merchantRef } = await this.generateFawryPaymentUrl(
-          campRegistration,
-          campRegistration.amount,
-          expiredFawryPayments[0].id,
-          parent,
-          newExpiration,
-        );
+        let paymentUrl: string;
+        let merchantRef: string;
 
-        if (!paymentUrl) {
-          throw new Error('Failed to generate new fawry payment url');
+        if (expiredOnlinePayments[0].paymentMethod === PaymentMethod.fawry) {
+          const result = await this.generateFawryPaymentUrl(
+            campRegistration,
+            campRegistration.amount,
+            expiredOnlinePayments[0].id,
+            parent,
+            newExpiration,
+          );
+          paymentUrl = result.paymentUrl;
+          merchantRef = result.merchantRef;
+        } else {
+          const result = await this.generatePaymobPaymentUrl(
+            campRegistration,
+            campRegistration.amount,
+            expiredOnlinePayments[0].id,
+            parent,
+          );
+          paymentUrl = result.paymentUrl;
+          merchantRef = result.merchantRef;
         }
 
-        const expiredPayment = expiredFawryPayments[0];
+        if (!paymentUrl) {
+          throw new Error('Failed to generate new online payment url');
+        }
+
+        const expiredPayment = expiredOnlinePayments[0];
 
         const updatePayment = await queryRunner.manager.update(
           RegistrationPayment,
@@ -1297,7 +1325,7 @@ export class CampRegistrationService {
         );
 
         if (updatePayment.affected !== 1) {
-          throw new Error('Failed to update fawry payment');
+          throw new Error('Failed to update online payment');
         }
 
         expiredPayment.status = PaymentStatus.pending;
@@ -1363,6 +1391,15 @@ export class CampRegistrationService {
         );
       case PaymentMethod.fawry:
         return await this.handleFawryPayment(
+          campRegistration,
+          campVariants,
+          campVariantVacancies,
+          queryRunner,
+          userId,
+          input,
+        );
+      case PaymentMethod.paymob:
+        return await this.handlePaymobPayment(
           campRegistration,
           campVariants,
           campVariantVacancies,
@@ -2643,8 +2680,13 @@ export class CampRegistrationService {
         throw new Error('Refund policy consent is required');
       }
 
-      if (paymentMethod === PaymentMethod.fawry) {
-        throw new Error('Fawry payment is not supported');
+      if (
+        paymentMethod === PaymentMethod.fawry ||
+        paymentMethod === PaymentMethod.paymob
+      ) {
+        throw new Error(
+          'Online payments (fawry/paymob) are not supported for manual confirmation',
+        );
       }
 
       const payments = await queryRunner.manager.find(RegistrationPayment, {
@@ -2941,7 +2983,7 @@ export class CampRegistrationService {
         refundOptions.push({
           amount,
           paymentId: payment.payment.id,
-          fawryReferenceNumber: payment.payment.fawryReferenceNumber ?? null,
+          paymentProviderRef: payment.payment.paymentProviderRef ?? null,
           paymentMethod: payment.payment.paymentMethod,
         });
 
@@ -3024,19 +3066,43 @@ export class CampRegistrationService {
 
       for (const option of decryptedPayload.refundOptions) {
         if (option.paymentMethod === PaymentMethod.fawry) {
-          if (!option.fawryReferenceNumber) {
+          if (!option.paymentProviderRef) {
             throw new Error(
               `Malformed fawry refund request ${option.paymentId}`,
             );
           }
           const refundResponse = await requestRefund({
             refundAmount: option.amount.toFixed(moneyFixation),
-            fawryReferenceNumber: option.fawryReferenceNumber,
+            fawryReferenceNumber: option.paymentProviderRef,
           });
 
           if (refundResponse?.statusCode !== 200) {
             throw new Error(
               `Failed to process fawry refund request ${option.paymentId} (${refundResponse?.statusCode ?? -100}) - ${refundResponse?.statusDescription ?? 'Unknown error'}`,
+            );
+          }
+        } else if (option.paymentMethod === PaymentMethod.paymob) {
+          const payment = await queryRunner.manager.findOne(
+            RegistrationPayment,
+            {
+              where: { id: option.paymentId },
+            },
+          );
+
+          if (!payment || !payment.paymentProviderRef) {
+            throw new Error(
+              `Malformed paymob refund request ${option.paymentId}`,
+            );
+          }
+
+          const refundResponse = await requestPaymobRefund({
+            transaction_id: payment.paymentProviderRef,
+            amount_cents: Math.round(option.amount.toNumber() * 100).toString(),
+          });
+
+          if (!refundResponse.success) {
+            throw new Error(
+              `Failed to process paymob refund request ${option.paymentId}`,
             );
           }
         }
@@ -3046,7 +3112,8 @@ export class CampRegistrationService {
           amount: option.amount,
           paymentMethod: option.paymentMethod,
           status:
-            option.paymentMethod === PaymentMethod.fawry
+            option.paymentMethod === PaymentMethod.fawry ||
+            option.paymentMethod === PaymentMethod.paymob
               ? PaymentStatus.paid
               : PaymentStatus.pending,
           parentId: option.paymentId,
@@ -3337,10 +3404,19 @@ export class CampRegistrationService {
           throw new Error('Payments already processed');
         }
 
-        await this.cancelFawryPayments({
-          queryRunner,
-          payments: [payment],
-        });
+        if (payment.paymentMethod === PaymentMethod.fawry) {
+          await this.cancelFawryPayments({
+            queryRunner,
+            payments: [payment],
+          });
+        } else {
+          // For other payment methods, just expire them
+          await queryRunner.manager.update(
+            RegistrationPayment,
+            { id: payment.id },
+            { status: PaymentStatus.expired },
+          );
+        }
 
         const vacancies: Map<number, number> = new Map();
 
@@ -3491,5 +3567,168 @@ export class CampRegistrationService {
         message: e.message,
       };
     }
+  }
+
+  async handlePaymobPayment(
+    campRegistration: CampRegistration,
+    campVariants: CampVariant[],
+    campVariantVacancies: Map<number, number>,
+    queryRunner: QueryRunner,
+    userId: string,
+    input: ProcessCampRegistrationInput,
+  ) {
+    //const find parent
+    const parent = await queryRunner.manager.findOne(User, {
+      where: { id: campRegistration.parentId },
+    });
+
+    if (!parent) {
+      throw Error('Failed to find parent');
+    }
+
+    if (
+      campRegistration.behaviorConsent !== input.behaviorConsent ||
+      campRegistration.refundPolicyConsent !== input.refundPolicyConsent
+    ) {
+      await queryRunner.manager.update(
+        CampRegistration,
+        { id: campRegistration.id },
+        {
+          refundPolicyConsent: input.refundPolicyConsent,
+          behaviorConsent: input.behaviorConsent,
+          paymentMethod: input.paymentMethod,
+        },
+      );
+    }
+
+    /// create payment
+    const totalAmount = this.calculateCampVariantRegistrationPrice(
+      campVariants,
+      campRegistration.campVariantRegistrations,
+    );
+
+    const payment = await queryRunner.manager.save(RegistrationPayment, {
+      campRegistrationId: campRegistration.id,
+      amount: totalAmount?.toFixed(moneyFixation),
+      paymentMethod: PaymentMethod.paymob,
+      userId,
+    });
+
+    if (!payment) {
+      throw Error('Failed to create payment record');
+    }
+
+    const tenMinutesFromNow = moment.tz('Africa/Cairo').add(10, 'minute');
+
+    const { paymentUrl, merchantRef } = await this.generatePaymobPaymentUrl(
+      campRegistration,
+      totalAmount,
+      payment.id,
+      parent,
+    );
+
+    if (!paymentUrl) throw Error('Payment url received empty');
+
+    payment.url = paymentUrl;
+    const updatePayment = await queryRunner.manager.update(
+      RegistrationPayment,
+      { id: payment.id },
+      {
+        url: paymentUrl,
+        expirationDate: tenMinutesFromNow.toDate(),
+        referenceNumber: merchantRef,
+      },
+    );
+
+    if (updatePayment.affected == 0) {
+      throw Error('Failed to update registration payment');
+    }
+
+    /// reserve registrations
+
+    await this.updateReservations({
+      queryRunner,
+      campVariantVacancies,
+      campRegistration,
+      expirationMinutes: 10,
+    });
+
+    // deduct vacancies
+    for (const [key, value] of campVariantVacancies) {
+      const update = await queryRunner.manager.update(
+        CampVariant,
+        { id: key },
+        { remainingCapacity: () => `remainingCapacity - ${value}` },
+      );
+      if (update.affected !== 1) {
+        const campVariant = campVariants.find((e) => e.id == key);
+        throw Error(
+          `Failed to deduct capacity from ${campVariant.name} (${campRegistration.id})`,
+        );
+      }
+    }
+
+    await queryRunner.commitTransaction();
+
+    this.setPaymentTimoout(payment.id);
+
+    return {
+      success: true,
+      payment: payment,
+      expiration: tenMinutesFromNow,
+    };
+  }
+
+  async generatePaymobPaymentUrl(
+    campRegistration: CampRegistration,
+    totalAmount: Decimal,
+    paymentId: number,
+    parent: User,
+  ): Promise<{ paymentUrl: string; merchantRef: string }> {
+    const merchantRef = generateMerchantRefNumber(paymentId);
+
+    const payload = {
+      amount: Math.round(totalAmount.toNumber() * 100), // Convert to cents
+      currency: 'EGP',
+      payment_methods: [parseInt(process.env.PAYMOB_INTEGRATION_ID)],
+      items: [
+        {
+          name: `Camp Registration - ${campRegistration.id}`,
+          amount: Math.round(totalAmount.toNumber() * 100), // Convert to cents
+          description: 'Camp Registration Payment',
+          quantity: 1,
+        },
+      ],
+      billing_data: {
+        apartment: 'N/A',
+        first_name: parent.name.split(' ')[0] || parent.name,
+        last_name: parent.name.split(' ').slice(1).join(' ') || 'N/A',
+        street: 'N/A',
+        building: 'N/A',
+        phone_number: parent.phone,
+        city: 'N/A',
+        country: 'EGY',
+        email: parent.email,
+        floor: 'N/A',
+        state: 'N/A',
+      },
+      special_reference: merchantRef,
+      expiration: 10 * 60,
+      notification_url: `${process.env.BASE_URL}/paymob/return`,
+      redirection_url: `${process.env.FRONTEND_URL}/payment-success`,
+    };
+
+    console.log('Paymob Payload:', payload);
+
+    const intentionResponse = await createPaymobIntention(payload);
+    const paymentUrl = generatePaymobCheckoutUrl(
+      process.env.PAYMOB_PUBLIC_KEY,
+      intentionResponse.client_secret,
+    );
+
+    return {
+      paymentUrl,
+      merchantRef,
+    };
   }
 }

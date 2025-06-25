@@ -1,11 +1,7 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
-import { DataSource, In, QueryRunner } from 'typeorm';
-import { FawryReturnDto } from './models/fawry-return.dto';
-import {
-  cancelPayment,
-  generateStatusQuerySignature,
-  requestPaymentStatus,
-} from './generate/payment.generate';
+import { DataSource, QueryRunner, In } from 'typeorm';
+import { PaymobReturnDto } from './models/payment.payload';
+import { createPaymobIntention, generatePaymobCheckoutUrl } from './generate/payment.generate';
 import { RegistrationPayment } from 'src/registration-payment/entities/registration-payment.entity';
 import * as moment from 'moment-timezone';
 import {
@@ -13,44 +9,44 @@ import {
   PaymentMethod,
   PaymentStatus,
 } from 'support/enums';
-import { CampVariant } from 'src/camp-variant/entities/camp-variant.entity';
 import { RegistrationReserve } from 'src/registration-reserve/entities/registration-reserve.entity';
-import e, { Response } from 'express';
-import { PaymentStatusResponse } from './models/payment-status.payload';
+import { Response } from 'express';
 import * as dotenv from 'dotenv';
 import { generateQueryParams } from 'support/query-params.generator';
 import { CampRegistration } from 'src/camp-registration/entities/camp-registration.entity';
 import { MailService } from 'src/mail/mail.service';
-import { Camp } from 'src/camp/entities/camp.entity';
+import { User } from 'src/user/entities/user.entity';
+import { Decimal } from 'support/scalars';
+import { moneyFixation } from 'support/constants';
+import { CampVariant } from 'src/camp-variant/entities/camp-variant.entity';
 
 dotenv.config();
 
 @Injectable()
-export class FawryService {
+export class PaymobService {
   constructor(
     private dataSource: DataSource,
     private mailService: MailService,
   ) {}
 
-  async handleReturn(query: FawryReturnDto, res: Response) {
-    console.log('Fawry Return Query:', query);
+  async handleReturn(query: PaymobReturnDto, res: Response) {
+    console.log('Paymob Return Query:', query);
     console.table(query);
-    console.log('Fawry res');
-    console.table(res);
 
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
 
     try {
-      if (!query.merchantRefNumber) {
+      if (!query.merchant_order_id) {
         return res.redirect(
           `${process.env.FRONTEND_URL}/payment-failed?message=Payment expired`,
         );
       }
+
       const payment = await queryRunner.manager.findOne(RegistrationPayment, {
         where: {
-          referenceNumber: `${query.merchantRefNumber}`,
+          referenceNumber: query.merchant_order_id,
         },
         relations: ['campRegistration'],
         lock: { mode: 'pessimistic_write' },
@@ -62,7 +58,7 @@ export class FawryService {
         throw Error('Payment not found');
       }
 
-      // validate the fawry response
+      // validate the paymob response
       const response = await this.validatePaymentResponse(
         query,
         payment,
@@ -82,7 +78,7 @@ export class FawryService {
 
       await this.dataSource.manager.update(
         RegistrationPayment,
-        { referenceNumber: `${query.merchantRefNumber}` },
+        { referenceNumber: query.merchant_order_id },
         { status: PaymentStatus.failed },
       );
 
@@ -94,35 +90,8 @@ export class FawryService {
     }
   }
 
-  async expirePayment(payment: RegistrationPayment, queryRunner: QueryRunner) {
-    const cancel = await cancelPayment(payment.referenceNumber, 'en-gb');
-
-    const cancelled = cancel?.code === '200';
-
-    await queryRunner.manager.update(
-      RegistrationPayment,
-      { id: payment.id },
-      {
-        status: cancelled ? PaymentStatus.expired : PaymentStatus.failed,
-      },
-    );
-
-    if (cancelled) {
-      const reserves = await queryRunner.manager.find(RegistrationReserve, {
-        where: { campRegistrationId: payment.campRegistrationId },
-        lock: { mode: 'pessimistic_write' },
-      });
-
-      if (reserves.length) {
-        await queryRunner.manager.delete(RegistrationReserve, {
-          paymentId: payment.id,
-        });
-      }
-    }
-  }
-
   async validatePaymentResponse(
-    query: FawryReturnDto,
+    query: PaymobReturnDto,
     payment: RegistrationPayment,
     queryRunner: QueryRunner,
     res: Response,
@@ -130,70 +99,34 @@ export class FawryService {
     let parameters = {
       success: false,
       networkError: false,
-      message: query.statusDescription,
-      statusCode: query.statusCode,
+      message: 'Payment failed',
       paymentUrl: payment.url,
       expirationDate: payment.expirationDate,
       campRegistrationId: payment.campRegistrationId,
       campId: payment.campRegistration.campId,
     };
 
-    const diff = moment()
-      .tz('Africa/Cairo')
-      .diff(payment.expirationDate, 'minutes');
-
-    if (query.statusCode !== 200) {
-      /// Make it explicit for failed payments
-      if (
-        payment.status == PaymentStatus.pending &&
-        payment.paymentMethod == PaymentMethod.fawry
-      ) {
-        if (diff > 0) {
-          await this.expirePayment(payment, queryRunner);
-
-          return res.redirect(
-            `${process.env.FRONTEND_URL}/payment-failed?paymentId=${payment.id}&message=Payment expired`,
-          );
-        }
-      }
+    // Check if payment was successful
+    if (query.success !== 'true') {
       return res.redirect(
         `${process.env.FRONTEND_URL}/payment-failed?${generateQueryParams(parameters)}`,
       );
     }
 
-    const paymentStatus = await requestPaymentStatus(query.merchantRefNumber);
-
-    if (!paymentStatus) {
-      parameters.networkError = true;
+    // Check if payment is pending
+    if (query.pending === 'true') {
+      parameters.message = 'Payment is pending';
       return res.redirect(
         `${process.env.FRONTEND_URL}/payment-failed?${generateQueryParams(parameters)}`,
       );
     }
 
-    if (paymentStatus.orderStatus !== 'PAID') {
-      if (
-        payment.status == PaymentStatus.pending &&
-        payment.paymentMethod == PaymentMethod.fawry
-      ) {
-        if (diff > 0) {
-          await this.expirePayment(payment, queryRunner);
-
-          return res.redirect(
-            `${process.env.FRONTEND_URL}/payment-failed?paymentId=${payment.id}&message=Payment expired`,
-          );
-        }
-      }
-
-      return res.redirect(
-        `${process.env.FRONTEND_URL}/payment-failed?${generateQueryParams(parameters)}`,
-      );
-    }
-
+    // Update payment with Paymob reference number and mark as paid
     const update = await queryRunner.manager.update(
       RegistrationPayment,
       { id: payment.id },
       {
-        paymentProviderRef: query.referenceNumber,
+        paymentProviderRef: query.id,
         status: PaymentStatus.paid,
       },
     );
@@ -202,6 +135,7 @@ export class FawryService {
       throw new Error('Failed to update payment status');
     }
 
+    // Update camp registration status
     const updateCampRegistration = await queryRunner.manager.update(
       CampRegistration,
       { id: payment.campRegistrationId },
@@ -272,4 +206,57 @@ export class FawryService {
       throw new Error('Failed to delete all camp reserves');
     }
   }
-}
+
+  async generatePaymobPaymentUrl(
+    campRegistration: CampRegistration,
+    totalAmount: Decimal,
+    paymentId: number,
+    parent: User,
+    tenMinutesFromNow: moment.Moment,
+  ): Promise<{ paymentUrl: string; merchantRef: string }> {
+    const merchantRef = `paymob_${paymentId}_${Date.now()}`;
+
+    const payload = {
+      amount: Math.round(totalAmount.toNumber() * 100), // Convert to cents
+      currency: 'EGP',
+      payment_methods: [parseInt(process.env.PAYMOB_INTEGRATION_ID)],
+      items: [
+        {
+          name: `Camp Registration - ${campRegistration.id}`,
+          amount: Math.round(totalAmount.toNumber() * 100), // Convert to cents
+          description: 'Camp Registration Payment',
+          quantity: 1,
+        },
+      ],
+      billing_data: {
+        apartment: 'N/A',
+        first_name: parent.name.split(' ')[0] || parent.name,
+        last_name: parent.name.split(' ').slice(1).join(' ') || 'N/A',
+        street: 'N/A',
+        building: 'N/A',
+        phone_number: parent.phone,
+        city: 'N/A',
+        country: 'EGY',
+        email: parent.email,
+        floor: 'N/A',
+        state: 'N/A',
+      },
+      special_reference: merchantRef,
+      notification_url: `${process.env.BASE_URL}/paymob/webhook`,
+      redirection_url: `${process.env.BASE_URL}/paymob/return`,
+    };
+
+    console.log('Paymob Payload:', payload);
+
+    const intentionResponse = await createPaymobIntention(payload);
+    const paymentUrl = generatePaymobCheckoutUrl(
+      process.env.PAYMOB_PUBLIC_KEY,
+      intentionResponse.client_secret,
+    );
+
+    return {
+      paymentUrl,
+      merchantRef,
+    };
+  }
+} 

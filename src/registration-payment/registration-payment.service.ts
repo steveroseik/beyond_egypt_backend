@@ -221,7 +221,7 @@ export class RegistrationPaymentService {
         { id: payment.id },
         {
           status: PaymentStatus.paid,
-          fawryReferenceNumber: validateResponse.fawryRefNumber,
+          paymentProviderRef: validateResponse.fawryRefNumber,
         },
       );
 
