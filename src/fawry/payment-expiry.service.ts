@@ -22,7 +22,7 @@ export class PaymentExpiryService implements OnModuleInit {
       .find({
         where: {
           status: PaymentStatus.pending,
-          paymentMethod: PaymentMethod.fawry, // Ensure it's a Fawry payment
+          paymentMethod: In([PaymentMethod.fawry, PaymentMethod.paymob]),
         },
       });
 

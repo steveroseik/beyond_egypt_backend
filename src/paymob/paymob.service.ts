@@ -1,7 +1,10 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { DataSource, QueryRunner, In } from 'typeorm';
 import { PaymobReturnDto } from './models/payment.payload';
-import { createPaymobIntention, generatePaymobCheckoutUrl } from './generate/payment.generate';
+import {
+  createPaymobIntention,
+  generatePaymobCheckoutUrl,
+} from './generate/payment.generate';
 import { RegistrationPayment } from 'src/registration-payment/entities/registration-payment.entity';
 import * as moment from 'moment-timezone';
 import {
@@ -19,6 +22,12 @@ import { User } from 'src/user/entities/user.entity';
 import { Decimal } from 'support/scalars';
 import { moneyFixation } from 'support/constants';
 import { CampVariant } from 'src/camp-variant/entities/camp-variant.entity';
+import {
+  validatePaymobPayment,
+  requestPaymobRefund,
+} from './generate/payment.generate';
+import { getSumOfPaidAmounts } from 'support/helpers/calculate-sum-of-paid';
+import { generateMerchantRefNumber } from 'support/random-uuid.generator';
 
 dotenv.config();
 
@@ -31,28 +40,17 @@ export class PaymobService {
 
   async handleReturn(query: PaymobReturnDto, res: Response) {
     console.log('Paymob Return Query:', query);
-    console.table(query);
+    console.log('Paymob res');
 
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
 
     try {
-      if (!query.merchant_order_id) {
-        return res.redirect(
-          `${process.env.FRONTEND_URL}/payment-failed?message=Payment expired`,
-        );
-      }
-
       const payment = await queryRunner.manager.findOne(RegistrationPayment, {
-        where: {
-          referenceNumber: query.merchant_order_id,
-        },
+        where: { referenceNumber: query.merchant_order_id },
         relations: ['campRegistration'],
-        lock: { mode: 'pessimistic_write' },
       });
-
-      console.log('PAYMENT', payment);
 
       if (!payment) {
         throw Error('Payment not found');
@@ -78,7 +76,7 @@ export class PaymobService {
 
       await this.dataSource.manager.update(
         RegistrationPayment,
-        { referenceNumber: query.merchant_order_id },
+        { referenceNumber: `${query.merchant_order_id}` },
         { status: PaymentStatus.failed },
       );
 
@@ -106,7 +104,7 @@ export class PaymobService {
       campId: payment.campRegistration.campId,
     };
 
-    // Check if payment was successful
+    // First, check the direct response data
     if (query.success !== 'true') {
       return res.redirect(
         `${process.env.FRONTEND_URL}/payment-failed?${generateQueryParams(parameters)}`,
@@ -116,6 +114,31 @@ export class PaymobService {
     // Check if payment is pending
     if (query.pending === 'true') {
       parameters.message = 'Payment is pending';
+      return res.redirect(
+        `${process.env.FRONTEND_URL}/payment-failed?${generateQueryParams(parameters)}`,
+      );
+    }
+
+    // If direct response indicates success, validate with Paymob API
+    try {
+      const expectedAmount = Math.round(payment.amount.toNumber() * 100); // Convert to cents
+      const validationResult = await validatePaymobPayment(
+        query.id,
+        expectedAmount,
+        query.merchant_order_id,
+      );
+
+      if (!validationResult.isValid) {
+        parameters.networkError = true;
+        parameters.message = 'Payment validation failed';
+        return res.redirect(
+          `${process.env.FRONTEND_URL}/payment-failed?${generateQueryParams(parameters)}`,
+        );
+      }
+    } catch (error) {
+      console.error('Paymob API validation error:', error);
+      parameters.networkError = true;
+      parameters.message = 'Payment validation failed - network error';
       return res.redirect(
         `${process.env.FRONTEND_URL}/payment-failed?${generateQueryParams(parameters)}`,
       );
@@ -145,17 +168,17 @@ export class PaymobService {
       },
     );
 
-    if (payment.status != PaymentStatus.expired) {
-      if (updateCampRegistration.affected !== 1) {
+    if (updateCampRegistration.affected !== 1) {
+      if (payment.status != PaymentStatus.expired) {
+        await queryRunner.manager.delete(RegistrationReserve, {
+          campRegistrationId: payment.campRegistrationId,
+        });
+
         throw new Error('Failed to update camp registration status');
       }
-
-      await queryRunner.manager.delete(RegistrationReserve, {
-        campRegistrationId: payment.campRegistrationId,
-      });
-    } else {
-      await this.deductVacancies(payment.campRegistrationId, queryRunner);
     }
+
+    await this.deductVacancies(payment.campRegistrationId, queryRunner);
 
     this.mailService.sendCampRegistrationConfirmation(
       payment.campRegistrationId,
@@ -214,7 +237,7 @@ export class PaymobService {
     parent: User,
     tenMinutesFromNow: moment.Moment,
   ): Promise<{ paymentUrl: string; merchantRef: string }> {
-    const merchantRef = `paymob_${paymentId}_${Date.now()}`;
+    const merchantRef = generateMerchantRefNumber(paymentId);
 
     const payload = {
       amount: Math.round(totalAmount.toNumber() * 100), // Convert to cents
@@ -242,6 +265,7 @@ export class PaymobService {
         state: 'N/A',
       },
       special_reference: merchantRef,
+      expiration: 10 * 60,
       notification_url: `${process.env.BASE_URL}/paymob/webhook`,
       redirection_url: `${process.env.BASE_URL}/paymob/return`,
     };
@@ -259,4 +283,4 @@ export class PaymobService {
       merchantRef,
     };
   }
-} 
+}

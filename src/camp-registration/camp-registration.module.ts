@@ -8,6 +8,7 @@ import { MailModule } from 'src/mail/mail.module';
 import { EncryptionModule } from 'src/encryption/encryption.module';
 import { RegistrationAttendance } from 'src/registration-attendance/entities/registration-attendance.entity';
 import { RegistrationAttendanceModule } from 'src/registration-attendance/registration-attendance.module';
+import { PaymobModule } from 'src/paymob/paymob.module';
 
 @Module({
   imports: [
@@ -15,6 +16,7 @@ import { RegistrationAttendanceModule } from 'src/registration-attendance/regist
     AwsBucketModule,
     MailModule,
     EncryptionModule,
+    PaymobModule,
   ],
   providers: [CampRegistrationResolver, CampRegistrationService],
   exports: [CampRegistrationService],

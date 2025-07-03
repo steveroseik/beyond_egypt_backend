@@ -404,9 +404,10 @@ export class CampRegistrationService {
     const now = moment.tz('Africa/Cairo');
 
     for (const cv of campVariants) {
-      if (now.diff(cv.startDate) >= 0) {
+      const endDate = moment(cv.endDate).tz('Africa/Cairo');
+      if (endDate.diff(now) <= 0) {
         if (campVariantRegistrations.find((e) => e.campVariantId == cv.id)) {
-          throw new Error(`${cv.name} has already started, you can't register`);
+          throw new Error(`${cv.name} has ended, you can't register`);
         }
       }
     }
@@ -2955,10 +2956,20 @@ export class CampRegistrationService {
         if (a.payment.paymentMethod === b.payment.paymentMethod) {
           return a.amount.isLessThan(b.amount) ? -1 : 1;
         } else {
-          if (a.payment.paymentMethod === PaymentMethod.fawry) {
-            return 1;
+          const aIsOnline =
+            a.payment.paymentMethod === PaymentMethod.fawry ||
+            a.payment.paymentMethod === PaymentMethod.paymob;
+          const bIsOnline =
+            b.payment.paymentMethod === PaymentMethod.fawry ||
+            b.payment.paymentMethod === PaymentMethod.paymob;
+
+          if (aIsOnline && !bIsOnline) {
+            return -1; // a is online, b is not - prioritize a
+          } else if (!aIsOnline && bIsOnline) {
+            return 1; // b is online, a is not - prioritize b
           } else {
-            return -1;
+            // Both are online or both are offline - use normal comparison
+            return a.amount.isLessThan(b.amount) ? -1 : 1;
           }
         }
       });
@@ -3084,21 +3095,14 @@ export class CampRegistrationService {
             );
           }
         } else if (option.paymentMethod === PaymentMethod.paymob) {
-          const payment = await queryRunner.manager.findOne(
-            RegistrationPayment,
-            {
-              where: { id: option.paymentId },
-            },
-          );
-
-          if (!payment || !payment.paymentProviderRef) {
+          if (!option.paymentProviderRef) {
             throw new Error(
               `Malformed paymob refund request ${option.paymentId}`,
             );
           }
 
           const refundResponse = await requestPaymobRefund({
-            transaction_id: payment.paymentProviderRef,
+            transaction_id: option.paymentProviderRef,
             amount_cents: Math.round(option.amount.toNumber() * 100).toString(),
           });
 
@@ -3305,8 +3309,9 @@ export class CampRegistrationService {
     const vacanciesToRelease = new Map<number, number>();
     for (const registration of registrations) {
       if (
-        registration.status !== CampRegistrationStatus.pending &&
-        registration.paymentMethod == PaymentMethod.fawry
+        registration.status === CampRegistrationStatus.pending &&
+        (registration.paymentMethod == PaymentMethod.fawry ||
+          registration.paymentMethod == PaymentMethod.paymob)
       ) {
         for (const variant of registration.campVariantRegistrations) {
           if (!vacanciesToRelease.has(variant.campVariantId)) {
@@ -3716,8 +3721,8 @@ export class CampRegistrationService {
       },
       special_reference: merchantRef,
       expiration: 10 * 60,
-      notification_url: `${process.env.BASE_URL}/paymob/return`,
-      redirection_url: `${process.env.FRONTEND_URL}/payment-success`,
+      notification_url: `${process.env.BASE_URL}/paymob/webhook`,
+      redirection_url: `${process.env.BASE_URL}/paymob/return`,
     };
 
     console.log('Paymob Payload:', payload);
