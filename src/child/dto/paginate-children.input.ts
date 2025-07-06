@@ -6,9 +6,6 @@ export class PaginateChildrenInput extends PaginationInput {
   @Field({ nullable: true })
   parentId?: string;
 
-  @Field({ nullable: true })
-  name?: string;
-
   @Field({
     nullable: true,
   })

@@ -99,7 +99,7 @@ export class AgeRangeService {
     const queryBuilder = this.repo.createQueryBuilder('ageRange');
 
     if (input.search) {
-      queryBuilder.where('ageRange.name LIKE :search', {
+      queryBuilder.where('name LIKE :search', {
         search: `%${input.search}%`,
       });
     }

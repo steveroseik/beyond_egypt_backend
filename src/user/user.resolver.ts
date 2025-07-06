@@ -27,6 +27,8 @@ import { PaginateUsersInput } from './dto/paginate-users.input';
 import { CreateEmployeeInput } from './dto/create-employee.input';
 import { RegisterUserInput } from './dto/register-user.input';
 import { FindInactiveUserInput } from './dto/find-inactive-user.input';
+import { ChangeMyEmailInput } from './dto/change-my-email.input';
+import { ChangeUserEmailInput } from './dto/change-user-email.input';
 
 @Resolver(() => User)
 export class UserResolver {
@@ -102,6 +104,28 @@ export class UserResolver {
   @Mutation(() => GraphQLJSONObject)
   permanentlyRemoveUser(@Args('id') id: string) {
     return this.userService.permanentlyRemove(id);
+  }
+
+  @Mutation(() => GraphQLJSONObject)
+  changeMyEmail(
+    @Args('input') input: ChangeMyEmailInput,
+    @CurrentUser('id') userId: string,
+  ) {
+    return this.userService.changeMyEmail(userId, input.newEmail);
+  }
+
+  @Mutation(() => GraphQLJSONObject)
+  changeUserEmail(
+    @Args('input') input: ChangeUserEmailInput,
+    @CurrentUser('type') userType: UserType,
+  ) {
+    if (userType !== UserType.admin) {
+      return {
+        success: false,
+        message: 'You are not authorized to perform this action',
+      };
+    }
+    return this.userService.changeUserEmail(input.userId, input.newEmail);
   }
 
   @ResolveField(() => [ParentAdditional])

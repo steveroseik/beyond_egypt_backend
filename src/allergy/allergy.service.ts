@@ -96,12 +96,9 @@ export class AllergyService {
     const queryBuilder = this.repo.createQueryBuilder('allergy');
 
     if (input.search) {
-      queryBuilder.where(
-        'allergy.nameEn LIKE :search OR allergy.nameAr LIKE :search',
-        {
-          search: `%${input.search}%`,
-        },
-      );
+      queryBuilder.where('nameEn LIKE :search OR nameAr LIKE :search', {
+        search: `%${input.search}%`,
+      });
     }
 
     const paginator = buildPaginator({

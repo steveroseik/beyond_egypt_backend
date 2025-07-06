@@ -157,14 +157,14 @@ export class ChildService {
     });
 
     if (input.parentId) {
-      queryBuilder.andWhere('child.parentId = :parentId', {
+      queryBuilder.andWhere('parentId = :parentId', {
         parentId: input.parentId,
       });
     }
 
-    if (input.name) {
-      queryBuilder.andWhere('child.name = :name', {
-        name: `%${input.name}%`,
+    if (input.search) {
+      queryBuilder.andWhere('child.name LIKE :name', {
+        name: `%${input.search}%`,
       });
     }
 
@@ -173,7 +173,7 @@ export class ChildService {
         where: { id: input.campId },
         relations: ['ageRanges'],
       });
-      if (camp) {
+      if (camp && camp.ageRanges?.length) {
         // based on current time and age ranges, get min and max birthdates for children
         const now = new Date();
         const minBirthDate = new Date(now);

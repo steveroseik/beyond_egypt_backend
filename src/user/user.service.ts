@@ -747,10 +747,148 @@ export class UserService {
   }
 
   findAllByKeys(keys: readonly string[]) {
-    return this.repo.find({
-      where: {
-        id: In(keys),
-      },
-    });
+    return this.repo.findBy({ id: In(keys) });
+  }
+
+  async changeMyEmail(userId: string, newEmail: string) {
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      // Normalize email addresses for comparison
+      const normalizedNewEmail = newEmail.toLowerCase().trim();
+      const currentUser = await this.findOne(userId);
+      
+      if (!currentUser) {
+        throw new Error('User not found');
+      }
+
+      const normalizedCurrentEmail = currentUser.email.toLowerCase().trim();
+
+      // Check if the new email is the same as the current email
+      if (normalizedNewEmail === normalizedCurrentEmail) {
+        throw new Error('New email must be different from current email');
+      }
+
+      // Check if the new email is already used by another user
+      const existingUser = await this.findOneByEmail(normalizedNewEmail);
+      if (existingUser && existingUser.id !== userId) {
+        throw new Error('Email is already in use by another account');
+      }
+
+      // Update email in Firebase Auth first
+      const firebaseResult = await this.authService.updateFirebaseEmail(userId, normalizedNewEmail);
+      
+      if (!firebaseResult.success) {
+        throw new Error(firebaseResult.message);
+      }
+
+      // Update email in database
+      const updateResult = await queryRunner.manager.update(
+        User,
+        { id: userId },
+        { email: normalizedNewEmail }
+      );
+
+      if (updateResult.affected !== 1) {
+        throw new Error('Failed to update email in database');
+      }
+
+      await queryRunner.commitTransaction();
+
+      // Send confirmation email to the new email address
+      this.mailService.sendActivationEmail(userId);
+
+      return {
+        success: true,
+        message: 'Email changed successfully. Please check your new email for verification.',
+        data: {
+          newEmail: normalizedNewEmail,
+          userId: userId,
+        },
+      };
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      console.error('Email change error:', error);
+      
+      return {
+        success: false,
+        message: error.message || 'Failed to change email',
+      };
+    } finally {
+      await queryRunner.release();
+    }
+  }
+
+  async changeUserEmail(targetUserId: string, newEmail: string) {
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      // Normalize email addresses for comparison
+      const normalizedNewEmail = newEmail.toLowerCase().trim();
+      const currentUser = await this.findOne(targetUserId);
+      
+      if (!currentUser) {
+        throw new Error('User not found');
+      }
+
+      const normalizedCurrentEmail = currentUser.email.toLowerCase().trim();
+
+      // Check if the new email is the same as the current email
+      if (normalizedNewEmail === normalizedCurrentEmail) {
+        throw new Error('New email must be different from current email');
+      }
+
+      // Check if the new email is already used by another user
+      const existingUser = await this.findOneByEmail(normalizedNewEmail);
+      if (existingUser && existingUser.id !== targetUserId) {
+        throw new Error('Email is already in use by another account');
+      }
+
+      // Update email in Firebase Auth first
+      const firebaseResult = await this.authService.updateFirebaseEmail(targetUserId, normalizedNewEmail);
+      
+      if (!firebaseResult.success) {
+        throw new Error(firebaseResult.message);
+      }
+
+      // Update email in database
+      const updateResult = await queryRunner.manager.update(
+        User,
+        { id: targetUserId },
+        { email: normalizedNewEmail }
+      );
+
+      if (updateResult.affected !== 1) {
+        throw new Error('Failed to update email in database');
+      }
+
+      await queryRunner.commitTransaction();
+
+      // Send confirmation email to the new email address
+      this.mailService.sendActivationEmail(targetUserId);
+
+      return {
+        success: true,
+        message: 'Email changed successfully. Please check your new email for verification.',
+        data: {
+          newEmail: normalizedNewEmail,
+          userId: targetUserId,
+        },
+      };
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      console.error('Email change error:', error);
+      
+      return {
+        success: false,
+        message: error.message || 'Failed to change email',
+      };
+    } finally {
+      await queryRunner.release();
+    }
   }
 }

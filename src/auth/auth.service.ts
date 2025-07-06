@@ -206,6 +206,22 @@ export class AuthService {
     }
   }
 
+  async updateFirebaseEmail(uid: string, newEmail: string) {
+    try {
+      await this.firebaseAuth.updateUser(uid, {
+        email: newEmail,
+        emailVerified: false, // Reset email verification since it's a new email
+      });
+      return { success: true, message: 'Email updated successfully in Firebase' };
+    } catch (e) {
+      console.log('Firebase email update error:', e);
+      if (e.code === 'auth/email-already-exists') {
+        return { success: false, message: 'Email is already in use by another account' };
+      }
+      return { success: false, message: e.message || 'Failed to update email in Firebase' };
+    }
+  }
+
   handleAuthError(error: FirebaseError) {
     switch (error.code) {
       case 'auth/invalid-email':

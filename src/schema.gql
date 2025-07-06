@@ -585,7 +585,6 @@ input PaginateChildrenInput {
   beforeCursor: String
   search: String
   parentId: String
-  name: String
   campId: Int
 }
 
@@ -790,6 +789,8 @@ type Mutation {
   registerUser(input: RegisterUserInput!): CreateUserResponse!
   removeUser(id: String!): JSONObject!
   permanentlyRemoveUser(id: String!): JSONObject!
+  changeMyEmail(input: ChangeMyEmailInput!): JSONObject!
+  changeUserEmail(input: ChangeUserEmailInput!): JSONObject!
   tempLogin(input: TempSignInInput!): JSONObject!
   signIn(input: TokenRequestInput!): UserAuthResponse!
   createDiscount(input: CreateDiscountInput!): JSONObject!
@@ -1134,6 +1135,15 @@ input CreateEmployeeInput {
 input RegisterUserInput {
   id: String!
   firebaseToken: String!
+}
+
+input ChangeMyEmailInput {
+  newEmail: String!
+}
+
+input ChangeUserEmailInput {
+  userId: String!
+  newEmail: String!
 }
 
 input TempSignInInput {
